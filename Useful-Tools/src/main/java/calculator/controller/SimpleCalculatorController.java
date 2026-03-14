@@ -13,23 +13,16 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 /**
- * FIX: Removed the large commented-out block of stale code (~35 lines) that
- *   was left over from an earlier implementation. Dead commented code adds
- *   noise and makes the intent of the live code harder to follow.
- *
- * FIX: The original had a nested try-catch structure where the outer catch
- *   tried to obtain a second PrintWriter after the inner try-with-resources
- *   had already closed the first one. Collapsed into a single clean structure.
- *
- * NOTE: The duplicate CalculatorController in calculator.api (mapped to
- *   /Calculator) has been removed — this servlet at /SimpleCalculator is the
- *   canonical implementation. Update any front-end references from /Calculator
- *   to /SimpleCalculator accordingly.
+ * IMPROVEMENT: Unique session key "simple_expression" prevents state collision
+ *   when the user has multiple calculator types open in the same browser session.
+ *   Previously all calculators shared the key "expression", so evaluating on
+ *   one calculator would corrupt the display of another.
  */
 @WebServlet("/SimpleCalculator")
 public class SimpleCalculatorController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
+    private static final String SESSION_KEY = "simple_expression";
 
     private final CalculatorService service = new CalculatorService();
 
@@ -42,15 +35,16 @@ public class SimpleCalculatorController extends HttpServlet {
         response.setCharacterEncoding("UTF-8");
 
         HttpSession session = request.getSession();
-        StringBuilder expr = (StringBuilder) session.getAttribute("expression");
+        StringBuilder expr = (StringBuilder) session.getAttribute(SESSION_KEY);
         if (expr == null) {
             expr = new StringBuilder();
-            session.setAttribute("expression", expr);
+            session.setAttribute(SESSION_KEY, expr);
         }
 
         String input = request.getParameter("input");
 
         try (PrintWriter out = response.getWriter()) {
+
             if ("C".equals(input)) {
                 expr.setLength(0);
                 out.print(gson.toJson(""));
@@ -61,17 +55,19 @@ public class SimpleCalculatorController extends HttpServlet {
                 double result = service.evaluate(expr.toString());
                 expr.setLength(0);
                 expr.append(result);
+                session.setAttribute(SESSION_KEY, expr);
                 out.print(gson.toJson(expr.toString()));
                 return;
             }
 
             expr.append(input);
+            session.setAttribute(SESSION_KEY, expr);
             out.print(gson.toJson(expr.toString()));
 
         } catch (Exception e) {
             e.printStackTrace();
             try (PrintWriter out = response.getWriter()) {
-                out.print(gson.toJson(e.getMessage()));
+                out.print(gson.toJson("Error: " + e.getMessage()));
             }
         }
     }

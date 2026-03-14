@@ -5,30 +5,17 @@ import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.annotation.WebListener;
 
 /**
- * NEW FILE — AppInitializer
+ * Eagerly loads every calculator function and operator class so their static
+ * initialiser blocks fire and register entries into FunctionRegistry /
+ * OperatorRegistry before the first HTTP request arrives.
  *
- * WHY THIS IS NEEDED:
- * FunctionRegistry and OperatorRegistry are populated via static initialiser
- * blocks inside each individual function/operator class (e.g. radd, xor, mod).
- * The JVM only executes a static block when the class is first loaded.
- * If no code ever references a class by name, it is never loaded, its static
- * block never fires, and it is never registered — meaning the ExpressionBuilder
- * would silently fail to recognise those functions/operators at runtime.
- *
- * This ServletContextListener runs once when the web application starts up.
- * It triggers Class.forName() for every function and operator class, which
- * forces the JVM to load them and execute their static registration blocks,
- * ensuring every function and operator is registered before any request arrives.
- *
- * HOW TO USE IN ECLIPSE:
- * This file goes in:
- *   src/calculator/startup/AppInitializer.java
- * The @WebListener annotation means no web.xml entry is needed (Servlet 3.0+).
+ * UPDATE: "and" and "or" are now in calculator.operators (fixed in previous
+ *   review batch — they were wrongly in calculator.functions). Their entries
+ *   here reflect the corrected package.
  */
 @WebListener
 public class AppInitializer implements ServletContextListener {
 
-    /** All calculator function classes (in calculator.functions). */
     private static final String[] FUNCTION_CLASSES = {
         "calculator.functions.radd",
         "calculator.functions.rsub",
@@ -67,14 +54,13 @@ public class AppInitializer implements ServletContextListener {
         "calculator.functions.ThreeDdistance"
     };
 
-    /** All calculator operator classes (in calculator.operators). */
     private static final String[] OPERATOR_CLASSES = {
         "calculator.operators.mod",
         "calculator.operators.percentage",
         "calculator.operators.leftShift",
         "calculator.operators.rightShift",
-        "calculator.operators.and",
-        "calculator.operators.or",
+        "calculator.operators.and",          // ← moved from functions in fix batch
+        "calculator.operators.or",           // ← moved from functions in fix batch
         "calculator.operators.xor",
         "calculator.operators.xnor",
         "calculator.operators.nand",
@@ -96,27 +82,19 @@ public class AppInitializer implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         System.out.println("[AppInitializer] Loading calculator functions and operators...");
-
-        for (String className : FUNCTION_CLASSES) {
-            loadClass(className);
-        }
-        for (String className : OPERATOR_CLASSES) {
-            loadClass(className);
-        }
-
-        System.out.println("[AppInitializer] All functions and operators registered.");
+        for (String cls : FUNCTION_CLASSES)  loadClass(cls);
+        for (String cls : OPERATOR_CLASSES)  loadClass(cls);
+        System.out.println("[AppInitializer] All functions and operators registered successfully.");
     }
 
     @Override
-    public void contextDestroyed(ServletContextEvent sce) {
-        // Nothing to clean up.
-    }
+    public void contextDestroyed(ServletContextEvent sce) { }
 
     private void loadClass(String className) {
         try {
             Class.forName(className);
         } catch (ClassNotFoundException e) {
-            System.err.println("[AppInitializer] WARNING: Could not load class: " + className);
+            System.err.println("[AppInitializer] WARNING: Could not load " + className);
             e.printStackTrace();
         }
     }

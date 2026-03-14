@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import com.google.gson.Gson;
-
 import calculator.service.CalculatorService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -13,103 +12,69 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
+/**
+ * IMPROVEMENT: Removed ~30 lines of commented-out stale code from an earlier
+ *   implementation. The active logic below it was identical and correct.
+ *
+ * IMPROVEMENT: Unique session key "intermediate_expression" to prevent state
+ *   collision when the user has multiple calculators open in the same session.
+ *
+ * IMPROVEMENT: Promoted service field to final (was non-final).
+ *
+ * IMPROVEMENT: Collapsed nested try-with-resources into a single clean
+ *   try-with-resources block.
+ */
 @WebServlet("/IntermediateCalculator")
 public class IntermediateCalculatorController extends HttpServlet {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	
-	private CalculatorService service = new CalculatorService();
-	
-	@Override
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		HttpSession session = request.getSession();
-		StringBuilder expr = (StringBuilder) session.getAttribute("expression");
-		String jsonResponse = "";
-		Gson gson = new Gson();
-		
-		try {
-			response.setContentType("application/json");
-			response.setCharacterEncoding("UTF-8");
+    private static final long serialVersionUID = 1L;
+    private static final String SESSION_KEY = "intermediate_expression";
 
-			if(expr == null) {
-				expr = new StringBuilder();
-				session.setAttribute("expression", expr);
-			}
+    private final CalculatorService service = new CalculatorService();
 
-			String input = request.getParameter("input");
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
 
-//			if("C".equals(input)) {
-//				expr.setLength(0);
-//				jsonResponse = gson.toJson(expr);
-//				try (PrintWriter out = response.getWriter()){
-//					out.print(jsonResponse);
-//					out.flush();
-//				}
-//				return;
-//			}
-//			
-//			if("=".equals(input)) {
-//				double result = IntermediateUtils.evaluateArithmeticExpression(expr.toString());
-//				ComputeDAO.storeExpressionResult(expr.toString(), Double.toString(result));
-//				expr.setLength(0);
-//				expr.append(result);
-//				session.setAttribute("expression", expr);
-//				jsonResponse = gson.toJson(expr);
-//				try (PrintWriter out = response.getWriter()) {
-//					out.print(jsonResponse);
-//					out.flush();
-//				}
-//			}
-//			
-//			expr.append(input);
-//			session.setAttribute("expression", expr);
-//			try (PrintWriter out = response.getWriter()){
-//				out.print(expr);
-//				out.flush();
-//			}
-			
-			//12/03 -- refactoring changes
+        Gson gson = new Gson();
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
 
-			try (PrintWriter out = response.getWriter()) {
+        HttpSession session = request.getSession();
+        StringBuilder expr = (StringBuilder) session.getAttribute(SESSION_KEY);
+        if (expr == null) {
+            expr = new StringBuilder();
+            session.setAttribute(SESSION_KEY, expr);
+        }
 
-	            if ("C".equals(input)) {
+        String input = request.getParameter("input");
 
-	                expr.setLength(0);
-	                jsonResponse = gson.toJson("");
-	                out.print(jsonResponse);
-	                return;
-	            }
+        try (PrintWriter out = response.getWriter()) {
 
-	            if ("=".equals(input)) {
+            if ("C".equals(input)) {
+                expr.setLength(0);
+                out.print(gson.toJson(""));
+                return;
+            }
 
-	                double result = service.evaluateAndStore(expr.toString());
+            if ("=".equals(input)) {
+                double result = service.evaluateAndStore(expr.toString());
+                expr.setLength(0);
+                expr.append(result);
+                session.setAttribute(SESSION_KEY, expr);
+                out.print(gson.toJson(expr.toString()));
+                return;
+            }
 
-	                expr.setLength(0);
-	                expr.append(result);
+            expr.append(input);
+            session.setAttribute(SESSION_KEY, expr);
+            out.print(gson.toJson(expr.toString()));
 
-	                jsonResponse = gson.toJson(expr);
-	                out.print(jsonResponse);
-	                return;
-	            }
-
-	            expr.append(input);
-	            jsonResponse = gson.toJson(expr);
-	            out.print(jsonResponse);
-
-	        } catch (Exception e) {
-
-	            jsonResponse = gson.toJson(e.getMessage());
-
-	            try (PrintWriter out = response.getWriter()) {
-	                out.print(jsonResponse);
-	            }
-	        }
-		}
-		catch(Exception e) {
-			e.printStackTrace();
-		}
-	}
+        } catch (Exception e) {
+            e.printStackTrace();
+            try (PrintWriter out = response.getWriter()) {
+                out.print(gson.toJson("Error: " + e.getMessage()));
+            }
+        }
+    }
 }

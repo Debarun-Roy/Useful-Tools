@@ -2,265 +2,103 @@ package calculator.controller;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
-
-import calculator.dao.ComputeDAO;
-import calculator.functions.cadd;
-import calculator.functions.csq;
-import calculator.functions.csub;
-import calculator.functions.imag;
-import calculator.functions.radd;
-import calculator.functions.real;
-import calculator.functions.rsub;
+import calculator.service.ComplexNumberService;
+import calculator.service.ComplexNumberService.ComplexResult;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import net.objecthunter.exp4j.Expression;
-import net.objecthunter.exp4j.ExpressionBuilder;
 
+/**
+ * REFACTORED — was ~265 lines, now ~90 lines.
+ *
+ * All arithmetic logic has been moved to ComplexNumberService.
+ * This controller is now a thin dispatcher: it reads the input, identifies
+ * the operation, delegates to the service, and writes the JSON response.
+ *
+ * FIXES carried over from the original:
+ *
+ * FIX 1 — Double.NaN comparison:
+ *   The original used "lastReal == Double.NaN" which is always false in Java
+ *   because NaN != NaN by IEEE 754 definition. Must use Double.isNaN().
+ *
+ * FIX 2 — Unique session keys:
+ *   Uses "complex_real" and "complex_imag" instead of sharing "expression"
+ *   with every other calculator controller.
+ *
+ * FIX 3 — "=" stripping before dispatch:
+ *   The original stripped the trailing "=" inside the if-block for "=".
+ *   Now stripped once at the top to avoid repetition in each branch.
+ */
 @WebServlet("/ComplexNumberCalculator/HandleCalculate")
 public class ComplexNumberCalculatorController extends HttpServlet {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
+    private static final String SESSION_REAL = "complex_real";
+    private static final String SESSION_IMAG = "complex_imag";
 
-	@Override
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		String jsonResponse = "";
-		Gson gson = new Gson();
-		try {
-			HttpSession session = request.getSession();
-			Double lastReal = (Double) session.getAttribute("lastReal");
-			Double lastImag = (Double) session.getAttribute("lastImag");
+    private final ComplexNumberService service = new ComplexNumberService();
 
-			response.setContentType("application/json");
-			response.setCharacterEncoding("UTF-8");
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
 
-			if(lastReal == Double.NaN || lastImag == Double.NaN || lastReal == null || lastImag == null) {
-				lastReal = 0.0;
-				lastImag = 0.0;
-				session.setAttribute("realPart", lastReal);
-				session.setAttribute("imagPart", lastImag);
-			}
+        Gson gson = new Gson();
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
 
-			String input = request.getParameter("input");
-			
-			if(input.endsWith("=")) {
-				input = input.substring(0,input.length()-1); //remove the =
-				if(input.startsWith("complex_add")) {
-					try {
-						String pattern = "complex_add\\(([^\\+\\-]+)\\+([^\\+\\-]+)i,([^\\+\\-]+)\\+([^\\+\\-]+)i\\)";
-						String replacement = "radd($1,$3) + cadd($2,$4)";
-						
-						String replacedExpr = input.replaceAll(pattern, replacement);
-						
-						String realStr = replacedExpr.replaceAll(".*radd\\(([^,]+),([^\\)]+)\\).*", "radd($1,$2)");
-						String imagStr = replacedExpr.replaceAll(".*cadd\\(([^,]+),([^\\)]+)\\).*", "cadd($1,$2)");
-						
-						Expression realExp = new ExpressionBuilder(realStr)
-								.function(new radd())
-								.build();
-						lastReal = realExp.evaluate();
-						
-						Expression imagExp = new ExpressionBuilder(imagStr)
-								.function(new cadd())
-								.build();
-						lastImag = imagExp.evaluate();
-						
-						String resultExpr = lastReal+"+"+lastImag+"i";
-						ComputeDAO.storeExpressionResult(input, resultExpr);
-						session.setAttribute("lastReal", lastReal);
-						session.setAttribute("lastImag", lastImag);
-						
-						jsonResponse = gson.toJson(resultExpr);
-						
-						try (PrintWriter out = response.getWriter()){
-							out.print(jsonResponse);
-							out.flush();
-						}
-					}
-					catch(Exception ex) {
-						ex.printStackTrace();
-						jsonResponse = gson.toJson(ex.getMessage());
-						try (PrintWriter out = response.getWriter()){
-							out.print(jsonResponse);
-							out.flush();
-						}
-					}
-					return;
-				}
-				else if(input.startsWith("complex_subtract")) {
-					try {
-						
-						String pattern = "complex_subtract\\(([^\\+\\-]+)\\+([^\\+\\-]+)i,([^\\+\\-]+)\\+([^\\+\\-]+)i\\)";
-						String replacement = "rsub($1,$3) + csub($2,$4)";
-						
-						String replacedExpr = input.replaceAll(pattern, replacement);
-						
-						String realStr = replacedExpr.replaceAll(".*rsub\\(([^,]+),([^\\)]+)\\).*", "rsub($1,$2)");
-						String imagStr = replacedExpr.replaceAll(".*csub\\(([^,]+),([^\\)]+)\\).*", "csub($1,$2)");
-						
-						Expression realExp = new ExpressionBuilder(realStr)
-								.function(new rsub())
-								.build();
-						lastReal = realExp.evaluate();
-						
-						Expression imagExp = new ExpressionBuilder(imagStr)
-								.function(new csub())
-								.build();
-						lastImag = imagExp.evaluate();
-						
-						String resultExpr = lastReal+"+"+lastImag+"i";
-						
-						ComputeDAO.storeExpressionResult(input, resultExpr);
-						session.setAttribute("lastReal", lastReal);
-						session.setAttribute("lastImag", lastImag);
-						
-						jsonResponse = gson.toJson(resultExpr);
-						
-						try (PrintWriter out = response.getWriter()){
-							out.print(jsonResponse);
-							out.flush();
-						}
-					}
-					catch(Exception ex) {
-						ex.printStackTrace();
-						jsonResponse = gson.toJson(ex.getMessage());
-						try (PrintWriter out = response.getWriter()){
-							out.print(jsonResponse);
-							out.flush();
-						}
-					}
-					return;
-				}
-				else if(input.startsWith("conj")) {
-					try {
-						Pattern p = Pattern.compile("conj\\(([^\\+\\-]+)\\+([^\\+\\-]+)i\\)");
-						Matcher m = p.matcher(input);
-						double aReal = 0.0;
-						double aImag = 0.0;
-						if (m.find()) {
-							String aRealExpr = m.group(1);
-							String aImagExpr = m.group(2);
+        HttpSession session = request.getSession();
+        Double lastReal = (Double) session.getAttribute(SESSION_REAL);
+        Double lastImag = (Double) session.getAttribute(SESSION_IMAG);
 
-							aReal = new ExpressionBuilder(aRealExpr).build().evaluate();
-							aImag = new ExpressionBuilder(aImagExpr).build().evaluate();
-						}
-						String resultExpr = aReal+"-"+aImag+"i";
-						ComputeDAO.storeExpressionResult(input, resultExpr);
-						lastReal=aReal;
-						lastImag=aImag;
-						session.setAttribute("lastReal", lastReal);
-						session.setAttribute("lastImag", lastImag);
-						jsonResponse = gson.toJson(resultExpr);
-						try (PrintWriter out = response.getWriter()) {
-							out.print(jsonResponse);
-							out.flush();
-						}
-					}
-					catch(Exception ex) {
-						ex.printStackTrace();
-						jsonResponse = gson.toJson(ex.getMessage());
-						try (PrintWriter out = response.getWriter()){
-							out.print(jsonResponse);
-							out.flush();
-						}
-					}
-					return;
-				}
-				else if(input.startsWith("imag")) {
-					try {
-						Expression expr = new ExpressionBuilder(input)
-								.function(new imag())
-								.build();
-						lastImag = expr.evaluate();
-						lastReal = 0.0;
-						
-						ComputeDAO.storeExpressionResult(input, Double.toString(lastImag));
-						jsonResponse = gson.toJson(lastImag);
-						session.setAttribute("lastReal", lastReal);
-						session.setAttribute("lastImag", lastImag);
-						try (PrintWriter out = response.getWriter()) {
-							out.print(jsonResponse);
-							out.flush();
-						}
-					}
-					catch(Exception ex) {
-						ex.printStackTrace();
-						jsonResponse = gson.toJson(ex.getMessage());
-						try (PrintWriter out = response.getWriter()){
-							out.print(jsonResponse);
-							out.flush();
-						}
-					}
-					return;
-				}
-				else if(input.startsWith("real")) {
-					try {
-						Expression expr = new ExpressionBuilder(input)
-								.function(new real())
-								.build();
-						lastImag = 0.0;
-						lastReal = expr.evaluate();
-						
-						ComputeDAO.storeExpressionResult(input, Double.toString(lastReal));
-						jsonResponse = gson.toJson(lastReal);
-						session.setAttribute("lastReal", lastReal);
-						session.setAttribute("lastImag", lastImag);
-						try (PrintWriter out = response.getWriter()) {
-							out.print(jsonResponse);
-							out.flush();
-						}
-					}
-					catch(Exception ex) {
-						ex.printStackTrace();
-						jsonResponse = gson.toJson(ex.getMessage());
-						try (PrintWriter out = response.getWriter()){
-							out.print(jsonResponse);
-							out.flush();
-						}
-					}
-					return;
-				}
-				else if(input.startsWith("csq")) {
-					try {
-						Expression expr = new ExpressionBuilder(input)
-								.function(new csq())
-								.build();
-						lastImag = 0.0;
-						lastReal = expr.evaluate();
-						
-						ComputeDAO.storeExpressionResult(input, Double.toString(lastReal));
-						jsonResponse = gson.toJson(lastReal);
-						session.setAttribute("lastReal", lastReal);
-						session.setAttribute("lastImag", lastImag);
-						try (PrintWriter out = response.getWriter()) {
-							out.print(jsonResponse);
-							out.flush();
-						}
-					}
-					catch(Exception ex) {
-						ex.printStackTrace();
-						jsonResponse = gson.toJson(ex.getMessage());
-						try (PrintWriter out = response.getWriter()){
-							out.print(jsonResponse);
-							out.flush();
-						}
-					}
-					return;
-				}
-			}
-		}
-		catch(Exception e) {
-			e.printStackTrace();
-		}
-	}
+        // FIX: was "lastReal == Double.NaN" — always false; use Double.isNaN()
+        if (lastReal == null || Double.isNaN(lastReal)) lastReal = 0.0;
+        if (lastImag == null || Double.isNaN(lastImag)) lastImag = 0.0;
+
+        String input = request.getParameter("input");
+
+        try (PrintWriter out = response.getWriter()) {
+
+            if (!input.endsWith("=")) {
+                // Not yet evaluated — nothing to do (expression built client-side).
+                out.print(gson.toJson(input));
+                return;
+            }
+
+            // Strip trailing "=" once, then dispatch on function name.
+            input = input.substring(0, input.length() - 1);
+
+            ComplexResult result;
+
+            if (input.startsWith("complex_add")) {
+                result = service.add(input);
+            } else if (input.startsWith("complex_subtract")) {
+                result = service.subtract(input);
+            } else if (input.startsWith("conj")) {
+                result = service.conjugate(input);
+            } else if (input.startsWith("imag")) {
+                result = service.imagPart(input);
+            } else if (input.startsWith("real")) {
+                result = service.realPart(input);
+            } else if (input.startsWith("csq")) {
+                result = service.modulusSquared(input);
+            } else {
+                throw new IllegalArgumentException("Unknown complex operation: " + input);
+            }
+
+            session.setAttribute(SESSION_REAL, result.real);
+            session.setAttribute(SESSION_IMAG, result.imag);
+            out.print(gson.toJson(result.display));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            try (PrintWriter out = response.getWriter()) {
+                out.print(gson.toJson("Error: " + e.getMessage()));
+            }
+        }
+    }
 }

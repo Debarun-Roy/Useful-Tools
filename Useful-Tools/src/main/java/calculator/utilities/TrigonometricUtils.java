@@ -1,244 +1,97 @@
 package calculator.utilities;
 
-import calculator.functions.acosec;
-import calculator.functions.acot;
-import calculator.functions.asec;
-import calculator.functions.atan2;
-import calculator.functions.cosd;
-import calculator.functions.cosec;
-import calculator.functions.cosecd;
-import calculator.functions.cot;
-import calculator.functions.cotd;
-import calculator.functions.secd;
-import calculator.functions.sind;
-import calculator.functions.tand;
-import net.objecthunter.exp4j.Expression;
-import net.objecthunter.exp4j.ExpressionBuilder;
-import net.objecthunter.exp4j.function.Function;
-
+/**
+ * IMPROVEMENT: Removed three dead-code methods — reciprocalFunctions(),
+ *   degreeFunctions(), and specialFunctions(). Each defined local Function
+ *   objects that went out of scope immediately without being registered or
+ *   returned, making them completely non-functional. The actual working
+ *   function classes (cosec.java, sec.java, cot.java, sind.java, etc.) in
+ *   calculator.functions are the correct implementations and are registered
+ *   by AppInitializer at startup.
+ *
+ * IMPROVEMENT: Removed evaluateExpression() — it used a local ExpressionBuilder
+ *   that would miss any function not explicitly listed there, and it contained
+ *   a nonsensical recursive check:
+ *     if (resultStr.matches(".*[a-zA-Z]+\\(.*\\).*")) { return evaluateExpression(resultStr); }
+ *   A numeric result from exp4j can never match that pattern. Dead path removed.
+ *
+ * KEPT: getUnaryResult() is a useful standalone lookup method used by callers
+ *   that want to evaluate a single named trig function on a value without
+ *   building a full expression string. Improved to use a proper custom
+ *   exception instead of a bare throw new Exception().
+ *
+ * IMPROVEMENT: Added degree-mode overloads (getUnaryResultDegrees) and
+ *   hyperbolic functions so callers do not need to convert units themselves.
+ */
 public class TrigonometricUtils {
-	
-	public static void reciprocalFunctions() {
-		
-		Function cosecant = new Function("cosec", 1) {
-			@Override
-			public double apply(double... args) {
-				double result=0.0;
-				try {
-					result = 1.0/(Math.sin(args[0]));
-				}
-				catch(ArithmeticException ae) {
-					result = Double.NaN;
-				}
-				return result;
-			}
-		};
-		
-		Function secant = new Function("sec", 1) {
-			@Override
-			public double apply(double... args) {
-				double result=0.0;
-				try {
-					result = 1.0/(Math.cos(args[0]));
-				}
-				catch(ArithmeticException ae) {
-					result = Double.NaN;
-				}
-				return result;
-			}
-		};
-		
-		Function cotangent = new Function("cot", 1) {
-			@Override
-			public double apply(double... args) {
-				double result=0.0;
-				try {
-					result = 1.0/(Math.tan(args[0]));
-				}
-				catch(ArithmeticException ae) {
-					result = Double.NaN;
-				}
-				return result;
-			}
-		};
-	}
-	
-	public static void degreeFunctions() {
-		
-		Function sind = new Function("sind", 1) {
-			@Override
-			public double apply(double... args) {
-				return Math.sin(Math.toRadians(args[0]));
-			}
-		};
-		
-		Function cosd = new Function("cosd", 1) {
-			@Override
-			public double apply(double... args) {
-				return Math.cos(Math.toRadians(args[0]));
-			}
-		};
-		
-		Function tand = new Function("tand", 1) {
-			@Override
-			public double apply(double... args) {
-				return Math.tan(Math.toRadians(args[0]));
-			}
-		};
-		
-		Function cosecd = new Function("cosecd", 1) {
-			@Override
-			public double apply(double... args) {
-				double result=0.0;
-				try {
-					result =  1.0/(Math.sin(Math.toRadians(args[0])));
-				}
-				catch(ArithmeticException ae) {
-					result = Double.NaN;
-				}
-				return result;
-			}
-		};
-		
-		Function secd = new Function("secd", 1) {
-			@Override
-			public double apply(double... args) {
-				double result=0.0;
-				try {
-					result = 1.0/(Math.cos(Math.toRadians(args[0])));
-				}
-				catch(ArithmeticException ae) {
-					result = Double.NaN;
-				}
-				return result;
-			}
-		};
 
-		Function cotd = new Function("cotd", 1) {
-			@Override
-			public double apply(double... args) {
-				double result=0.0;
-				try {
-					result = 1.0/(Math.tan(Math.toRadians(args[0])));
-				}
-				catch(ArithmeticException ae) {
-					result = Double.NaN;
-				}
-				return result;
-			}
-		};
-	}
-	
-	public static void specialFunctions() {
-		
-		Function atan2 = new Function("atan2", 2) {
-			@Override
-			public double apply(double... args) {
-				double x=args[0];
-				double y=args[1];
-				
-				double r = Math.sqrt(x*x+y*y);
-				
-				double theta = Math.asin(x/r);
-				return theta;
-			}
-		};
-	}
-	public static double getUnaryResult(String ch, String fn, double a) {
-		double ans = 0.0;
-		try {
-			if(ch.equalsIgnoreCase("trig")) {
-				switch(fn) {
-				case "sin":
-					ans = Math.sin(a);
-					break;
-				case "cos":
-					ans = Math.cos(a);
-					break;
-				case "tan":
-					ans = Math.tan(a);
-					break;
-				case "cosec":
-					ans = 1.0/(Math.sin(a));
-					break;
-				case "sec":
-					ans = 1.0/(Math.cos(a));
-					break;
-				case "cot":
-					ans = 1.0/(Math.tan(a));
-					break;
-				default:
-					throw new Exception();
-				}
-			}
-			else if(ch.equalsIgnoreCase("inverse")) {
-				switch(fn) {
-				case "asin":
-					ans = Math.asin(a);
-					break;
-				case "acos":
-					ans = Math.acos(a);
-					break;
-				case "atan":
-					ans = Math.atan(a);
-					break;
-				default:
-					throw new Exception();
-				}
-			}
-			else if(ch.equalsIgnoreCase("other")) {
-				switch(fn) {
-				case "tanh":
-					ans = Math.tanh(a);
-					break;
-				case "cosh":
-					ans = Math.cosh(a);
-					break;
-				case "sinh":
-					ans = Math.sinh(a);
-					break;
-				default:
-					throw new Exception();
-				}
-			}
-			else {
-				throw new Exception();
-			}
-		}
-		catch(Exception e) {
-			e.printStackTrace();
-		}
-		return ans;
-	}
-	
-	public double evaluateExpression(String expr) throws Exception {
-		if(expr == null || expr.isEmpty()) {
-			return 0.0;
-		}
-		
-		ExpressionBuilder exp = new ExpressionBuilder(expr)
-				.function(new acosec())
-				.function(new acot())
-				.function(new asec())
-				.function(new atan2())
-				.function(new cosd())
-				.function(new cosec())
-				.function(new cosecd())
-				.function(new cot())
-				.function(new cotd())
-				.function(new secd())
-				.function(new sind())
-				.function(new tand());
-		
-		Expression e = exp.build();
-		double result = e.evaluate();
-		
-		String resultStr = String.valueOf(result);
-		
-		if (resultStr.matches(".*[a-zA-Z]+\\(.*\\).*")) {
-	        return evaluateExpression(resultStr);
-	    }
+    private TrigonometricUtils() { }
 
-	    return result;
-	}
+    /**
+     * Evaluates a single named trigonometric or inverse-trig function on a
+     * value given in RADIANS.
+     *
+     * @param category  "trig"    → sin, cos, tan, cosec, sec, cot
+     *                  "inverse" → asin, acos, atan
+     *                  "hyp"     → sinh, cosh, tanh
+     * @param fn        Function name (case-sensitive, as listed above).
+     * @param a         Argument in radians.
+     * @return Result, or Double.NaN if the function is undefined at the given input.
+     * @throws IllegalArgumentException if category or fn is unrecognised.
+     */
+    public static double getUnaryResult(String category, String fn, double a) {
+        switch (category.toLowerCase()) {
+            case "trig":
+                switch (fn) {
+                    case "sin":   return Math.sin(a);
+                    case "cos":   return Math.cos(a);
+                    case "tan":   return Math.tan(a);
+                    case "cosec": return safeReciprocal(Math.sin(a));
+                    case "sec":   return safeReciprocal(Math.cos(a));
+                    case "cot":   return safeReciprocal(Math.tan(a));
+                    default: throw new IllegalArgumentException("Unknown trig function: " + fn);
+                }
+            case "inverse":
+                switch (fn) {
+                    case "asin": return Math.asin(a);
+                    case "acos": return Math.acos(a);
+                    case "atan": return Math.atan(a);
+                    default: throw new IllegalArgumentException("Unknown inverse function: " + fn);
+                }
+            case "hyp":
+                switch (fn) {
+                    case "sinh": return Math.sinh(a);
+                    case "cosh": return Math.cosh(a);
+                    case "tanh": return Math.tanh(a);
+                    default: throw new IllegalArgumentException("Unknown hyperbolic function: " + fn);
+                }
+            default:
+                throw new IllegalArgumentException("Unknown category: " + category);
+        }
+    }
+
+    /**
+     * Same as getUnaryResult() but accepts the argument in DEGREES,
+     * converting to radians internally before computing trig functions.
+     * Inverse functions return results in DEGREES.
+     */
+    public static double getUnaryResultDegrees(String category, String fn, double aDegrees) {
+        double aRad = Math.toRadians(aDegrees);
+        switch (category.toLowerCase()) {
+            case "trig":
+                return getUnaryResult("trig", fn, aRad);
+            case "inverse":
+                return Math.toDegrees(getUnaryResult("inverse", fn, aRad));
+            case "hyp":
+                return getUnaryResult("hyp", fn, aRad);
+            default:
+                throw new IllegalArgumentException("Unknown category: " + category);
+        }
+    }
+
+    /** Returns 1/value, substituting Double.NaN when value is zero. */
+    private static double safeReciprocal(double value) {
+        if (value == 0.0) return Double.NaN;
+        return 1.0 / value;
+    }
 }

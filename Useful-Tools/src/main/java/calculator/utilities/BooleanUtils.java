@@ -44,13 +44,15 @@ public class BooleanUtils {
 
         if (m.find()) {
             String funcName = m.group(1);
-            String argsStr = m.group(2);
+            String argsStr  = m.group(2);
 
             ArrayList<String> args = splitTopLevelCommas(argsStr);
             double[] evaluatedArgs = new double[args.size()];
+
             for (int i = 0; i < args.size(); i++) {
                 evaluatedArgs[i] = evaluateBooleanExpression(args.get(i));
             }
+
             return applyFunction(funcName, evaluatedArgs);
         }
 
@@ -60,24 +62,28 @@ public class BooleanUtils {
     }
 
     private static double applyFunction(String funcName, double[] args) {
-        String expr = funcName + "("
+        String reconstructed = funcName + "("
                 + Arrays.stream(args).mapToObj(String::valueOf).collect(Collectors.joining(","))
                 + ")";
-        return buildBooleanExpression(expr).build().evaluate();
+        return buildBooleanExpression(reconstructed).build().evaluate();
     }
 
     /**
-     * FIX: The original splitTopLevelCommas had a critical bug — the call to
-     * args.add(current.toString().trim()) was placed INSIDE the main loop body
-     * (after every character that was not a comma), meaning every single
-     * non-comma character caused a partial, in-progress token to be added to
-     * the result list. For example, parsing "1,0,1" would produce:
-     *   ["1", "1,", "1,0", "0", "0,", "0,1", "1"]
-     * instead of the correct ["1", "0", "1"].
+     * FIX: The original implementation had two bugs:
      *
-     * The fix moves the add() call to exactly two places:
-     *   1. When a top-level comma is encountered (finishes the current token).
-     *   2. After the loop ends (adds the final token).
+     * Bug 1 — args.add() was called INSIDE the main loop body after every
+     *   non-comma character, appending a partial in-progress token on every
+     *   iteration. Parsing "1,0,1" produced ["1","1,","1,0","0","0,","0,1","1"]
+     *   instead of the correct ["1","0","1"].
+     *
+     * Bug 2 — current.setLength(0) was never called after flushing a token on
+     *   a top-level comma, so every subsequent token accumulated all the
+     *   characters from all previous tokens.
+     *
+     * Fix: args.add() is called in exactly two places:
+     *   1. When a top-level comma is encountered (flushes the current token).
+     *   2. After the loop ends (flushes the final token).
+     *   current.setLength(0) resets the buffer immediately after each flush.
      */
     private static ArrayList<String> splitTopLevelCommas(String argsStr) {
         ArrayList<String> args = new ArrayList<>();
@@ -88,17 +94,17 @@ public class BooleanUtils {
             char ch = argsStr.charAt(i);
 
             if (ch == ',' && depth == 0) {
-                // Top-level comma: the current token is complete.
+                // Top-level comma — flush the completed token.
                 args.add(current.toString().trim());
-                current.setLength(0);          // reset for next token
+                current.setLength(0);    // reset buffer for the next token
             } else {
-                if (ch == '(') depth++;
+                if (ch == '(')      depth++;
                 else if (ch == ')') depth--;
                 current.append(ch);
             }
         }
 
-        // Add the final token (there is no trailing comma to trigger it above).
+        // Flush the last token (no trailing comma to trigger the flush above).
         if (current.length() > 0) {
             args.add(current.toString().trim());
         }
@@ -106,7 +112,12 @@ public class BooleanUtils {
         return args;
     }
 
-    /** Shared helper to avoid duplicating the long list of operators/functions. */
+    /**
+     * Shared helper that constructs an ExpressionBuilder pre-loaded with all
+     * boolean operators and the majority/parity functions.
+     * Extracted to avoid duplicating the long operator list between
+     * evaluateBooleanExpression() and applyFunction().
+     */
     private static ExpressionBuilder buildBooleanExpression(String expr) {
         return new ExpressionBuilder(expr)
                 .function(new majority())

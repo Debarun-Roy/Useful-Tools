@@ -13,34 +13,40 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
+/**
+ * IMPROVEMENT: Unique session key "boolean_expression" to prevent state
+ *   collision across calculator tabs in the same browser session.
+ *
+ * (Missing return after "=" was fixed in the previous review batch.)
+ */
 @WebServlet("/BooleanCalculator")
 public class BooleanCalculatorController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
+    private static final String SESSION_KEY = "boolean_expression";
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        HttpSession session = request.getSession();
-        StringBuilder expr = (StringBuilder) session.getAttribute("expression");
         Gson gson = new Gson();
-
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
+        HttpSession session = request.getSession();
+        StringBuilder expr = (StringBuilder) session.getAttribute(SESSION_KEY);
+        if (expr == null) {
+            expr = new StringBuilder();
+            session.setAttribute(SESSION_KEY, expr);
+        }
+
+        String input = request.getParameter("input");
+
         try (PrintWriter out = response.getWriter()) {
-
-            if (expr == null) {
-                expr = new StringBuilder();
-                session.setAttribute("expression", expr);
-            }
-
-            String input = request.getParameter("input");
 
             if ("C".equals(input)) {
                 expr.setLength(0);
-                session.setAttribute("expression", expr);
+                session.setAttribute(SESSION_KEY, expr);
                 out.print(gson.toJson(""));
                 return;
             }
@@ -50,24 +56,19 @@ public class BooleanCalculatorController extends HttpServlet {
                 ComputeDAO.storeExpressionResult(expr.toString(), Double.toString(result));
                 expr.setLength(0);
                 expr.append(result);
-                session.setAttribute("expression", expr);
+                session.setAttribute(SESSION_KEY, expr);
                 out.print(gson.toJson(expr.toString()));
-                // FIX: The original was missing this return statement.
-                // Without it, execution fell through to expr.append(input)
-                // which appended the literal "=" character to the result.
                 return;
             }
 
             expr.append(input);
-            session.setAttribute("expression", expr);
+            session.setAttribute(SESSION_KEY, expr);
             out.print(gson.toJson(expr.toString()));
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
             try (PrintWriter out = response.getWriter()) {
-                out.print(new Gson().toJson(e.getMessage()));
+                out.print(gson.toJson("Error: " + e.getMessage()));
             }
         }
     }
