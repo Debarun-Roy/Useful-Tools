@@ -1,11 +1,16 @@
 package calculator.functions;
 
+import calculator.registry.FunctionRegistry;
 import net.objecthunter.exp4j.function.Function;
 
 public class ThreeDdistance extends Function {
 	
 	public ThreeDdistance() {
 		super("lambda", 6);
+	}
+	
+	static {
+		FunctionRegistry.register(new ThreeDdistance());
 	}
 	
 	@Override

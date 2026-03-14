@@ -1,11 +1,16 @@
 package calculator.operators;
 
+import calculator.registry.OperatorRegistry;
 import net.objecthunter.exp4j.operator.Operator;
 
 public class biconditional extends Operator {
 
 	public biconditional() {
 		super("↔", 2, false, Operator.PRECEDENCE_ADDITION-6);
+	}
+	
+	static {
+	    OperatorRegistry.register(new biconditional());
 	}
 	
 	@Override

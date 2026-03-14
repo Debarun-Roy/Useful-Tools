@@ -1,11 +1,16 @@
 package calculator.functions;
 
+import calculator.registry.FunctionRegistry;
 import net.objecthunter.exp4j.function.Function;
 
 public class parity extends Function {
 
 	public parity() {
 		super("P", -1);
+	}
+	
+	static {
+		FunctionRegistry.register(new parity());
 	}
 	
 	@Override

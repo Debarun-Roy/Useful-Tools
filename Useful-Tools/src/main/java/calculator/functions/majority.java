@@ -1,11 +1,16 @@
 package calculator.functions;
 
+import calculator.registry.FunctionRegistry;
 import net.objecthunter.exp4j.function.Function;
 
 public class majority extends Function {
 
 	public majority() {
 		super("M", 3);
+	}
+	
+	static {
+		FunctionRegistry.register(new majority());
 	}
 	
 	@Override

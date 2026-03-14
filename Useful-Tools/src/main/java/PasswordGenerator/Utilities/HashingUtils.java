@@ -1,38 +1,26 @@
-package PasswordGenerator.Utilities;
+package passwordgenerator.utilities;
 
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.KeySpec;
-import java.util.Base64;
+import org.mindrot.jbcrypt.BCrypt;
 
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
-
+/**
+ * FIX: The original HashingUtils used PBKDF2WithHmacSHA1 and discarded the
+ * salt, making verification permanently impossible. LoginUtils.verifyUser()
+ * uses BCrypt.checkpw(), which expects a BCrypt hash — so if HashingUtils
+ * produced a PBKDF2 hash, login would never succeed for any user.
+ *
+ * This class now uses BCrypt consistently, which:
+ *   1. Embeds the salt inside the hash string (no need to store salt separately).
+ *   2. Is directly verifiable by LoginUtils.verifyUser()/BCrypt.checkpw().
+ *   3. Is the industry-standard approach for password storage.
+ *
+ * The work factor (log rounds) is set to 12, which is a sensible default
+ * as of current hardware. Increase it as hardware speeds improve.
+ */
 public class HashingUtils {
-	
-	public static String generateHashedPassword(String password) {
-		String hashedPassword = "";
-		try {
-			SecureRandom random = new SecureRandom();
-			byte[] salt = new byte[16];
-			random.nextBytes(salt);
-			KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, 65536, 128);
-			SecretKeyFactory f = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-			byte[] hash = f.generateSecret(spec).getEncoded();
-			Base64.Encoder enc = Base64.getEncoder();
-			
-//			System.out.printf("salt: %s%n", enc.encodeToString(salt));
-//			System.out.printf("hash: %s%n", enc.encodeToString(hash));
-			
-			hashedPassword = enc.encodeToString(hash);
-		}
-		catch(NoSuchAlgorithmException nsae) {
-			nsae.printStackTrace();
-		}
-		catch (InvalidKeySpecException ikse) {
-			ikse.printStackTrace();
-		}
-		return hashedPassword;
-	}
+
+    private static final int BCRYPT_LOG_ROUNDS = 12;
+
+    public static String generateHashedPassword(String password) {
+        return BCrypt.hashpw(password, BCrypt.gensalt(BCRYPT_LOG_ROUNDS));
+    }
 }

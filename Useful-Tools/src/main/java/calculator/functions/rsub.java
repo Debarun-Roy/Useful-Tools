@@ -1,10 +1,15 @@
 package calculator.functions;
 
+import calculator.registry.FunctionRegistry;
 import net.objecthunter.exp4j.function.Function;
 
 public class rsub extends Function {
 	public rsub() {
 		super("cadd", 2);
+	}
+	
+	static {
+		FunctionRegistry.register(new rsub());
 	}
 	
 	@Override

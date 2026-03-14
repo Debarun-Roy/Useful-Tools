@@ -1,11 +1,16 @@
 package calculator.functions;
 
+import calculator.registry.FunctionRegistry;
 import net.objecthunter.exp4j.function.Function;
 
 public class TwoDdistance extends Function {
 
 	public TwoDdistance() {
 		super("lambda", 4);
+	}
+	
+	static {
+		FunctionRegistry.register(new TwoDdistance());
 	}
 	
 	@Override

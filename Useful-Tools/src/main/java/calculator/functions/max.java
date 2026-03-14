@@ -1,5 +1,6 @@
 package calculator.functions;
 
+import calculator.registry.FunctionRegistry;
 import net.objecthunter.exp4j.function.Function;
 
 public class max extends Function {
@@ -7,6 +8,11 @@ public class max extends Function {
 	public max() {
 		super("max", -1);
 	}
+	
+	static {
+		FunctionRegistry.register(new max());
+	}
+	
 	@Override
 	public double apply(double... args) {
 		try {

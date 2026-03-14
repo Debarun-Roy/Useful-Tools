@@ -1,11 +1,16 @@
 package calculator.functions;
 
+import calculator.registry.FunctionRegistry;
 import net.objecthunter.exp4j.function.Function;
 
 public class acot extends Function {
 
 	public acot() {
 		super("acot", 1);
+	}
+	
+	static {
+		FunctionRegistry.register(new acot());
 	}
 	
 	@Override

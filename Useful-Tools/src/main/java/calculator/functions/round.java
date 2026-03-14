@@ -1,11 +1,16 @@
 package calculator.functions;
 
+import calculator.registry.FunctionRegistry;
 import net.objecthunter.exp4j.function.Function;
 
 public class round extends Function {
 	
 	public round() {
 		super("round", 2);
+	}
+	
+	static {
+		FunctionRegistry.register(new round());
 	}
 	
 	@Override

@@ -1,11 +1,16 @@
 package calculator.functions;
 
+import calculator.registry.FunctionRegistry;
 import net.objecthunter.exp4j.function.Function;
 
 public class cotd extends Function {
 	
 	public cotd() {
 		super("cotd", 1);
+	}
+	
+	static {
+		FunctionRegistry.register(new cotd());
 	}
 	
 	@Override

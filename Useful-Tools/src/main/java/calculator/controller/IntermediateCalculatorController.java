@@ -5,8 +5,7 @@ import java.io.PrintWriter;
 
 import com.google.gson.Gson;
 
-import calculator.dao.ComputeDAO;
-import calculator.utilities.IntermediateUtils;
+import calculator.service.CalculatorService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -21,6 +20,8 @@ public class IntermediateCalculatorController extends HttpServlet {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	
+	private CalculatorService service = new CalculatorService();
 	
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -40,35 +41,72 @@ public class IntermediateCalculatorController extends HttpServlet {
 
 			String input = request.getParameter("input");
 
-			if("C".equals(input)) {
-				expr.setLength(0);
-				jsonResponse = gson.toJson(expr);
-				try (PrintWriter out = response.getWriter()){
-					out.print(jsonResponse);
-					out.flush();
-				}
-				return;
-			}
+//			if("C".equals(input)) {
+//				expr.setLength(0);
+//				jsonResponse = gson.toJson(expr);
+//				try (PrintWriter out = response.getWriter()){
+//					out.print(jsonResponse);
+//					out.flush();
+//				}
+//				return;
+//			}
+//			
+//			if("=".equals(input)) {
+//				double result = IntermediateUtils.evaluateArithmeticExpression(expr.toString());
+//				ComputeDAO.storeExpressionResult(expr.toString(), Double.toString(result));
+//				expr.setLength(0);
+//				expr.append(result);
+//				session.setAttribute("expression", expr);
+//				jsonResponse = gson.toJson(expr);
+//				try (PrintWriter out = response.getWriter()) {
+//					out.print(jsonResponse);
+//					out.flush();
+//				}
+//			}
+//			
+//			expr.append(input);
+//			session.setAttribute("expression", expr);
+//			try (PrintWriter out = response.getWriter()){
+//				out.print(expr);
+//				out.flush();
+//			}
 			
-			if("=".equals(input)) {
-				double result = IntermediateUtils.evaluateArithmeticExpression(expr.toString());
-				ComputeDAO.storeExpressionResult(expr.toString(), Double.toString(result));
-				expr.setLength(0);
-				expr.append(result);
-				session.setAttribute("expression", expr);
-				jsonResponse = gson.toJson(expr);
-				try (PrintWriter out = response.getWriter()) {
-					out.print(jsonResponse);
-					out.flush();
-				}
-			}
-			
-			expr.append(input);
-			session.setAttribute("expression", expr);
-			try (PrintWriter out = response.getWriter()){
-				out.print(expr);
-				out.flush();
-			}
+			//12/03 -- refactoring changes
+
+			try (PrintWriter out = response.getWriter()) {
+
+	            if ("C".equals(input)) {
+
+	                expr.setLength(0);
+	                jsonResponse = gson.toJson("");
+	                out.print(jsonResponse);
+	                return;
+	            }
+
+	            if ("=".equals(input)) {
+
+	                double result = service.evaluateAndStore(expr.toString());
+
+	                expr.setLength(0);
+	                expr.append(result);
+
+	                jsonResponse = gson.toJson(expr);
+	                out.print(jsonResponse);
+	                return;
+	            }
+
+	            expr.append(input);
+	            jsonResponse = gson.toJson(expr);
+	            out.print(jsonResponse);
+
+	        } catch (Exception e) {
+
+	            jsonResponse = gson.toJson(e.getMessage());
+
+	            try (PrintWriter out = response.getWriter()) {
+	                out.print(jsonResponse);
+	            }
+	        }
 		}
 		catch(Exception e) {
 			e.printStackTrace();

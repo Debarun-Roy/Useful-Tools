@@ -1,11 +1,16 @@
 package calculator.functions;
 
+import calculator.registry.FunctionRegistry;
 import net.objecthunter.exp4j.function.Function;
 
 public class sec extends Function{
 	
 	public sec() {
 		super("sec", 1);
+	}
+	
+	static {
+		FunctionRegistry.register(new sec());
 	}
 	
 	@Override

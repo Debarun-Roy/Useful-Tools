@@ -1,11 +1,16 @@
 package calculator.functions;
 
+import calculator.registry.FunctionRegistry;
 import net.objecthunter.exp4j.function.Function;
 
 public class and extends Function {
 
 	public and() {
 		super("and", 2);
+	}
+	
+	static {
+		FunctionRegistry.register(new and());
 	}
 	
 	@Override

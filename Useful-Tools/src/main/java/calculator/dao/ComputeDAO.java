@@ -13,8 +13,8 @@ public class ComputeDAO {
 			Connection conn = DatabaseUtils.getSQLite3Connection();
 			String sql = "INSERT INTO expr_table VALUES(?, ?);";
 			PreparedStatement pst = conn.prepareStatement(sql);
-			pst.setString(0, expr);
-			pst.setString(1, ans);
+			pst.setString(1, expr); //PreparedStatement uses 1-based indexing
+			pst.setString(2, ans);
 			pst.executeUpdate();
 			DatabaseUtils.closeSQLConnection(conn, pst, null);
 		}

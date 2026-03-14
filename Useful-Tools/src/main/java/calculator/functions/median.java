@@ -1,11 +1,16 @@
 package calculator.functions;
 
+import calculator.registry.FunctionRegistry;
 import net.objecthunter.exp4j.function.Function;
 
 public class median extends Function {
 
 	public median() {
 		super("median", -1);
+	}
+	
+	static {
+		FunctionRegistry.register(new median());
 	}
 	
 	@Override

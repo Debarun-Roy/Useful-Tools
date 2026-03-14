@@ -133,6 +133,7 @@ public class IntermediateUtils {
 		return exp.build().evaluate();
 	}
 	
+	//12/03 --refactoring changes
 	private static ArrayList<String> splitTopLevelCommas(String argsStr){
 		
 		ArrayList<String> args = new ArrayList<>();
@@ -156,9 +157,9 @@ public class IntermediateUtils {
 					current.append(ch);
 				}
 			}
-			if(current.length()>0) {
-				args.add(current.toString().trim());
-			}
+		}
+		if(current.length()>0) {
+			args.add(current.toString().trim());
 		}
 		
 		return args;

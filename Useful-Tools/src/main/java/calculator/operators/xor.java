@@ -1,5 +1,6 @@
 package calculator.operators;
 
+import calculator.registry.OperatorRegistry;
 import net.objecthunter.exp4j.operator.Operator;
 
 public class xor extends Operator {
@@ -8,10 +9,14 @@ public class xor extends Operator {
 		super("⊕", 2, true, Operator.PRECEDENCE_ADDITION-4);
 	}
 	
+	static {
+	    OperatorRegistry.register(new xor());
+	}
+	
 	@Override
 	public double apply(double... args) {
 		boolean a = args[0] != 0;
-		boolean b = args[1] != 1;
+		boolean b = args[1] != 0;
 		
 		return ((a || b) && !(a && b))? 1:0;
 	}

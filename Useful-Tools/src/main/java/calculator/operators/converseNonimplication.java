@@ -1,11 +1,16 @@
 package calculator.operators;
 
+import calculator.registry.OperatorRegistry;
 import net.objecthunter.exp4j.operator.Operator;
 
 public class converseNonimplication extends Operator {
 
 	public converseNonimplication() {
 		super("⊅", 2, false, Operator.PRECEDENCE_ADDITION-3);
+	}
+	
+	static {
+	    OperatorRegistry.register(new converseNonimplication());
 	}
 	
 	@Override

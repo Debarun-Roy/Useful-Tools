@@ -1,11 +1,16 @@
 package calculator.functions;
 
+import calculator.registry.FunctionRegistry;
 import net.objecthunter.exp4j.function.Function;
 
 public class cosecd extends Function{
 
 	public cosecd() {
 		super("cosecd", 1);
+	}
+	
+	static {
+		FunctionRegistry.register(new cosecd());
 	}
 	
 	@Override

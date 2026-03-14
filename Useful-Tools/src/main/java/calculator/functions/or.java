@@ -1,11 +1,16 @@
 package calculator.functions;
 
+import calculator.registry.FunctionRegistry;
 import net.objecthunter.exp4j.function.Function;
 
 public class or extends Function {
 	
 	public or() {
 		super("or", 2);
+	}
+	
+	static {
+		FunctionRegistry.register(new or());
 	}
 	
 	@Override
