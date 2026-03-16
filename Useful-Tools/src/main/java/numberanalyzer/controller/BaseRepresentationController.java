@@ -5,6 +5,7 @@ import java.io.PrintWriter;
 import java.util.LinkedHashMap;
 
 import com.google.gson.Gson;
+import common.ApiResponse;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -16,36 +17,18 @@ import numberanalyzer.categories.BaseNRepresentation;
 /**
  * Returns base-N representations for a single number or a range 0..N.
  *
- * This controller is kept specifically for its "all in range" capability
- * (choice = "all in range"), which iterates from 0 to N and returns all
- * base representations for every number in the range. This is not available
- * through any other endpoint.
+ * CHANGE 5: All responses now wrapped in ApiResponse. HTTP status codes applied:
+ *   400 for invalid input, 500 for server errors.
+ * CHANGE 6: Path renamed /BaseRepresentation → /api/analyzer/base-representation
  *
- * For single-number base lookups (binary/octal/hex), prefer using the
- * NumberAnalysisDisplayController response which includes base representations
- * as part of the full classification result.
- *
- * FIX 1 — NullPointerException on first request:
- *   The original did:
- *     long number = (long) session.getAttribute("number");
- *   On the first request, getAttribute() returns null. Unboxing null to a
- *   primitive long throws NullPointerException before the parameter check
- *   even runs. Fixed: use boxed Long with a null-guard, defaulting to 0.
- *
- * FIX 2 — Non-JSON responses:
- *   All branches called out.print(responseJson) on Map and String objects,
- *   which calls Map.toString() / String.toString() producing Java format
- *   (e.g. "{1=0b101}") rather than valid JSON. Fixed: Gson.toJson() applied
- *   to every response.
- *
- * FIX 3 — Error response was a plain string "Exception occured : ...".
- *   Now returns proper JSON so the client can parse it consistently.
+ * All prior fixes from the final_changes batch are preserved:
+ *   - Null-unboxing NPE on first request fixed (boxed Long)
+ *   - Non-JSON Map.toString() responses replaced with Gson.toJson()
  */
-@WebServlet("/BaseRepresentation")
+@WebServlet("/api/analyzer/base-representation")
 public class BaseRepresentationController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
-
     private final Gson gson = new Gson();
 
     @Override
@@ -55,90 +38,94 @@ public class BaseRepresentationController extends HttpServlet {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        try {
+        try (PrintWriter out = response.getWriter()) {
             HttpSession session = request.getSession();
 
-            // FIX: use boxed Long — unboxing null throws NPE.
             Long number = (Long) session.getAttribute("number");
             if (number == null) number = 0L;
 
             String numberParam = request.getParameter("number");
             if (numberParam != null && !numberParam.isBlank()) {
-                number = Long.parseLong(numberParam.trim());
-                session.setAttribute("number", number);
+                try {
+                    number = Long.parseLong(numberParam.trim());
+                    session.setAttribute("number", number);
+                } catch (NumberFormatException nfe) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.print(gson.toJson(ApiResponse.fail(
+                            "'" + numberParam + "' is not a valid integer.", "INVALID_NUMBER")));
+                    return;
+                }
+            }
+
+            String choice = request.getParameter("choice");
+            if (choice == null || choice.isBlank()) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Parameter 'choice' is required. Valid values: all, binary, octal, hex, all in range.",
+                        "MISSING_CHOICE")));
+                return;
             }
 
             BaseNRepresentation bnr = new BaseNRepresentation();
-            String choice = request.getParameter("choice");
 
-            if (choice == null) {
-                throw new IllegalArgumentException("Parameter 'choice' is required.");
-            }
-
-            try (PrintWriter out = response.getWriter()) {
-                switch (choice.toLowerCase()) {
-
-                    case "all": {
-                        // FIX: was out.print(responseJson) — produced "{1=0b...}" not JSON
-                        LinkedHashMap<Integer, String> allBases = bnr.findAllBases(number);
-                        out.print(gson.toJson(allBases));
-                        break;
-                    }
-
-                    case "binary": {
-                        String binary = bnr.getBinaryRepresentation(number);
-                        out.print(gson.toJson(binary));
-                        break;
-                    }
-
-                    case "octal": {
-                        String octal = bnr.getOctalRepresentation(number);
-                        out.print(gson.toJson(octal));
-                        break;
-                    }
-
-                    case "hex": {
-                        String hex = bnr.getHexRepresentation(number);
-                        out.print(gson.toJson(hex));
-                        break;
-                    }
-
-                    case "all in range": {
-                        // The unique capability of this controller.
-                        // Returns every base representation for every number 0..N
-                        // (or N..0 for negative N).
-                        LinkedHashMap<Long, LinkedHashMap<Integer, String>> rangeResult
-                                = new LinkedHashMap<>();
-                        if (number < 0) {
-                            for (long i = 0; i >= number; i--) {
-                                rangeResult.put(i, bnr.findAllBases(i));
-                            }
-                        } else {
-                            for (long i = 0; i <= number; i++) {
-                                rangeResult.put(i, bnr.findAllBases(i));
-                            }
-                        }
-                        // FIX: was out.print(responseJson) — produced Java Map format, not JSON
-                        out.print(gson.toJson(rangeResult));
-                        break;
-                    }
-
-                    default:
-                        throw new IllegalArgumentException(
-                                "Unknown choice: '" + choice + "'. Valid values: all, binary, octal, hex, all in range.");
+            switch (choice.toLowerCase()) {
+                case "all": {
+                    LinkedHashMap<Integer, String> allBases = bnr.findAllBases(number);
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    out.print(gson.toJson(ApiResponse.ok(allBases)));
+                    break;
                 }
-                out.flush();
+                case "binary": {
+                    String binary = bnr.getBinaryRepresentation(number);
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    out.print(gson.toJson(ApiResponse.ok(binary)));
+                    break;
+                }
+                case "octal": {
+                    String octal = bnr.getOctalRepresentation(number);
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    out.print(gson.toJson(ApiResponse.ok(octal)));
+                    break;
+                }
+                case "hex": {
+                    String hex = bnr.getHexRepresentation(number);
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    out.print(gson.toJson(ApiResponse.ok(hex)));
+                    break;
+                }
+                case "all in range": {
+                    // Unique capability — returns base representations for every
+                    // number in the range [0, N] (or [N, 0] for negative N).
+                    LinkedHashMap<Long, LinkedHashMap<Integer, String>> rangeResult = new LinkedHashMap<>();
+                    if (number < 0) {
+                        for (long i = 0; i >= number; i--) {
+                            rangeResult.put(i, bnr.findAllBases(i));
+                        }
+                    } else {
+                        for (long i = 0; i <= number; i++) {
+                            rangeResult.put(i, bnr.findAllBases(i));
+                        }
+                    }
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    out.print(gson.toJson(ApiResponse.ok(rangeResult)));
+                    break;
+                }
+                default: {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.print(gson.toJson(ApiResponse.fail(
+                            "Unknown choice: '" + choice + "'. Valid values: all, binary, octal, hex, all in range.",
+                            "INVALID_CHOICE")));
+                    break;
+                }
             }
+            out.flush();
 
-        } catch (NumberFormatException nfe) {
-            try (PrintWriter out = response.getWriter()) {
-                out.print(gson.toJson("Error: '" + request.getParameter("number")
-                        + "' is not a valid integer."));
-            }
         } catch (Exception e) {
             e.printStackTrace();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             try (PrintWriter out = response.getWriter()) {
-                out.print(gson.toJson("Error: " + e.getMessage()));
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Base representation lookup failed. Please try again.", "INTERNAL_ERROR")));
             }
         }
     }

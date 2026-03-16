@@ -4,30 +4,20 @@ import calculator.service.CalculatorService;
 import jakarta.servlet.annotation.WebServlet;
 
 /**
- * REFACTORED: Now extends AbstractCalculatorController.
+ * Evaluates an expression AND persists it (expression + result) to expr_table.
+ * Use this calculator when you want the result to appear in calculation history.
  *
- * Was ~115 lines (including a large commented-out dead code block). Now 25 lines.
- * The only logic unique to this controller is:
- *   - Its session key ("intermediate_expression")
- *   - Its evaluation call (service.evaluateAndStore — persists to DB)
- *
- * The distinction between this and SimpleCalculatorController is that
- * evaluateAndStore() also writes the expression and result to expr_table.
+ * POST /api/calculator/intermediate
+ * Body: { "expression": "log(2,8)" }
  */
-@WebServlet("/IntermediateCalculator")
+@WebServlet("/api/calculator/intermediate")
 public class IntermediateCalculatorController extends AbstractCalculatorController {
 
     private static final long serialVersionUID = 1L;
-
     private final CalculatorService service = new CalculatorService();
 
     @Override
-    protected String getSessionKey() {
-        return "intermediate_expression";
-    }
-
-    @Override
-    protected double evaluate(String expr) throws Exception {
-        return service.evaluateAndStore(expr);
+    protected double evaluate(String expression) throws Exception {
+        return service.evaluateAndStore(expression);
     }
 }

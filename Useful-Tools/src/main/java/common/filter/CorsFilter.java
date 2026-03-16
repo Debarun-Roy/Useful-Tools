@@ -9,46 +9,48 @@ import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
-import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * CORS filter — must be the FIRST filter in the chain.
+ * CORS filter — handles cross-origin requests from the React frontend.
  *
- * Applies to every request ("/*") and does two things:
- *   1. Sets the appropriate Access-Control-* headers on every response so the
- *      React dev server (or production build) can communicate with this backend.
- *   2. Short-circuits HTTP OPTIONS preflight requests immediately with 200 OK,
- *      because the browser sends a preflight before every cross-origin request
- *      that carries credentials or uses a non-simple method/header. If the
- *      preflight is not answered correctly, the actual request is never sent.
+ * CHANGE FROM BATCH 1: The @WebFilter("/*") annotation has been REMOVED.
+ * This filter is now registered exclusively in web.xml, which guarantees
+ * it runs before AuthFilter. If @WebFilter were present alongside the
+ * web.xml declaration, the filter would be registered twice, causing
+ * duplicate Access-Control-* headers on every response. Duplicate headers
+ * break the browser's CORS check — it expects exactly one value per header.
  *
- * ── Why Access-Control-Allow-Origin cannot be "*" ───────────────────────────
- * When Access-Control-Allow-Credentials is "true" (required so the browser
- * sends the session cookie automatically), the browser spec forbids the wildcard
- * "*" as the allowed origin. It must be the exact requesting origin. We handle
- * this by checking the incoming Origin header against a whitelist and echoing
- * back the matching origin, or blocking by not setting the header at all.
+ * ── How it works ─────────────────────────────────────────────────────────
+ * 1. For every request: checks the Origin header against ALLOWED_ORIGINS.
+ *    If matched, sets the three required Access-Control-* headers and echoes
+ *    the exact origin back (required when credentials:true is used — the
+ *    wildcard "*" is forbidden by the browser spec in that case).
  *
- * ── Production note ─────────────────────────────────────────────────────────
- * Add your deployed React app origin to ALLOWED_ORIGINS before going live.
- * Never add "*" to the allowed origins set when credentials are enabled.
+ * 2. For OPTIONS (preflight): responds immediately with 200 OK and returns.
+ *    Does NOT call chain.doFilter(). This prevents AuthFilter from ever
+ *    seeing preflight requests, which would incorrectly reject them with 401.
  *
- * ── Eclipse setup ───────────────────────────────────────────────────────────
+ * ── Adding a production origin ───────────────────────────────────────────
+ * Add your deployed React app URL to ALLOWED_ORIGINS before going live.
+ * Example: "https://yourdomain.com"
+ * Never add "*" to this set — credentials:true forbids the wildcard.
+ *
+ * ── Eclipse setup ────────────────────────────────────────────────────────
  * Place in: src/common/filter/CorsFilter.java
- * No web.xml entry is needed — @WebFilter handles registration (Servlet 3.0+).
+ * Register in: WebContent/WEB-INF/web.xml (do NOT add @WebFilter back)
  */
-@WebFilter("/*")
 public class CorsFilter implements Filter {
 
     /**
      * All origins permitted to make credentialed cross-origin requests.
-     * Add your production frontend URL here before deploying.
+     * localhost:3000 is the default for create-react-app.
+     * localhost:5173 is the default for Vite.
      */
     private static final Set<String> ALLOWED_ORIGINS = Set.of(
-            "http://localhost:3000",   // React dev server (create-react-app default)
-            "http://localhost:5173"    // React dev server (Vite default)
+            "http://localhost:3000",
+            "http://localhost:5173"
     );
 
     @Override
@@ -63,48 +65,38 @@ public class CorsFilter implements Filter {
         String origin = request.getHeader("Origin");
 
         /*
-         * Only set Access-Control-Allow-Origin if the request comes from a
-         * known origin. If origin is null (same-origin or non-browser client)
-         * or not in the whitelist, we simply don't add the CORS headers — the
-         * browser will block the response, which is the correct security behaviour.
+         * Only set CORS headers when the request comes from a known origin.
+         * Requests without an Origin header (e.g. same-origin, curl, Postman)
+         * are passed through without CORS headers — the browser does not need
+         * them for same-origin requests, and non-browser clients do not check them.
          */
         if (origin != null && ALLOWED_ORIGINS.contains(origin)) {
-
-            // Echo the exact origin back — required when credentials are true.
+            // Echo the exact origin — wildcard is forbidden when credentials:true.
             response.setHeader("Access-Control-Allow-Origin",      origin);
-
-            // Allow the browser to send the session cookie automatically.
+            // Allow the browser to include the session cookie automatically.
             response.setHeader("Access-Control-Allow-Credentials", "true");
-
-            // Methods the React app will use.
-            response.setHeader("Access-Control-Allow-Methods",
-                    "GET, POST, PUT, DELETE, OPTIONS");
-
-            // Headers React (and Gson) will send.
+            // HTTP methods the React client will use.
+            response.setHeader("Access-Control-Allow-Methods",     "GET, POST, PUT, DELETE, OPTIONS");
+            // Request headers the React client will send.
             response.setHeader("Access-Control-Allow-Headers",
                     "Content-Type, Authorization, X-Requested-With, Accept");
-
-            // Tell the browser it can cache the preflight result for 1 hour,
-            // reducing the number of preflight round-trips.
-            response.setHeader("Access-Control-Max-Age", "3600");
+            // Cache the preflight response for 1 hour to reduce round-trips.
+            response.setHeader("Access-Control-Max-Age",           "3600");
         }
 
         /*
-         * OPTIONS is the browser's preflight request.
-         * It must be answered immediately with 200 — do not pass it down the
-         * filter chain, as servlet logic should not run on a preflight.
+         * Short-circuit OPTIONS (the browser's preflight check).
+         * Return 200 immediately without forwarding to any servlet or filter.
+         * AuthFilter must never see a preflight — it would reject it with 401.
          */
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             response.setStatus(HttpServletResponse.SC_OK);
-            return;
+            return;  // Do NOT call chain.doFilter
         }
 
         chain.doFilter(servletRequest, servletResponse);
     }
 
-    @Override
-    public void init(FilterConfig filterConfig) throws ServletException { }
-
-    @Override
-    public void destroy() { }
+    @Override public void init(FilterConfig fc) throws ServletException { }
+    @Override public void destroy() { }
 }

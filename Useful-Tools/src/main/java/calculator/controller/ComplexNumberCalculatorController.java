@@ -2,8 +2,11 @@ package calculator.controller;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.LinkedHashMap;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import common.ApiResponse;
 import calculator.service.ComplexNumberService;
 import calculator.service.ComplexNumberService.ComplexResult;
 import jakarta.servlet.ServletException;
@@ -11,93 +14,144 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 /**
- * REFACTORED — was ~265 lines, now ~90 lines.
+ * Evaluates complex number operations.
  *
- * All arithmetic logic has been moved to ComplexNumberService.
- * This controller is now a thin dispatcher: it reads the input, identifies
- * the operation, delegates to the service, and writes the JSON response.
+ * Does NOT extend AbstractCalculatorController because complex arithmetic
+ * returns two values (real and imaginary parts), not a single double.
  *
- * FIXES carried over from the original:
+ * ── CHANGE 4: Stateless ───────────────────────────────────────────────────
+ * The previous design stored lastReal and lastImag in the HTTP session.
+ * React now holds these values in component state. The server receives a
+ * complete operation string and returns the computed real/imag pair.
+ * No session reads or writes occur here.
  *
- * FIX 1 — Double.NaN comparison:
- *   The original used "lastReal == Double.NaN" which is always false in Java
- *   because NaN != NaN by IEEE 754 definition. Must use Double.isNaN().
+ * ComplexNumberCalculatorHandleResetController has been DELETED. React
+ * resets lastReal/lastImag by setting its own state to {real:0, imag:0}.
  *
- * FIX 2 — Unique session keys:
- *   Uses "complex_real" and "complex_imag" instead of sharing "expression"
- *   with every other calculator controller.
+ * ── CHANGE 6: Path rename ────────────────────────────────────────────────
+ * /ComplexNumberCalculator/HandleCalculate → /api/calculator/complex
  *
- * FIX 3 — "=" stripping before dispatch:
- *   The original stripped the trailing "=" inside the if-block for "=".
- *   Now stripped once at the top to avoid repetition in each branch.
+ * ── CHANGE 5: HTTP status codes ──────────────────────────────────────────
+ * 200 on success, 400 on invalid/malformed input, 500 on server error.
+ *
+ * ── Request format ────────────────────────────────────────────────────────
+ * POST /api/calculator/complex
+ * Content-Type: application/json
+ * Body: { "operation": "complex_add(3+4i,1+2i)" }
+ *
+ * Supported operation prefixes:
+ *   complex_add(a+bi,c+di)      Addition
+ *   complex_subtract(a+bi,c+di) Subtraction
+ *   conj(a+bi)                  Conjugate
+ *   imag(a+bi)                  Extract imaginary part
+ *   real(a+bi)                  Extract real part
+ *   csq(a+bi)                   Modulus squared |z|²
+ *
+ * ── Response format ───────────────────────────────────────────────────────
+ * 200: { "success": true,  "data": { "real": 4.0, "imag": 6.0, "display": "4.0+6.0i" } }
+ * 400: { "success": false, "errorCode": "MISSING_OPERATION", "error": "..." }
+ * 400: { "success": false, "errorCode": "UNKNOWN_OPERATION", "error": "..." }
+ * 500: { "success": false, "errorCode": "INTERNAL_ERROR",    "error": "..." }
  */
-@WebServlet("/ComplexNumberCalculator/HandleCalculate")
+@WebServlet("/api/calculator/complex")
 public class ComplexNumberCalculatorController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
-    private static final String SESSION_REAL = "complex_real";
-    private static final String SESSION_IMAG = "complex_imag";
 
     private final ComplexNumberService service = new ComplexNumberService();
+    private final Gson gson = new Gson();
+
+    /** Simple inner class for deserialising the JSON request body. */
+    private static class ComplexRequest {
+        String operation;
+    }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        Gson gson = new Gson();
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        HttpSession session = request.getSession();
-        Double lastReal = (Double) session.getAttribute(SESSION_REAL);
-        Double lastImag = (Double) session.getAttribute(SESSION_IMAG);
-
-        // FIX: was "lastReal == Double.NaN" — always false; use Double.isNaN()
-        if (lastReal == null || Double.isNaN(lastReal)) lastReal = 0.0;
-        if (lastImag == null || Double.isNaN(lastImag)) lastImag = 0.0;
-
-        String input = request.getParameter("input");
-
         try (PrintWriter out = response.getWriter()) {
 
-            if (!input.endsWith("=")) {
-                // Not yet evaluated — nothing to do (expression built client-side).
-                out.print(gson.toJson(input));
+            // ── 1. Parse JSON body ──────────────────────────────────────────
+            ComplexRequest body;
+            try {
+                body = gson.fromJson(request.getReader(), ComplexRequest.class);
+            } catch (JsonSyntaxException jse) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Request body must be valid JSON: { \"operation\": \"...\" }",
+                        "INVALID_JSON")));
                 return;
             }
 
-            // Strip trailing "=" once, then dispatch on function name.
-            input = input.substring(0, input.length() - 1);
-
-            ComplexResult result;
-
-            if (input.startsWith("complex_add")) {
-                result = service.add(input);
-            } else if (input.startsWith("complex_subtract")) {
-                result = service.subtract(input);
-            } else if (input.startsWith("conj")) {
-                result = service.conjugate(input);
-            } else if (input.startsWith("imag")) {
-                result = service.imagPart(input);
-            } else if (input.startsWith("real")) {
-                result = service.realPart(input);
-            } else if (input.startsWith("csq")) {
-                result = service.modulusSquared(input);
-            } else {
-                throw new IllegalArgumentException("Unknown complex operation: " + input);
+            // ── 2. Validate operation field ─────────────────────────────────
+            if (body == null || body.operation == null || body.operation.isBlank()) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Request body must contain a non-empty 'operation' field.",
+                        "MISSING_OPERATION")));
+                return;
             }
 
-            session.setAttribute(SESSION_REAL, result.real);
-            session.setAttribute(SESSION_IMAG, result.imag);
-            out.print(gson.toJson(result.display));
+            String operation = body.operation.trim();
 
+            // ── 3. Dispatch to service ──────────────────────────────────────
+            // Dispatch based on the operation name prefix (case-sensitive,
+            // matching the strings the React client will send).
+            ComplexResult result;
+
+            if (operation.startsWith("complex_add")) {
+                result = service.add(operation);
+            } else if (operation.startsWith("complex_subtract")) {
+                result = service.subtract(operation);
+            } else if (operation.startsWith("conj")) {
+                result = service.conjugate(operation);
+            } else if (operation.startsWith("imag")) {
+                result = service.imagPart(operation);
+            } else if (operation.startsWith("real")) {
+                result = service.realPart(operation);
+            } else if (operation.startsWith("csq")) {
+                result = service.modulusSquared(operation);
+            } else {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Unknown operation: '" + operation + "'. Supported operations: "
+                        + "complex_add, complex_subtract, conj, imag, real, csq.",
+                        "UNKNOWN_OPERATION")));
+                return;
+            }
+
+            // ── 4. Build response payload ───────────────────────────────────
+            LinkedHashMap<String, Object> data = new LinkedHashMap<>();
+            data.put("real",      result.real);
+            data.put("imag",      result.imag);
+            data.put("display",   result.display);
+            data.put("operation", operation);
+
+            response.setStatus(HttpServletResponse.SC_OK);
+            out.print(gson.toJson(ApiResponse.ok(data)));
+
+        } catch (IllegalArgumentException iae) {
+            // Service throws this for malformed operation strings (e.g. bad regex match).
+            iae.printStackTrace();
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            try (PrintWriter out = response.getWriter()) {
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Malformed operation string: " + iae.getMessage(),
+                        "MALFORMED_OPERATION")));
+            }
         } catch (Exception e) {
             e.printStackTrace();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             try (PrintWriter out = response.getWriter()) {
-                out.print(gson.toJson("Error: " + e.getMessage()));
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Complex number evaluation failed. Please check the expression format.",
+                        "INTERNAL_ERROR")));
             }
         }
     }

@@ -1,14 +1,107 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app id="WebApp_ID" version="2.4" xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd">
-	<display-name>UsefulTools.exe</display-name>
-	<welcome-file-list>
-		<welcome-file>index.html</welcome-file>
-		<welcome-file>index.htm</welcome-file>
-		<welcome-file>index.jsp</welcome-file>
-		<welcome-file>index.xhtml</welcome-file>
-		<welcome-file>default.html</welcome-file>
-		<welcome-file>default.htm</welcome-file>
-		<welcome-file>default.jsp</welcome-file>
-		<welcome-file>default.xhtml</welcome-file>
-	</welcome-file-list>
+<!--
+    NAMESPACE NOTE
+    ══════════════
+    The Eclipse-generated version of this file used:
+        version="2.4" xmlns="http://java.sun.com/xml/ns/j2ee"
+    That is the Servlet 2.4 / J2EE 1.4 specification from 2003.
+
+    Every servlet and filter in this project uses:
+        import jakarta.servlet.*;
+    The jakarta.* package prefix only exists from Jakarta EE 9 onwards,
+    which corresponds to Servlet 5.0 and Tomcat 10+. The web.xml namespace
+    must match — otherwise the deployment descriptor contradicts the runtime.
+
+    The correct namespace for this project is therefore:
+        version="5.0" xmlns="https://jakarta.ee/xml/ns/jakartaee"
+
+    Tomcat 10+ will parse both, but declaring 2.4 while running 5.0 is
+    technically incorrect and disallows the use of modern schema features.
+    If strict schema validation is ever enabled, the old namespace fails.
+-->
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+                             https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
+         version="5.0">
+
+    <!--
+        Display name — identifies this application in Tomcat Manager.
+        Preserved from the Eclipse-generated version.
+    -->
+    <display-name>UsefulTools.exe</display-name>
+
+    <!--
+        Welcome file — served when the root URL "/" is requested with no path.
+        The Eclipse version listed 8 candidates (index.html, index.htm,
+        index.jsp, index.xhtml, default.html, default.htm, default.jsp,
+        default.xhtml). Only one is needed.
+
+        WHY index.html ONLY:
+        When the React production build is copied into WebContent/, it produces
+        an index.html at the root. Tomcat tries welcome files in order and
+        serves the first match it finds on disk. Listing only index.html
+        makes the intent explicit: this container serves a React SPA.
+        The JSP variants are removed because a React frontend has no JSP
+        entry points — any JSP files that remain are legacy artifacts.
+    -->
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file>
+    </welcome-file-list>
+
+    <!--
+        ═══════════════════════════════════════════════════════════════════
+        FILTER DECLARATIONS — ORDER IS MANDATORY
+        ═══════════════════════════════════════════════════════════════════
+
+        Jakarta Servlet annotations (@WebFilter) do not guarantee the
+        execution order of filters when multiple filters match the same URL.
+        The only spec-compliant way to enforce filter order is to declare
+        all filters here in web.xml. The container executes filter-mappings
+        in document order — top to bottom.
+
+        CorsFilter MUST run before AuthFilter because:
+          1. The browser sends an OPTIONS preflight request before any
+             cross-origin POST/GET with credentials.
+          2. CorsFilter intercepts OPTIONS and returns 200 immediately,
+             without calling chain.doFilter().
+          3. AuthFilter never sees the preflight. If it did, it would
+             return 401 (no session on a preflight), which would carry no
+             CORS headers, which the browser would interpret as a CORS
+             error — making the actual request impossible to send.
+
+        IMPORTANT: @WebFilter annotations have been REMOVED from both
+        CorsFilter and AuthFilter. If you add @WebFilter back to either
+        class, the filter registers TWICE (once from the annotation, once
+        from this web.xml), causing duplicate Access-Control-* headers on
+        every response. Duplicate CORS headers cause browsers to reject
+        all cross-origin requests.
+
+        @WebServlet annotations on servlet classes are NOT affected and
+        remain valid — only filters have the ordering problem.
+        ═══════════════════════════════════════════════════════════════════
+    -->
+
+    <!-- FILTER 1: CORS — must run first on every request -->
+    <filter>
+        <filter-name>CorsFilter</filter-name>
+        <filter-class>common.filter.CorsFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>CorsFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+        <dispatcher>REQUEST</dispatcher>
+    </filter-mapping>
+
+    <!-- FILTER 2: Auth — runs second, only on /api/* paths -->
+    <filter>
+        <filter-name>AuthFilter</filter-name>
+        <filter-class>common.filter.AuthFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>AuthFilter</filter-name>
+        <url-pattern>/api/*</url-pattern>
+        <dispatcher>REQUEST</dispatcher>
+    </filter-mapping>
+
 </web-app>

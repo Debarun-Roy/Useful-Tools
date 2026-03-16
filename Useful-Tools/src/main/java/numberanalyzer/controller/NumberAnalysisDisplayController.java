@@ -5,6 +5,7 @@ import java.io.PrintWriter;
 import java.util.LinkedHashMap;
 
 import com.google.gson.Gson;
+import common.ApiResponse;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -14,26 +15,37 @@ import jakarta.servlet.http.HttpSession;
 import numberanalyzer.service.NumberAnalyzerService;
 
 /**
- * REFACTORED — was ~327 lines of inline analysis, now ~60 lines.
+ * Classifies a number across all mathematical categories.
  *
- * All analysis logic has been moved to NumberAnalyzerService.
+ * ── CHANGE 5: HTTP status codes + ApiResponse ─────────────────────────────
+ * All responses are now wrapped in ApiResponse. Proper status codes applied:
+ *   400 for invalid number format, 500 for internal errors.
  *
- * FIX 1 — NullPointerException on first request:
- *   The original did:
- *     long number = (long) session.getAttribute("number");
- *   On the very first request, "number" is not in the session, so
- *   getAttribute() returns null. Unboxing null to long throws NPE.
- *   Fixed by using Long (boxed) and defaulting to 0 if not yet set.
+ * ── CHANGE 6: Path rename ────────────────────────────────────────────────
+ * /NumberAnalyzer → /api/analyzer/classify
  *
- * FIX 2 — Response was not valid JSON:
- *   The original called out.print(responseJSONMap) which invokes Map.toString(),
- *   producing Java's default "{key=value}" format — not JSON. The front-end
- *   would receive unparseable text. Fixed with Gson.toJson().
+ * ── Request ───────────────────────────────────────────────────────────────
+ * POST /api/analyzer/classify
+ * Content-Type: application/x-www-form-urlencoded
+ * Body: number=153
  *
- * FIX 3 — Duplicate analysis checks (Real, Rational, Sad, Composite):
- *   Moved to NumberAnalyzerService where they are documented and removed.
+ * ── Response ──────────────────────────────────────────────────────────────
+ * 200: {
+ *   "success": true,
+ *   "data": {
+ *     "number": 153,
+ *     "analysis": {
+ *       "Number Theory": { "1": "153 is an Odd number.", ... },
+ *       "Primes":        { ... },
+ *       "Recreational":  { "1": "153 is an Armstrong number.", ... },
+ *       ...
+ *     }
+ *   }
+ * }
+ * 400: { "success": false, "errorCode": "INVALID_NUMBER", "error": "..." }
+ * 500: { "success": false, "errorCode": "INTERNAL_ERROR", "error": "..." }
  */
-@WebServlet("/NumberAnalyzer")
+@WebServlet("/api/analyzer/classify")
 public class NumberAnalysisDisplayController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
@@ -48,37 +60,45 @@ public class NumberAnalysisDisplayController extends HttpServlet {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        try {
+        try (PrintWriter out = response.getWriter()) {
+
             HttpSession session = request.getSession();
 
-            // FIX: Use boxed Long so null-check works; default to 0 on first request.
+            // Use boxed Long — unboxing null to long primitive throws NPE.
             Long number = (Long) session.getAttribute("number");
             if (number == null) number = 0L;
 
             String numberParam = request.getParameter("number");
             if (numberParam != null && !numberParam.isBlank()) {
-                number = Long.parseLong(numberParam.trim());
-                session.setAttribute("number", number);
+                try {
+                    number = Long.parseLong(numberParam.trim());
+                    session.setAttribute("number", number);
+                } catch (NumberFormatException nfe) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.print(gson.toJson(ApiResponse.fail(
+                            "'" + numberParam + "' is not a valid integer.",
+                            "INVALID_NUMBER")));
+                    return;
+                }
             }
 
-            LinkedHashMap<String, LinkedHashMap<Integer, String>> result =
+            LinkedHashMap<String, LinkedHashMap<Integer, String>> analysis =
                     analyzerService.analyzeNumber(number);
 
-            // FIX: Use Gson — Map.toString() produces "{key=value}", not JSON.
-            try (PrintWriter out = response.getWriter()) {
-                out.print(gson.toJson(result));
-                out.flush();
-            }
+            LinkedHashMap<String, Object> data = new LinkedHashMap<>();
+            data.put("number",   number);
+            data.put("analysis", analysis);
 
-        } catch (NumberFormatException nfe) {
-            try (PrintWriter out = response.getWriter()) {
-                out.print(gson.toJson("Error: '" + request.getParameter("number")
-                        + "' is not a valid integer."));
-            }
+            response.setStatus(HttpServletResponse.SC_OK);
+            out.print(gson.toJson(ApiResponse.ok(data)));
+
         } catch (Exception e) {
             e.printStackTrace();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             try (PrintWriter out = response.getWriter()) {
-                out.print(gson.toJson("Error: " + e.getMessage()));
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Analysis failed. Please try again.",
+                        "INTERNAL_ERROR")));
             }
         }
     }

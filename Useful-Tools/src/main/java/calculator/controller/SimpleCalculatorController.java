@@ -4,30 +4,22 @@ import calculator.service.CalculatorService;
 import jakarta.servlet.annotation.WebServlet;
 
 /**
- * REFACTORED: Now extends AbstractCalculatorController.
+ * Evaluates a standard arithmetic/function expression.
+ * Extends AbstractCalculatorController — see that class for full details.
  *
- * Was ~70 lines. Now 25 lines.
- * The only logic unique to this controller is:
- *   - Its session key ("simple_expression")
- *   - Its evaluation call (service.evaluate — does NOT persist to DB)
+ * Does NOT persist the result to the database (use IntermediateCalculator for that).
  *
- * All session management, JSON serialisation, error handling, and
- * input routing is handled once in AbstractCalculatorController.
+ * POST /api/calculator/simple
+ * Body: { "expression": "3+4*sin(0.5)" }
  */
-@WebServlet("/SimpleCalculator")
+@WebServlet("/api/calculator/simple")
 public class SimpleCalculatorController extends AbstractCalculatorController {
 
     private static final long serialVersionUID = 1L;
-
     private final CalculatorService service = new CalculatorService();
 
     @Override
-    protected String getSessionKey() {
-        return "simple_expression";
-    }
-
-    @Override
-    protected double evaluate(String expr) throws Exception {
-        return service.evaluate(expr);
+    protected double evaluate(String expression) throws Exception {
+        return service.evaluate(expression);
     }
 }

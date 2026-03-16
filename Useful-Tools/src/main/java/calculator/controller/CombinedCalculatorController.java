@@ -5,31 +5,21 @@ import calculator.utilities.CombinedUtils;
 import jakarta.servlet.annotation.WebServlet;
 
 /**
- * REFACTORED: Now extends AbstractCalculatorController.
+ * Evaluates expressions that mix arithmetic, trigonometric, and logical
+ * operators in a single expression string. Persists the result.
  *
- * Was ~77 lines (with the missing-return bug). Now 30 lines.
- * The missing-return bug is gone — AbstractCalculatorController's
- * doPost() always returns after the "=" branch.
- *
- * The only logic unique to this controller is:
- *   - Its session key ("combined_expression")
- *   - Its evaluation call (CombinedUtils.evaluateCombinedExpression)
- *   - Persisting result via ComputeDAO directly
+ * POST /api/calculator/combined
+ * Body: { "expression": "sin(3.14)+max(3,7)" }
  */
-@WebServlet("/CombinedCalculator")
+@WebServlet("/api/calculator/combined")
 public class CombinedCalculatorController extends AbstractCalculatorController {
 
     private static final long serialVersionUID = 1L;
 
     @Override
-    protected String getSessionKey() {
-        return "combined_expression";
-    }
-
-    @Override
-    protected double evaluate(String expr) throws Exception {
-        double result = CombinedUtils.evaluateCombinedExpression(expr);
-        ComputeDAO.storeExpressionResult(expr, Double.toString(result));
+    protected double evaluate(String expression) throws Exception {
+        double result = CombinedUtils.evaluateCombinedExpression(expression);
+        ComputeDAO.storeExpressionResult(expression, Double.toString(result));
         return result;
     }
 }

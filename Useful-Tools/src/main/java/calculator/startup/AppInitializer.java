@@ -5,13 +5,25 @@ import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.annotation.WebListener;
 
 /**
- * Eagerly loads every calculator function and operator class so their static
- * initialiser blocks fire and register entries into FunctionRegistry /
- * OperatorRegistry before the first HTTP request arrives.
+ * Eagerly loads every calculator function and operator class at application
+ * startup so their static initialiser blocks fire and register entries into
+ * FunctionRegistry / OperatorRegistry before the first HTTP request arrives.
  *
- * UPDATE: "and" and "or" are now in calculator.operators (fixed in previous
- *   review batch — they were wrongly in calculator.functions). Their entries
- *   here reflect the corrected package.
+ * CORRECTION from previous batch:
+ *   "calculator.operators.not" was mistakenly removed in the last fix pass
+ *   because the file was not present in the uploaded project snapshot.
+ *   The user confirmed that calculator.operators.not does exist in the
+ *   project and has been restored to OPERATOR_CLASSES.
+ *
+ *   Note: both a Function (calculator.functions.not) and an Operator
+ *   (calculator.operators.not) exist for "not". This is intentional —
+ *   they serve different expression syntaxes:
+ *     Function:  not(1)   → call-style, registered in FunctionRegistry
+ *     Operator:  (symbol) → infix/prefix-style, registered in OperatorRegistry
+ *
+ * RETAINED FIX from previous batch:
+ *   "calculator.functions.nCr" is now a real implemented class and is
+ *   correctly present in FUNCTION_CLASSES.
  */
 @WebListener
 public class AppInitializer implements ServletContextListener {
@@ -49,7 +61,7 @@ public class AppInitializer implements ServletContextListener {
         "calculator.functions.atan2",
         "calculator.functions.majority",
         "calculator.functions.parity",
-        "calculator.functions.not",
+        "calculator.functions.not",            // Function-style: not(1)
         "calculator.functions.TwoDdistance",
         "calculator.functions.ThreeDdistance"
     };
@@ -59,13 +71,13 @@ public class AppInitializer implements ServletContextListener {
         "calculator.operators.percentage",
         "calculator.operators.leftShift",
         "calculator.operators.rightShift",
-        "calculator.operators.and",          // ← moved from functions in fix batch
-        "calculator.operators.or",           // ← moved from functions in fix batch
+        "calculator.operators.and",
+        "calculator.operators.or",
         "calculator.operators.xor",
         "calculator.operators.xnor",
         "calculator.operators.nand",
         "calculator.operators.nor",
-        "calculator.operators.not",
+        "calculator.operators.not",            // RESTORED: Operator-style prefix not
         "calculator.operators.negation",
         "calculator.operators.implication",
         "calculator.operators.reverseImplication",
@@ -94,7 +106,7 @@ public class AppInitializer implements ServletContextListener {
         try {
             Class.forName(className);
         } catch (ClassNotFoundException e) {
-            System.err.println("[AppInitializer] WARNING: Could not load " + className);
+            System.err.println("[AppInitializer] WARNING: Could not load class: " + className);
             e.printStackTrace();
         }
     }

@@ -2,44 +2,54 @@ package calculator.controller;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.LinkedHashMap;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
+import common.ApiResponse;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 /**
- * NEW FILE — AbstractCalculatorController
+ * Stateless base class for all standard calculator controllers.
  *
- * WHY THIS EXISTS:
- * All five standard calculator controllers (Simple, Boolean, Intermediate,
- * Combined, Trig) contained near-identical doPost() bodies implementing the
- * same session-expression pattern:
+ * ── CHANGE 4: From stateful session to stateless ─────────────────────────
+ * The previous design stored the expression string in the HTTP session and
+ * appended to it on every button press. This created a round-trip per
+ * keypress, required sticky sessions for multi-server deployments, and
+ * forced the server to maintain intermediate UI state.
  *
- *   1. Read (or create) a StringBuilder from the HTTP session.
- *   2. If input is "C" → clear the expression, respond with "".
- *   3. If input is "=" → call an evaluation method, store result, respond.
- *   4. Otherwise      → append input to expression, respond with current value.
+ * The new design:
+ *   - React holds the expression string in a useState hook. Button presses
+ *     update local state instantly with zero network latency.
+ *   - Only the "=" button sends an HTTP request, containing the complete
+ *     expression that React has accumulated locally.
+ *   - "C" (clear) is a React-only operation — no server call at all.
+ *   - This server becomes a pure function: expression in → result out.
  *
- * The only line that differed between controllers was the evaluation call on "=".
- * Everything else — session management, JSON serialisation, error handling,
- * content-type headers — was duplicated verbatim five times.
+ * ── Request format ────────────────────────────────────────────────────────
+ * POST /api/calculator/{type}
+ * Content-Type: application/json
+ * Body: { "expression": "3+4*sin(0.5)" }
  *
- * This base class implements the entire pattern once using the Template Method
- * design pattern. Each concrete subclass provides:
- *   (a) a unique SESSION_KEY string (so concurrent tabs don't share state)
- *   (b) an implementation of evaluate(String expr) (the single line that differed)
+ * ── Response format ───────────────────────────────────────────────────────
+ * 200 OK:  { "success": true,  "data": { "expression": "3+4*sin(0.5)", "result": 5.916... } }
+ * 400:     { "success": false, "errorCode": "MISSING_EXPRESSION", "error": "..." }
+ * 400:     { "success": false, "errorCode": "INVALID_JSON",       "error": "..." }
+ * 500:     { "success": false, "errorCode": "EVALUATION_ERROR",   "error": "..." }
  *
- * RESULT:
- *   Each concrete controller is now ~25 lines instead of ~70 lines.
- *   Any future fix to the session pattern (error format, response encoding, etc.)
- *   needs to be made in exactly one place.
+ * ── Template Method pattern ───────────────────────────────────────────────
+ * The evaluate() method is the only line that differs between the five
+ * concrete subclasses. Everything else — JSON parsing, validation, response
+ * serialisation, error handling — is implemented here once.
  *
- * NOTE: ComplexNumberCalculatorController is NOT a subclass — its input/output
- * pattern is fundamentally different (two-part complex results, no running
- * expression string). It remains standalone.
+ * ── Note on ComplexNumberCalculatorController ─────────────────────────────
+ * Complex arithmetic returns two values (real and imaginary parts), not a
+ * single double. It does not extend this class — it is a standalone servlet.
  */
 public abstract class AbstractCalculatorController extends HttpServlet {
 
@@ -47,23 +57,21 @@ public abstract class AbstractCalculatorController extends HttpServlet {
     private final Gson gson = new Gson();
 
     /**
-     * Returns the HTTP session attribute key used to store this calculator's
-     * expression string. Every concrete subclass must return a unique key to
-     * prevent session state from leaking between different open calculator tabs.
-     *
-     * Examples: "simple_expression", "boolean_expression", etc.
-     */
-    protected abstract String getSessionKey();
-
-    /**
      * Evaluates the given expression string and returns the numeric result.
      * Implementations may also persist the result to the database.
      *
-     * @param expr The full expression string accumulated so far (e.g. "3+4*2").
-     * @return The numeric result of evaluating the expression.
+     * @param expression The complete expression to evaluate (e.g. "3+4*sin(0.5)").
+     * @return The numeric result.
      * @throws Exception if the expression cannot be parsed or evaluated.
+     *                   The exception message is returned to the client as the
+     *                   "error" field in the ApiResponse.
      */
-    protected abstract double evaluate(String expr) throws Exception;
+    protected abstract double evaluate(String expression) throws Exception;
+
+    /** Simple inner class for deserialising the JSON request body. */
+    private static class EvalRequest {
+        String expression;
+    }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -72,41 +80,55 @@ public abstract class AbstractCalculatorController extends HttpServlet {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        HttpSession session = request.getSession();
-        StringBuilder expr = (StringBuilder) session.getAttribute(getSessionKey());
-        if (expr == null) {
-            expr = new StringBuilder();
-            session.setAttribute(getSessionKey(), expr);
-        }
-
-        String input = request.getParameter("input");
-
         try (PrintWriter out = response.getWriter()) {
 
-            if ("C".equals(input)) {
-                expr.setLength(0);
-                session.setAttribute(getSessionKey(), expr);
-                out.print(gson.toJson(""));
+            // ── 1. Parse JSON body ──────────────────────────────────────────
+            // gson.fromJson(reader, Class) returns null if the body is empty.
+            // It throws JsonSyntaxException if the body is malformed JSON.
+            EvalRequest body;
+            try {
+                body = gson.fromJson(request.getReader(), EvalRequest.class);
+            } catch (JsonSyntaxException jse) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Request body must be valid JSON: { \"expression\": \"...\" }",
+                        "INVALID_JSON")));
                 return;
             }
 
-            if ("=".equals(input)) {
-                double result = evaluate(expr.toString());
-                expr.setLength(0);
-                expr.append(result);
-                session.setAttribute(getSessionKey(), expr);
-                out.print(gson.toJson(expr.toString()));
+            // ── 2. Validate expression field ────────────────────────────────
+            if (body == null || body.expression == null || body.expression.isBlank()) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Request body must contain a non-empty 'expression' field.",
+                        "MISSING_EXPRESSION")));
                 return;
             }
 
-            expr.append(input);
-            session.setAttribute(getSessionKey(), expr);
-            out.print(gson.toJson(expr.toString()));
+            String expression = body.expression.trim();
+
+            // ── 3. Evaluate ─────────────────────────────────────────────────
+            // Delegate to the concrete subclass. Any parse/evaluation errors
+            // are caught below and returned as structured JSON.
+            double result = evaluate(expression);
+
+            // ── 4. Return result ────────────────────────────────────────────
+            LinkedHashMap<String, Object> data = new LinkedHashMap<>();
+            data.put("expression", expression);
+            data.put("result",     result);
+
+            response.setStatus(HttpServletResponse.SC_OK);
+            out.print(gson.toJson(ApiResponse.ok(data)));
 
         } catch (Exception e) {
             e.printStackTrace();
+            // Do not expose raw exception class names — use a clean message.
+            String message = (e.getMessage() != null && !e.getMessage().isBlank())
+                    ? "Evaluation failed: " + e.getMessage()
+                    : "The expression could not be evaluated. Please check the syntax.";
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             try (PrintWriter out = response.getWriter()) {
-                out.print(gson.toJson("Error: " + e.getMessage()));
+                out.print(gson.toJson(ApiResponse.fail(message, "EVALUATION_ERROR")));
             }
         }
     }

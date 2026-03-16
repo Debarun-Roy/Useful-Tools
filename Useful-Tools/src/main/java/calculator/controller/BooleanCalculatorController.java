@@ -5,29 +5,21 @@ import calculator.utilities.BooleanUtils;
 import jakarta.servlet.annotation.WebServlet;
 
 /**
- * REFACTORED: Now extends AbstractCalculatorController.
+ * Evaluates a boolean/logical expression using the full operator set
+ * (AND, OR, XOR, NAND, NOR, implication, etc.) and persists the result.
  *
- * Was ~80 lines. Now 30 lines.
- * The only logic unique to this controller is:
- *   - Its session key ("boolean_expression")
- *   - Its evaluation call (BooleanUtils.evaluateBooleanExpression)
- *   - Persisting to the database via ComputeDAO directly (BooleanUtils
- *     does not go through CalculatorService, so we store the result here)
+ * POST /api/calculator/boolean
+ * Body: { "expression": "1&(0|1)" }
  */
-@WebServlet("/BooleanCalculator")
+@WebServlet("/api/calculator/boolean")
 public class BooleanCalculatorController extends AbstractCalculatorController {
 
     private static final long serialVersionUID = 1L;
 
     @Override
-    protected String getSessionKey() {
-        return "boolean_expression";
-    }
-
-    @Override
-    protected double evaluate(String expr) throws Exception {
-        double result = BooleanUtils.evaluateBooleanExpression(expr);
-        ComputeDAO.storeExpressionResult(expr, Double.toString(result));
+    protected double evaluate(String expression) throws Exception {
+        double result = BooleanUtils.evaluateBooleanExpression(expression);
+        ComputeDAO.storeExpressionResult(expression, Double.toString(result));
         return result;
     }
 }
