@@ -1,0 +1,172 @@
+/* ─── Page shell ─────────────────────────────────────────────────────────── */
+.page {
+  min-height:       100vh;
+  display:          flex;
+  flex-direction:   column;
+  background-color: var(--clr-bg);
+}
+
+/* ─── Header / nav bar ───────────────────────────────────────────────────── */
+.header {
+  display:          flex;
+  align-items:      center;
+  justify-content:  space-between;
+  padding:          0 var(--space-xl);
+  height:           64px;
+  background:       var(--clr-surface);
+  border-bottom:    1px solid var(--clr-border);
+  box-shadow:       0 1px 4px rgba(0, 0, 0, 0.06);
+  position:         sticky;
+  top:              0;
+  z-index:          10;
+}
+
+.brand {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-sm);
+}
+
+.brandIcon {
+  font-size:  1.5rem;
+  color:      var(--clr-primary);
+  line-height: 1;
+}
+
+.brandName {
+  font-size:      var(--fs-lg);
+  font-weight:    700;
+  color:          var(--clr-primary);
+  letter-spacing: -0.02em;
+}
+
+.userArea {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-md);
+}
+
+.usernameLabel {
+  font-size: var(--fs-sm);
+  color:     var(--clr-text-muted);
+}
+
+.logoutButton {
+  padding:       6px var(--space-md);
+  background:    transparent;
+  color:         var(--clr-primary);
+  border:        1px solid var(--clr-primary);
+  border-radius: var(--radius-md);
+  font-size:     var(--fs-sm);
+  font-weight:   600;
+  transition:    background-color var(--transition), color var(--transition);
+}
+
+.logoutButton:hover {
+  background: var(--clr-primary);
+  color:      #ffffff;
+}
+
+/* ─── Main content area ──────────────────────────────────────────────────── */
+.main {
+  flex:    1;
+  padding: var(--space-2xl) var(--space-xl);
+  max-width: 960px;
+  width:   100%;
+  margin:  0 auto;
+}
+
+.welcome {
+  margin-bottom: var(--space-xl);
+}
+
+.greeting {
+  font-size:      var(--fs-2xl);
+  font-weight:    700;
+  color:          var(--clr-text);
+  letter-spacing: -0.03em;
+  margin-bottom:  var(--space-xs);
+}
+
+.subtitle {
+  font-size: var(--fs-lg);
+  color:     var(--clr-text-muted);
+}
+
+/* ─── Feature grid ───────────────────────────────────────────────────────── */
+.grid {
+  display:               grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap:                   var(--space-md);
+}
+
+/* ─── Feature card (available) ───────────────────────────────────────────── */
+.card {
+  display:        flex;
+  flex-direction: column;
+  align-items:    flex-start;
+  gap:            var(--space-xs);
+  padding:        var(--space-lg);
+  background:     var(--clr-surface);
+  border:         1px solid var(--clr-border);
+  border-radius:  var(--radius-lg);
+  box-shadow:     var(--shadow-card);
+  text-align:     left;
+  transition:     transform var(--transition), box-shadow var(--transition),
+                  border-color var(--transition);
+}
+
+.card:hover {
+  transform:    translateY(-2px);
+  box-shadow:   0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: var(--clr-accent);
+}
+
+.card:active {
+  transform: translateY(0);
+}
+
+/* ─── Feature card (disabled / coming soon) ──────────────────────────────── */
+.cardDisabled {
+  /* Identical layout, but muted and non-interactive */
+  display:        flex;
+  flex-direction: column;
+  align-items:    flex-start;
+  gap:            var(--space-xs);
+  padding:        var(--space-lg);
+  background:     var(--clr-surface);
+  border:         1px solid var(--clr-border);
+  border-radius:  var(--radius-lg);
+  text-align:     left;
+  opacity:        0.55;
+  cursor:         not-allowed;
+}
+
+/* ─── Card internals ─────────────────────────────────────────────────────── */
+.cardIcon {
+  font-size:     1.75rem;
+  margin-bottom: var(--space-xs);
+  line-height:   1;
+}
+
+.cardLabel {
+  font-size:   var(--fs-md);
+  font-weight: 700;
+  color:       var(--clr-text);
+}
+
+.cardDesc {
+  font-size:   var(--fs-sm);
+  color:       var(--clr-text-muted);
+  line-height: 1.4;
+}
+
+.cardBadge {
+  margin-top:     var(--space-sm);
+  font-size:      0.75rem;
+  font-weight:    600;
+  color:          var(--clr-primary);
+  background:     #e8edf8;
+  padding:        2px 8px;
+  border-radius:  999px;  /* pill shape */
+}

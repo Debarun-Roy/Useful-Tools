@@ -1,0 +1,61 @@
+/* ─── Full-page background ───────────────────────────────────────────────── */
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Diagonal gradient using our brand primary colours */
+  background: linear-gradient(
+    135deg,
+    var(--clr-primary) 0%,
+    var(--clr-primary-light) 100%
+  );
+  padding: var(--space-md);
+}
+
+/* ─── Centred card ────────────────────────────────────────────────────────── */
+.card {
+  background: var(--clr-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-2xl) var(--space-xl);
+  width: 100%;
+  max-width: 440px;
+  /* Subtle upward animation when the card first appears */
+  animation: slideUp 200ms ease both;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Brand header ────────────────────────────────────────────────────────── */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xl);
+}
+
+.brandIcon {
+  font-size: 1.75rem;
+  color: var(--clr-primary);
+  line-height: 1;
+}
+
+.brandName {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--clr-primary);
+  letter-spacing: -0.02em;
+}
+
+/* ─── Page title ──────────────────────────────────────────────────────────── */
+.title {
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  color: var(--clr-text);
+  margin-bottom: var(--space-lg);
+  letter-spacing: -0.02em;
+}
