@@ -1,16 +1,11 @@
 package calculator.operators;
 
-import calculator.registry.OperatorRegistry;
 import net.objecthunter.exp4j.operator.Operator;
 
 public class reverseImplication extends Operator {
 
 	public reverseImplication() {
 		super("←", 2, false, Operator.PRECEDENCE_ADDITION-6);
-	}
-	
-	static {
-	    OperatorRegistry.register(new reverseImplication());
 	}
 	
 	@Override

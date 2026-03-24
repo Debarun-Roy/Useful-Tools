@@ -14,30 +14,23 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Validates whether an expression string is parseable without evaluating it.
- * Intended for live "as-you-type" feedback in the React calculator UI.
+ * Validates whether an expression is parseable for a given calculator mode.
  *
- * ── CHANGE 5: HTTP status codes ──────────────────────────────────────────
- * 400 for missing expr parameter; 200 in all other cases including invalid
- * expressions (validation is not an error — the endpoint always succeeds,
- * it just reports whether the expression is valid or not).
+ * FIX — Now reads an optional 'mode' query parameter and delegates to
+ * CalculatorService.validateForMode(expr, mode) instead of the mode-blind
+ * validateExpression(). This allows boolean and combined expressions containing
+ * unicode operators (&, |, ⊕, →, etc.) to be validated correctly using the
+ * same ExpressionBuilder configuration that actually evaluates them.
  *
- * ── CHANGE 6: Path rename ────────────────────────────────────────────────
- * /ValidateExpression → /api/calculator/validate
+ * Request:
+ *   GET /api/calculator/validate?expr=1%261&mode=boolean
+ *   GET /api/calculator/validate?expr=sin(0.5)&mode=trig
+ *   GET /api/calculator/validate?expr=max(2,3)     (mode defaults to "simple")
  *
- * ── Request ───────────────────────────────────────────────────────────────
- * GET /api/calculator/validate?expr=sin(3.14)+cos(0)
- *
- * ── Response ──────────────────────────────────────────────────────────────
- * 200: { "success": true, "data": { "valid": true,  "expr": "sin(3.14)+cos(0)" } }
- * 200: { "success": true, "data": { "valid": false, "expr": "sin(3.14)+("       } }
- * 400: { "success": false, "errorCode": "MISSING_PARAMETER", "error": "..." }
- *
- * React usage (debounced, called on every keypress):
- *   const res = await fetch(`/api/calculator/validate?expr=${encodeURIComponent(expr)}`,
- *                           { credentials: 'include' });
- *   const json = await res.json();
- *   setIsValid(json.data.valid);
+ * Response:
+ *   200: { "success": true, "data": { "valid": true,  "expr": "...", "mode": "..." } }
+ *   200: { "success": true, "data": { "valid": false, "expr": "...", "mode": "..." } }
+ *   400: { "success": false, "errorCode": "MISSING_PARAMETER", "error": "..." }
  */
 @WebServlet("/api/calculator/validate")
 public class ValidateExpressionController extends HttpServlet {
@@ -53,8 +46,9 @@ public class ValidateExpressionController extends HttpServlet {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        try (PrintWriter out = response.getWriter()) {
+        PrintWriter out = response.getWriter();
 
+        try {
             String expr = request.getParameter("expr");
 
             if (expr == null) {
@@ -65,11 +59,19 @@ public class ValidateExpressionController extends HttpServlet {
                 return;
             }
 
-            boolean valid = service.validateExpression(expr);
+            // mode defaults to "simple" if not provided — safe for all
+            // arithmetic-only calculators that do not send a mode param.
+            String mode = request.getParameter("mode");
+            if (mode == null || mode.isBlank()) {
+                mode = "simple";
+            }
+
+            boolean valid = service.validateForMode(expr, mode);
 
             LinkedHashMap<String, Object> data = new LinkedHashMap<>();
             data.put("valid", valid);
             data.put("expr",  expr);
+            data.put("mode",  mode);
 
             response.setStatus(HttpServletResponse.SC_OK);
             out.print(gson.toJson(ApiResponse.ok(data)));
@@ -77,11 +79,9 @@ public class ValidateExpressionController extends HttpServlet {
         } catch (Exception e) {
             e.printStackTrace();
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            try (PrintWriter out = response.getWriter()) {
-                out.print(gson.toJson(ApiResponse.fail(
-                        "Validation check failed.",
-                        "INTERNAL_ERROR")));
-            }
+            out.print(gson.toJson(ApiResponse.fail(
+                    "Validation check failed.",
+                    "INTERNAL_ERROR")));
         }
     }
 }

@@ -7,19 +7,15 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import calculator.expression.ExpressionBuilderFactory;
+import calculator.registry.FunctionRegistry;
 import net.objecthunter.exp4j.Expression;
 import net.objecthunter.exp4j.ExpressionBuilder;
+import net.objecthunter.exp4j.function.Function;
 
 /**
- * IMPROVEMENT: Removed ~100 lines of commented-out code (the old manual
- *   constructor-per-function block that was replaced by ExpressionBuilderFactory).
- *   The factory approach is already the right design; the dead comments only added noise.
- *
- * FIX: Replaced the private splitTopLevelCommas() — which had the same
- *   accumulation bug as the original BooleanUtils — with a call to the shared
- *   ExpressionParserUtils.splitTopLevelCommas(). The bug caused every token
- *   after the first comma to contain all previous tokens' characters appended
- *   to it, producing nonsense argument values.
+ * FIX — applyFunction() now looks up every function in FunctionRegistry first
+ * and calls f.apply(args) directly if found.
+ * Identical fix to IntermediateUtils — see that class for the full explanation.
  */
 public class CombinedUtils {
 
@@ -50,6 +46,14 @@ public class CombinedUtils {
     }
 
     private static double applyFunction(String funcName, double[] args) {
+        // Step 1: Look for the function in our registry — call directly.
+        for (Function f : FunctionRegistry.getFunctions()) {
+            if (f.getName().equals(funcName)) {
+                return f.apply(args);
+            }
+        }
+
+        // Step 2: exp4j built-in — reconstruct and evaluate.
         String reconstructed = funcName + "("
                 + Arrays.stream(args).mapToObj(String::valueOf).collect(Collectors.joining(","))
                 + ")";

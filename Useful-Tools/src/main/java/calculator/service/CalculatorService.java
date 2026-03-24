@@ -2,35 +2,43 @@ package calculator.service;
 
 import calculator.expression.ExpressionBuilderFactory;
 import calculator.repository.ComputeRepository;
-import net.objecthunter.exp4j.Expression;
+import calculator.utilities.BooleanUtils;
+import calculator.utilities.IntermediateUtils;
 
 /**
- * IMPROVEMENT: Added validateExpression() so callers can check an expression
- *   is syntactically valid before evaluating it — useful for giving the user
- *   early feedback rather than an exception on "=".
+ * FIX — validateForMode() now uses evaluation-based validation for all modes.
  *
- * IMPROVEMENT: evaluate() and evaluateAndStore() now throw descriptive
- *   IllegalArgumentException on blank/null input instead of letting exp4j
- *   produce a confusing internal parse error.
+ * The previous approach used ExpressionBuilderFactory.create(expr).build()
+ * for standard modes and BooleanUtils.buildBooleanExpression(expr).build()
+ * for boolean mode. Both relied on exp4j's build() succeeding.
+ *
+ * The problem: build() behaviour depends on the exact exp4j version and which
+ * operator symbols it accepts. For some symbols (|, and possibly others),
+ * build() may throw even when evaluation works correctly, because the tokenizer
+ * and the operator-registration path have different validation logic.
+ *
+ * The correct approach: validate by attempting the SAME CODE PATH used for
+ * actual evaluation. If evaluation succeeds, the expression is valid. If it
+ * throws (for any reason other than a numeric error like division by zero),
+ * the expression is invalid.
+ *
+ * Numeric errors (ArithmeticException for 1/0) mean the expression IS valid
+ * syntactically — it parsed and evaluated, it just produced an undefined result.
+ * These are treated as valid so that expressions like 1/0 show a green dot.
  */
 public class CalculatorService {
 
     private final ComputeRepository repository = new ComputeRepository();
 
-    /**
-     * Evaluates the expression and returns the result.
-     * Does NOT persist the result to the database.
-     */
     public double evaluate(String expression) throws Exception {
         requireNonBlank(expression);
-        Expression e = ExpressionBuilderFactory.create(expression).build();
-        return e.evaluate();
+        try {
+            return IntermediateUtils.evaluateArithmeticExpression(expression);
+        } catch (ArithmeticException ae) {
+            return Double.NaN;
+        }
     }
 
-    /**
-     * Evaluates the expression, persists (expression, result) to the database,
-     * and returns the result.
-     */
     public double evaluateAndStore(String expression) throws Exception {
         double result = evaluate(expression);
         repository.storeExpressionResult(expression, Double.toString(result));
@@ -38,18 +46,64 @@ public class CalculatorService {
     }
 
     /**
-     * Returns true if the expression can be parsed without error.
-     * Does not evaluate — only checks syntax.
-     * Useful for front-end validation before the user presses "=".
+     * Validates an expression for a given calculator mode.
+     *
+     * Mode values match the tab IDs sent from the React frontend:
+     *   "simple"       → tries IntermediateUtils evaluation
+     *   "intermediate" → tries IntermediateUtils evaluation
+     *   "trig"         → tries IntermediateUtils evaluation
+     *   "boolean"      → tries BooleanUtils evaluation
+     *   "combined"     → tries IntermediateUtils first, then BooleanUtils
+     *
+     * ArithmeticException (division by zero) is treated as VALID because it
+     * means the expression parsed and evaluated correctly — it just produced
+     * a numeric error, not a syntax error.
+     *
+     * All other exceptions and errors are treated as INVALID.
      */
-    public boolean validateExpression(String expression) {
-        if (expression == null || expression.isBlank()) return false;
+    public boolean validateForMode(String expr, String mode) {
+        if (expr == null || expr.isBlank()) return false;
+
+        switch (mode) {
+
+            case "boolean":
+                return BooleanUtils.validateExpression(expr);
+
+            case "combined":
+                // Combined expressions may be pure arithmetic, pure boolean, or mixed.
+                // Try arithmetic first. If that fails, try boolean.
+                if (tryArithmeticValidation(expr)) return true;
+                return BooleanUtils.validateExpression(expr);
+
+            default:
+                // simple, intermediate, trig
+                return tryArithmeticValidation(expr);
+        }
+    }
+
+    /**
+     * Attempts to validate by actually evaluating through IntermediateUtils.
+     * Returns true if evaluation succeeds or throws only ArithmeticException.
+     * Returns false for all other exceptions and errors.
+     */
+    private boolean tryArithmeticValidation(String expr) {
         try {
-            ExpressionBuilderFactory.create(expression).build();
+            IntermediateUtils.evaluateArithmeticExpression(expr);
             return true;
-        } catch (Exception e) {
+        } catch (ArithmeticException ae) {
+            // Division by zero etc. — expression IS syntactically valid.
+            return true;
+        } catch (Throwable t) {
             return false;
         }
+    }
+
+    /**
+     * Kept for backward compatibility with any code that calls this directly.
+     * Delegates to tryArithmeticValidation.
+     */
+    public boolean validateExpression(String expression) {
+        return tryArithmeticValidation(expression);
     }
 
     private void requireNonBlank(String expression) {

@@ -1,16 +1,11 @@
 package calculator.operators;
 
-import calculator.registry.OperatorRegistry;
 import net.objecthunter.exp4j.operator.Operator;
 
 public class nonimplication extends Operator {
 
 	public nonimplication() {
 		super("⊄", 2, false, Operator.PRECEDENCE_ADDITION-6);
-	}
-	
-	static {
-	    OperatorRegistry.register(new nonimplication());
 	}
 	
 	@Override

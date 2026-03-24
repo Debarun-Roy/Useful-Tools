@@ -1,8 +1,8 @@
 package common;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
@@ -38,10 +38,15 @@ public class UnifiedLogger {
 
         try {
             Properties properties = new Properties();
-            String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
-            String propertiesPath = rootPath + "config.properties";
-            try (FileInputStream fis = new FileInputStream(propertiesPath)) {
-                properties.load(fis);
+            try (InputStream is = DatabaseUtils.class
+                    .getClassLoader()
+                    .getResourceAsStream("passwordgenerator/properties/config.properties")) {
+
+                if (is == null) {
+                    throw new RuntimeException("config.properties not found in classpath");
+                }
+
+                properties.load(is);
             }
 
             System.setProperty(

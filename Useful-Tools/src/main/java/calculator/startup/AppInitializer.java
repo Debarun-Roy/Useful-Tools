@@ -5,25 +5,27 @@ import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.annotation.WebListener;
 
 /**
- * Eagerly loads every calculator function and operator class at application
- * startup so their static initialiser blocks fire and register entries into
- * FunctionRegistry / OperatorRegistry before the first HTTP request arrives.
+ * Eagerly loads every calculator function class at application startup so their
+ * static initialiser blocks fire and register entries into FunctionRegistry
+ * before the first HTTP request arrives.
  *
- * CORRECTION from previous batch:
- *   "calculator.operators.not" was mistakenly removed in the last fix pass
- *   because the file was not present in the uploaded project snapshot.
- *   The user confirmed that calculator.operators.not does exist in the
- *   project and has been restored to OPERATOR_CLASSES.
+ * OPERATOR_CLASSES is intentionally empty:
+ *   All boolean/logic/unicode operators (xor, nand, implication, etc.) have had
+ *   their static registration blocks removed. They are instantiated directly by
+ *   BooleanUtils using 'new xor()' etc. and never go through OperatorRegistry.
+ *   This is necessary because exp4j's ExpressionBuilder.checkOperatorSymbol()
+ *   rejects any symbol that is not a valid special-character token — it rejects
+ *   unicode characters (xor symbol, implication arrow, etc.) and letter-based
+ *   words ("mod") alike. Loading them into ExpressionBuilderFactory crashed ALL
+ *   calculators, not just the boolean one.
  *
- *   Note: both a Function (calculator.functions.not) and an Operator
- *   (calculator.operators.not) exist for "not". This is intentional —
- *   they serve different expression syntaxes:
- *     Function:  not(1)   → call-style, registered in FunctionRegistry
- *     Operator:  (symbol) → infix/prefix-style, registered in OperatorRegistry
+ *   The 'mod' operator was removed because exp4j already handles '%' as a native
+ *   binary modulo operator. The 'percentage' unary operator was removed because
+ *   its '%' symbol conflicts with exp4j's built-in '%'. Percentage is now the
+ *   'percent' function: percent(x) returns x/100.
  *
- * RETAINED FIX from previous batch:
- *   "calculator.functions.nCr" is now a real implemented class and is
- *   correctly present in FUNCTION_CLASSES.
+ * loadClass() catches both ClassNotFoundException and Error so that a single
+ * broken class does not prevent the rest of the application from starting.
  */
 @WebListener
 public class AppInitializer implements ServletContextListener {
@@ -36,7 +38,6 @@ public class AppInitializer implements ServletContextListener {
         "calculator.functions.csq",
         "calculator.functions.real",
         "calculator.functions.imag",
-        "calculator.functions.conj",
         "calculator.functions.logn",
         "calculator.functions.fact",
         "calculator.functions.nCr",
@@ -44,6 +45,7 @@ public class AppInitializer implements ServletContextListener {
         "calculator.functions.min",
         "calculator.functions.mean",
         "calculator.functions.median",
+        "calculator.functions.percent",
         "calculator.functions.round",
         "calculator.functions.trunc",
         "calculator.functions.sind",
@@ -61,42 +63,19 @@ public class AppInitializer implements ServletContextListener {
         "calculator.functions.atan2",
         "calculator.functions.majority",
         "calculator.functions.parity",
-        "calculator.functions.not",            // Function-style: not(1)
+        "calculator.functions.not",
         "calculator.functions.TwoDdistance",
         "calculator.functions.ThreeDdistance"
     };
 
-    private static final String[] OPERATOR_CLASSES = {
-        "calculator.operators.mod",
-        "calculator.operators.percentage",
-        "calculator.operators.leftShift",
-        "calculator.operators.rightShift",
-        "calculator.operators.and",
-        "calculator.operators.or",
-        "calculator.operators.xor",
-        "calculator.operators.xnor",
-        "calculator.operators.nand",
-        "calculator.operators.nor",
-        "calculator.operators.not",            // RESTORED: Operator-style prefix not
-        "calculator.operators.negation",
-        "calculator.operators.implication",
-        "calculator.operators.reverseImplication",
-        "calculator.operators.biconditional",
-        "calculator.operators.nonimplication",
-        "calculator.operators.converseNonimplication",
-        "calculator.operators.equality",
-        "calculator.operators.greaterThan",
-        "calculator.operators.greaterThanOrEqualTo",
-        "calculator.operators.lesserThan",
-        "calculator.operators.lesserThanOrEqualTo"
-    };
+    // Intentionally empty — see class-level comment above.
+    private static final String[] OPERATOR_CLASSES = {};
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
-        System.out.println("[AppInitializer] Loading calculator functions and operators...");
-        for (String cls : FUNCTION_CLASSES)  loadClass(cls);
-        for (String cls : OPERATOR_CLASSES)  loadClass(cls);
-        System.out.println("[AppInitializer] All functions and operators registered successfully.");
+        System.out.println("[AppInitializer] Loading calculator functions...");
+        for (String cls : FUNCTION_CLASSES) loadClass(cls);
+        System.out.println("[AppInitializer] Startup class loading complete.");
     }
 
     @Override
@@ -106,7 +85,10 @@ public class AppInitializer implements ServletContextListener {
         try {
             Class.forName(className);
         } catch (ClassNotFoundException e) {
-            System.err.println("[AppInitializer] WARNING: Could not load class: " + className);
+            System.err.println("[AppInitializer] WARNING: class not found: " + className);
+            e.printStackTrace();
+        } catch (Error e) {
+            System.err.println("[AppInitializer] WARNING: failed to initialise class: " + className);
             e.printStackTrace();
         }
     }

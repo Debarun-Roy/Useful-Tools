@@ -33,6 +33,45 @@ import net.objecthunter.exp4j.ExpressionBuilder;
 
 public class BooleanUtils {
 
+    /**
+     * Returns true if the expression is valid for the boolean calculator.
+     *
+     * PREVIOUS APPROACH — WRONG:
+     *   buildBooleanExpression(expr).build()
+     *   This uses exp4j's build() which may throw for certain operator symbols
+     *   depending on the exp4j version. The exact exception type (and whether it
+     *   is an Exception or Error subclass) varies. The result was that expressions
+     *   like 1|1 returned valid:false even though evaluation worked correctly.
+     *
+     * CORRECT APPROACH:
+     *   Use evaluateBooleanExpression(expr) directly as the validation mechanism.
+     *   This is the IDENTICAL code path used for actual evaluation, so validation
+     *   and evaluation are guaranteed to agree. If evaluation succeeds, the
+     *   expression is valid. If it throws for any reason (syntax error, unknown
+     *   symbol, etc.), the expression is invalid.
+     *
+     *   Catching Throwable (not just Exception) ensures that Error subclasses
+     *   such as ExceptionInInitializerError — which are thrown when a class's
+     *   static initialiser fails — are also caught and do not propagate.
+     *
+     *   The exception is printed to System.err so that if a NEW type of failure
+     *   is encountered, the exact cause is visible in the Tomcat console. This
+     *   makes future debugging straightforward.
+     */
+    public static boolean validateExpression(String expr) {
+        if (expr == null || expr.isBlank()) return false;
+        try {
+            evaluateBooleanExpression(expr);
+            return true;
+        } catch (Throwable t) {
+            // Print to console so the exact failure type is visible in Tomcat logs.
+            // Remove this line once boolean validation is confirmed stable.
+            System.err.println("[BooleanUtils.validateExpression] rejected '" + expr
+                    + "' — " + t.getClass().getName() + ": " + t.getMessage());
+            return false;
+        }
+    }
+
     public static double evaluateBooleanExpression(String expr) throws Exception {
         if (expr == null || expr.isEmpty()) {
             return 0.0;
@@ -48,11 +87,9 @@ public class BooleanUtils {
 
             ArrayList<String> args = splitTopLevelCommas(argsStr);
             double[] evaluatedArgs = new double[args.size()];
-
             for (int i = 0; i < args.size(); i++) {
                 evaluatedArgs[i] = evaluateBooleanExpression(args.get(i));
             }
-
             return applyFunction(funcName, evaluatedArgs);
         }
 
@@ -62,29 +99,15 @@ public class BooleanUtils {
     }
 
     private static double applyFunction(String funcName, double[] args) {
+        if (funcName.equalsIgnoreCase("parity")) {
+            return new parity().apply(args);
+        }
         String reconstructed = funcName + "("
                 + Arrays.stream(args).mapToObj(String::valueOf).collect(Collectors.joining(","))
                 + ")";
         return buildBooleanExpression(reconstructed).build().evaluate();
     }
 
-    /**
-     * FIX: The original implementation had two bugs:
-     *
-     * Bug 1 — args.add() was called INSIDE the main loop body after every
-     *   non-comma character, appending a partial in-progress token on every
-     *   iteration. Parsing "1,0,1" produced ["1","1,","1,0","0","0,","0,1","1"]
-     *   instead of the correct ["1","0","1"].
-     *
-     * Bug 2 — current.setLength(0) was never called after flushing a token on
-     *   a top-level comma, so every subsequent token accumulated all the
-     *   characters from all previous tokens.
-     *
-     * Fix: args.add() is called in exactly two places:
-     *   1. When a top-level comma is encountered (flushes the current token).
-     *   2. After the loop ends (flushes the final token).
-     *   current.setLength(0) resets the buffer immediately after each flush.
-     */
     private static ArrayList<String> splitTopLevelCommas(String argsStr) {
         ArrayList<String> args = new ArrayList<>();
         StringBuilder current = new StringBuilder();
@@ -92,33 +115,22 @@ public class BooleanUtils {
 
         for (int i = 0; i < argsStr.length(); i++) {
             char ch = argsStr.charAt(i);
-
             if (ch == ',' && depth == 0) {
-                // Top-level comma — flush the completed token.
                 args.add(current.toString().trim());
-                current.setLength(0);    // reset buffer for the next token
+                current.setLength(0);
             } else {
-                if (ch == '(')      depth++;
+                if      (ch == '(') depth++;
                 else if (ch == ')') depth--;
                 current.append(ch);
             }
         }
-
-        // Flush the last token (no trailing comma to trigger the flush above).
         if (current.length() > 0) {
             args.add(current.toString().trim());
         }
-
         return args;
     }
 
-    /**
-     * Shared helper that constructs an ExpressionBuilder pre-loaded with all
-     * boolean operators and the majority/parity functions.
-     * Extracted to avoid duplicating the long operator list between
-     * evaluateBooleanExpression() and applyFunction().
-     */
-    private static ExpressionBuilder buildBooleanExpression(String expr) {
+    static ExpressionBuilder buildBooleanExpression(String expr) {
         return new ExpressionBuilder(expr)
                 .function(new majority())
                 .function(new parity())

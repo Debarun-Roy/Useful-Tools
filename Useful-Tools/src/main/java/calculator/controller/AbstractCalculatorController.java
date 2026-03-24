@@ -5,8 +5,6 @@ import java.io.PrintWriter;
 import java.util.LinkedHashMap;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import common.ApiResponse;
 import jakarta.servlet.ServletException;
@@ -17,58 +15,45 @@ import jakarta.servlet.http.HttpServletResponse;
 /**
  * Stateless base class for all standard calculator controllers.
  *
- * ── CHANGE 4: From stateful session to stateless ─────────────────────────
- * The previous design stored the expression string in the HTTP session and
- * appended to it on every button press. This created a round-trip per
- * keypress, required sticky sessions for multi-server deployments, and
- * forced the server to maintain intermediate UI state.
+ * FIX 1 — PrintWriter try-with-resources bug:
+ *   The original used try-with-resources for the outer block:
+ *     try (PrintWriter out = response.getWriter()) { ... evaluate ... }
+ *     catch (Exception e) {
+ *       try (PrintWriter out = response.getWriter()) { ... error ... }
+ *     }
+ *   When an exception was thrown during evaluate(), the try-with-resources
+ *   automatically CLOSED the first PrintWriter before the catch block ran.
+ *   On Tomcat 11, calling response.getWriter() a second time after the first
+ *   writer has been closed causes the response to be committed in a broken
+ *   state — an empty or partial body. The frontend's response.json() then
+ *   throws because there is no valid JSON, which was incorrectly showing
+ *   "Could not reach the server" for things like 1/0.
  *
- * The new design:
- *   - React holds the expression string in a useState hook. Button presses
- *     update local state instantly with zero network latency.
- *   - Only the "=" button sends an HTTP request, containing the complete
- *     expression that React has accumulated locally.
- *   - "C" (clear) is a React-only operation — no server call at all.
- *   - This server becomes a pure function: expression in → result out.
+ *   Fix: obtain the PrintWriter ONCE before the try block and share it across
+ *   both the success path and the catch block. The servlet container closes
+ *   the response automatically when the request cycle ends — we do not close it
+ *   manually.
  *
- * ── Request format ────────────────────────────────────────────────────────
- * POST /api/calculator/{type}
- * Content-Type: application/json
- * Body: { "expression": "3+4*sin(0.5)" }
+ * FIX 2 — NaN and Infinity are not valid JSON:
+ *   Gson throws IllegalArgumentException when serialising Double.NaN or
+ *   Double.POSITIVE_INFINITY / Double.NEGATIVE_INFINITY because JSON has no
+ *   representation for these values. Operations like sqrt(-1), asin(2),
+ *   fact(-1), 1/0 (now returns NaN from CalculatorService) all produce these
+ *   special values.
  *
- * ── Response format ───────────────────────────────────────────────────────
- * 200 OK:  { "success": true,  "data": { "expression": "3+4*sin(0.5)", "result": 5.916... } }
- * 400:     { "success": false, "errorCode": "MISSING_EXPRESSION", "error": "..." }
- * 400:     { "success": false, "errorCode": "INVALID_JSON",       "error": "..." }
- * 500:     { "success": false, "errorCode": "EVALUATION_ERROR",   "error": "..." }
- *
- * ── Template Method pattern ───────────────────────────────────────────────
- * The evaluate() method is the only line that differs between the five
- * concrete subclasses. Everything else — JSON parsing, validation, response
- * serialisation, error handling — is implemented here once.
- *
- * ── Note on ComplexNumberCalculatorController ─────────────────────────────
- * Complex arithmetic returns two values (real and imaginary parts), not a
- * single double. It does not extend this class — it is a standalone servlet.
+ *   Fix: after evaluate() returns, check the result with Double.isNaN() and
+ *   Double.isInfinite(). If special, put the result into the data map as a
+ *   String ("NaN", "Infinity", "-Infinity") rather than as a double. Gson
+ *   serialises strings without any issue. The frontend formatResult() already
+ *   handles string values gracefully.
  */
 public abstract class AbstractCalculatorController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
     private final Gson gson = new Gson();
 
-    /**
-     * Evaluates the given expression string and returns the numeric result.
-     * Implementations may also persist the result to the database.
-     *
-     * @param expression The complete expression to evaluate (e.g. "3+4*sin(0.5)").
-     * @return The numeric result.
-     * @throws Exception if the expression cannot be parsed or evaluated.
-     *                   The exception message is returned to the client as the
-     *                   "error" field in the ApiResponse.
-     */
     protected abstract double evaluate(String expression) throws Exception;
 
-    /** Simple inner class for deserialising the JSON request body. */
     private static class EvalRequest {
         String expression;
     }
@@ -80,11 +65,13 @@ public abstract class AbstractCalculatorController extends HttpServlet {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        try (PrintWriter out = response.getWriter()) {
+        // FIX 1: Obtain the writer once, before the try/catch, and reuse it
+        // in both the success path and the error path. This guarantees the
+        // response body is always written to the same open writer.
+        PrintWriter out = response.getWriter();
 
+        try {
             // ── 1. Parse JSON body ──────────────────────────────────────────
-            // gson.fromJson(reader, Class) returns null if the body is empty.
-            // It throws JsonSyntaxException if the body is malformed JSON.
             EvalRequest body;
             try {
                 body = gson.fromJson(request.getReader(), EvalRequest.class);
@@ -108,28 +95,46 @@ public abstract class AbstractCalculatorController extends HttpServlet {
             String expression = body.expression.trim();
 
             // ── 3. Evaluate ─────────────────────────────────────────────────
-            // Delegate to the concrete subclass. Any parse/evaluation errors
-            // are caught below and returned as structured JSON.
             double result = evaluate(expression);
 
-            // ── 4. Return result ────────────────────────────────────────────
+            // ── 4. Handle NaN and Infinity ──────────────────────────────────
+            // FIX 2: JSON has no representation for NaN or Infinity.
+            // Return them as strings so Gson can serialise the response.
+            // The frontend formatResult() displays them as-is.
+            //
+            // When does this occur?
+            //   NaN      — 1/0 (caught in CalculatorService), sqrt(-1), asin(2),
+            //              fact(-1), fact(0.5), nCr with invalid args, 0/0, etc.
+            //   Infinity — fact(171+), very large exponentials that overflow double
+            final Object resultValue;
+            if (Double.isNaN(result)) {
+                resultValue = "NaN";
+            } else if (Double.isInfinite(result)) {
+                resultValue = result > 0 ? "Infinity" : "-Infinity";
+            } else {
+                resultValue = result;
+            }
+
+            // ── 5. Return result ────────────────────────────────────────────
             LinkedHashMap<String, Object> data = new LinkedHashMap<>();
             data.put("expression", expression);
-            data.put("result",     result);
+            data.put("result",     resultValue);
 
             response.setStatus(HttpServletResponse.SC_OK);
             out.print(gson.toJson(ApiResponse.ok(data)));
 
         } catch (Exception e) {
+            // This catches parse errors, unknown function names, etc.
+            // ArithmeticException (division by zero) is caught in
+            // CalculatorService.evaluate() and returned as NaN — it does
+            // not reach here.
             e.printStackTrace();
-            // Do not expose raw exception class names — use a clean message.
             String message = (e.getMessage() != null && !e.getMessage().isBlank())
                     ? "Evaluation failed: " + e.getMessage()
                     : "The expression could not be evaluated. Please check the syntax.";
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            try (PrintWriter out = response.getWriter()) {
-                out.print(gson.toJson(ApiResponse.fail(message, "EVALUATION_ERROR")));
-            }
+            // FIX 1: Reuse the same 'out' writer — do NOT call getWriter() again.
+            out.print(gson.toJson(ApiResponse.fail(message, "EVALUATION_ERROR")));
         }
     }
 }
