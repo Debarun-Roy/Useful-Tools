@@ -1,6 +1,7 @@
-package calculator.operators;
+package calculator.functions;
 
-import net.objecthunter.exp4j.operator.Operator;
+import calculator.registry.FunctionRegistry;
+import net.objecthunter.exp4j.function.Function;
 
 /**
  * Converse Non-implication (⊅) — true when b is true and a is false.
@@ -17,10 +18,14 @@ import net.objecthunter.exp4j.operator.Operator;
  *
  * Corrected to: return (!a && b) ? 1 : 0;
  */
-public class converseNonimplication extends Operator {
+public class converseNonimplication extends Function {
 
     public converseNonimplication() {
-        super("⊅", 2, false, Operator.PRECEDENCE_ADDITION - 3);
+        super("converseNonimplication", 2);
+    }
+    
+    static {
+    	FunctionRegistry.register(new converseNonimplication());
     }
 
     @Override

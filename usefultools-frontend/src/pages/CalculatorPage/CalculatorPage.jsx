@@ -121,29 +121,67 @@ const TRIG_DEG_BTNS = [
 
 const BOOL_VAL_BTNS = [
   b('0', '0', 'digit'), b('1', '1', 'digit'),
-  b('(', '(', 'op'),    b(')', ')', 'op'),
+  b('(', '(', 'op'),    b(')', ')', 'op'),    b(',', ',', 'op'),
 ]
 
+/**
+ * BOOL_BITWISE_BTNS — FIX:
+ * Unicode operator symbols (⊕, ⊙, ↑, ↓) replaced with function call syntax.
+ * exp4j rejects unicode characters as operator symbols at registration time,
+ * crashing the entire expression builder. These 4 operations are now named
+ * 2-argument functions implemented in BooleanUtils.buildBooleanExpression().
+ *
+ * Usage: xor(1,1) → 0,  nand(1,1) → 0,  nor(0,0) → 1,  xnor(1,1) → 1
+ *
+ * ASCII operators (&, |, !, !=, ==, >, <, >=, <=, <<, >>) remain as operators
+ * because all their characters are in exp4j's allowed symbol set.
+ */
 const BOOL_BITWISE_BTNS = [
-  b('& (AND)',      '&',  'op'), b('| (OR)',      '|',  'op'),
-  b('⊕ (XOR)',      '⊕',  'op'), b('⊙ (XNOR)',    '⊙',  'op'),
-  b('↑ (NAND)',     '↑',  'op'), b('↓ (NOR)',     '↓',  'op'),
-  b('! (NOT)',      '!',  'op'), b('!= (NEQ)',    '!=', 'op'),
-  b('== (EQ)',      '==', 'op'), b('>',           '>',  'op'),
-  b('<',            '<',  'op'), b('>=',          '>=', 'op'),
-  b('<=',           '<=', 'op'), b('<< (LSHIFT)', '<<', 'op'),
-  b('>> (RSHIFT)',  '>>', 'op'),
+  b('& (AND)',      '&',     'op'),
+  b('| (OR)',       '|',     'op'),
+  b('xor(',        'xor(',  'func'),   // replaces ⊕
+  b('xnor(',       'xnor(', 'func'),   // replaces ⊙
+  b('nand(',       'nand(', 'func'),   // replaces ↑
+  b('nor(',        'nor(',  'func'),   // replaces ↓
+  b('! (NOT)',      '!',     'op'),
+  b('!= (NEQ)',     '!=',    'op'),
+  b('== (EQ)',      '==',    'op'),
+  b('>',            '>',     'op'),
+  b('<',            '<',     'op'),
+  b('>=',           '>=',    'op'),
+  b('<=',           '<=',    'op'),
+  b('<< (LSHIFT)', '<<',    'op'),
+  b('>> (RSHIFT)', '>>',    'op'),
 ]
 
+/**
+ * BOOL_LOGIC_BTNS — FIX:
+ * All 5 operators used unicode symbols (→, ←, ↔, ⊄, ⊅) — all rejected by exp4j.
+ * Replaced with named 2-argument functions.
+ *
+ * Usage:
+ *   impl(1,0)  → 0   (implication:          a → b  =  !a || b)
+ *   rimpl(0,1) → 0   (reverse implication:  a ← b  =  a || !b)
+ *   bicon(1,0) → 0   (biconditional:        a ↔ b  =  a == b)
+ *   nimp(1,0)  → 1   (nonimplication:       a ⊄ b  =  a && !b)
+ *   cnimp(0,1) → 1   (converse nonimpl.:    a ⊅ b  =  !a && b)
+ */
 const BOOL_LOGIC_BTNS = [
-  b('→ (IMP)',    '→', 'op'), b('← (RIMP)',   '←', 'op'),
-  b('↔ (BICON)', '↔', 'op'), b('⊄ (NIMP)',   '⊄', 'op'),
-  b('⊅ (CNIMP)', '⊅', 'op'),
+  b('impl(',  'impl(',  'func'),   // replaces →
+  b('rimpl(', 'rimpl(', 'func'),   // replaces ←
+  b('bicon(', 'bicon(', 'func'),   // replaces ↔
+  b('nimp(',  'nimp(',  'func'),   // replaces ⊄
+  b('cnimp(', 'cnimp(', 'func'),   // replaces ⊅
 ]
 
 const BOOL_FUNC_BTNS = [
   b('majority(', 'majority(', 'func'),
   b('parity(',   'parity(',   'func'),
+]
+
+const BOOL_CONST_BINS = [
+  b('TRUE', '1', 'const'),
+  b('FALSE', '0', 'const'),
 ]
 
 // ─── Button groups per tab ────────────────────────────────────────────────────
@@ -164,10 +202,11 @@ const BUTTON_GROUPS = {
     GRP('Constants', CONST_BTNS),
   ],
   boolean: [
-    GRP('Values',            BOOL_VAL_BTNS),
+    GRP('Values & Grouping', BOOL_VAL_BTNS),
     GRP('Bitwise & Compare', BOOL_BITWISE_BTNS),
-    GRP('Logic Operators',   BOOL_LOGIC_BTNS),
-    GRP('Functions',         BOOL_FUNC_BTNS),
+    GRP('Logic Functions',   BOOL_LOGIC_BTNS),
+    GRP('Multi-arg Functions', BOOL_FUNC_BTNS),
+    GRP('Constants', BOOL_CONST_BINS),
   ],
   trig: [
     GRP('Numbers',         DIGIT_BTNS),
@@ -183,7 +222,7 @@ const BUTTON_GROUPS = {
     GRP('Trig (Radians)',  TRIG_RAD_BTNS),
     GRP('Trig (Degrees)',  TRIG_DEG_BTNS),
     GRP('Boolean Ops',     BOOL_BITWISE_BTNS),
-    GRP('Logic Ops',       BOOL_LOGIC_BTNS),
+    GRP('Logic Functions', BOOL_LOGIC_BTNS),
     GRP('Boolean Funcs',   BOOL_FUNC_BTNS),
     GRP('Constants',       CONST_BTNS),
   ],

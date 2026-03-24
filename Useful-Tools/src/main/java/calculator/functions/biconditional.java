@@ -1,16 +1,21 @@
-package calculator.operators;
+package calculator.functions;
 
-import net.objecthunter.exp4j.operator.Operator;
+import calculator.registry.FunctionRegistry;
+import net.objecthunter.exp4j.function.Function;
 
 /*
  * CHANGES REQUIRED : exp4j does not allow custom operators because its tokenizer only understands the pre-defined operators that come with the package.
  * To implement custom operators like biconditional we have to define them as custom functions.
  * Similar normalization needs to be made in the frontend to ensure that something like 1 <-> 0 is converted to biconditional(1, 0) in the backend.
  */
-public class biconditional extends Operator {
+public class biconditional extends Function {
 
 	public biconditional() {
-		super("↔", 2, false, Operator.PRECEDENCE_ADDITION-6);
+		super("biconditional", 2);
+	}
+	
+	static {
+		FunctionRegistry.register(new biconditional());
 	}
 	
 	@Override

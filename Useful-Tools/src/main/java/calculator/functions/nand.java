@@ -1,6 +1,7 @@
-package calculator.operators;
+package calculator.functions;
 
-import net.objecthunter.exp4j.operator.Operator;
+import calculator.registry.FunctionRegistry;
+import net.objecthunter.exp4j.function.Function;
 
 /**
  * NAND (↑) — true when NOT both inputs are true.
@@ -17,10 +18,14 @@ import net.objecthunter.exp4j.operator.Operator;
  * With the original bug, NAND(1,1) returned 1 instead of 0, making every
  * result in the truth table wrong.
  */
-public class nand extends Operator {
+public class nand extends Function {
 
     public nand() {
-        super("↑", 2, true, Operator.PRECEDENCE_ADDITION - 3);
+        super("nand", 2);
+    }
+    
+    static {
+    	FunctionRegistry.register(new nand());
     }
 
     @Override

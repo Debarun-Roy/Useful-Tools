@@ -6,30 +6,32 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import calculator.functions.biconditional;
+import calculator.functions.converseNonimplication;
+import calculator.functions.implication;
 import calculator.functions.majority;
+import calculator.functions.nand;
+import calculator.functions.nonimplication;
+import calculator.functions.nor;
 import calculator.functions.parity;
+import calculator.functions.reverseImplication;
+import calculator.functions.xnor;
+import calculator.functions.xor;
 import calculator.operators.and;
-import calculator.operators.biconditional;
-import calculator.operators.converseNonimplication;
 import calculator.operators.equality;
 import calculator.operators.greaterThan;
 import calculator.operators.greaterThanOrEqualTo;
-import calculator.operators.implication;
 import calculator.operators.leftShift;
 import calculator.operators.lesserThan;
 import calculator.operators.lesserThanOrEqualTo;
-import calculator.operators.nand;
 import calculator.operators.negation;
-import calculator.operators.nonimplication;
-import calculator.operators.nor;
 import calculator.operators.not;
 import calculator.operators.or;
-import calculator.operators.reverseImplication;
 import calculator.operators.rightShift;
-import calculator.operators.xnor;
-import calculator.operators.xor;
+import calculator.registry.FunctionRegistry;
 import net.objecthunter.exp4j.Expression;
 import net.objecthunter.exp4j.ExpressionBuilder;
+import net.objecthunter.exp4j.function.Function;
 
 public class BooleanUtils {
 
@@ -77,8 +79,11 @@ public class BooleanUtils {
             return 0.0;
         }
 
+//        Pattern p = Pattern.compile(
+//                "(?i)\\b(majority|parity)\\b\\s*\\(((?:[^()]++|\\((?:[^()]++|\\([^()]*\\))*\\))*)\\)");
         Pattern p = Pattern.compile(
-                "(?i)\\b(majority|parity)\\b\\s*\\(((?:[^()]++|\\((?:[^()]++|\\([^()]*\\))*\\))*)\\)");
+        		"(?i)\\b([a-zA-Z_]\\w*)\\b\\s*\\(((?:[^()]++|\\((?:[^()]++|\\([^()]*\\))*\\))*)\\)"
+        		);
         Matcher m = p.matcher(expr);
 
         if (m.find()) {
@@ -101,6 +106,13 @@ public class BooleanUtils {
     private static double applyFunction(String funcName, double[] args) {
         if (funcName.equalsIgnoreCase("parity")) {
             return new parity().apply(args);
+        }
+        //if our function is found in our function registry
+        for (Function f : FunctionRegistry.getFunctions()) {
+        	if(f.getName().equals(funcName)) {
+        		// Call apply() directly — bypasses exp4j's argument-count check.
+                return f.apply(args);
+        	}
         }
         String reconstructed = funcName + "("
                 + Arrays.stream(args).mapToObj(String::valueOf).collect(Collectors.joining(","))
@@ -134,25 +146,25 @@ public class BooleanUtils {
         return new ExpressionBuilder(expr)
                 .function(new majority())
                 .function(new parity())
+                .function(new biconditional())
+                .function(new converseNonimplication())
+                .function(new implication())
+                .function(new nonimplication())
+                .function(new nand())
+                .function(new nor())
+                .function(new reverseImplication())
+                .function(new xnor())
+                .function(new xor())
                 .operator(new and())
-                .operator(new biconditional())
-                .operator(new converseNonimplication())
                 .operator(new equality())
                 .operator(new negation())
                 .operator(new greaterThan())
                 .operator(new lesserThan())
                 .operator(new greaterThanOrEqualTo())
                 .operator(new lesserThanOrEqualTo())
-                .operator(new implication())
                 .operator(new leftShift())
-                .operator(new nand())
-                .operator(new nonimplication())
-                .operator(new nor())
                 .operator(new not())
                 .operator(new or())
-                .operator(new reverseImplication())
-                .operator(new rightShift())
-                .operator(new xnor())
-                .operator(new xor());
+                .operator(new rightShift());
     }
 }

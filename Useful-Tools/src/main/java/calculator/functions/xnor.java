@@ -1,6 +1,7 @@
-package calculator.operators;
+package calculator.functions;
 
-import net.objecthunter.exp4j.operator.Operator;
+import calculator.registry.FunctionRegistry;
+import net.objecthunter.exp4j.function.Function;
 
 /**
  * XNOR (⊙) — true when both inputs have the same truth value.
@@ -16,10 +17,14 @@ import net.objecthunter.exp4j.operator.Operator;
  * Corrected to: boolean b = args[1] != 0;
  * The XNOR formula is equivalently written as !(a ^ b), or simply (a == b).
  */
-public class xnor extends Operator {
+public class xnor extends Function {
 
     public xnor() {
-        super("⊙", 2, true, Operator.PRECEDENCE_ADDITION - 4);
+        super("xnor", 2);
+    }
+    
+    static {
+    	FunctionRegistry.register(new xnor());
     }
 
     @Override
