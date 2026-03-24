@@ -24,9 +24,11 @@ public class CombinedUtils {
             return 0.0;
         }
 
+        String normalizedExpr = InputNormalizer.normalize(expr);
+
         Pattern p = Pattern.compile(
                 "([a-zA-Z_][a-zA-Z0-9_]*)\\(((?:[^()]+|\\((?:[^()]+|\\([^()]*\\))*\\))+)\\)");
-        Matcher m = p.matcher(expr);
+        Matcher m = p.matcher(normalizedExpr);
 
         if (m.find()) {
             String funcName = m.group(1);
@@ -40,7 +42,7 @@ public class CombinedUtils {
             return applyFunction(funcName, evaluatedArgs);
         }
 
-        ExpressionBuilder exp = ExpressionBuilderFactory.create(expr);
+        ExpressionBuilder exp = buildCombinedExpression(normalizedExpr);
         Expression e = exp.build();
         return e.evaluate();
     }
@@ -57,7 +59,11 @@ public class CombinedUtils {
         String reconstructed = funcName + "("
                 + Arrays.stream(args).mapToObj(String::valueOf).collect(Collectors.joining(","))
                 + ")";
-        ExpressionBuilder exp = ExpressionBuilderFactory.create(reconstructed);
+        ExpressionBuilder exp = buildCombinedExpression(reconstructed);
         return exp.build().evaluate();
+    }
+
+    private static ExpressionBuilder buildCombinedExpression(String expr) {
+        return BooleanUtils.addBooleanOperators(ExpressionBuilderFactory.create(InputNormalizer.normalize(expr)));
     }
 }

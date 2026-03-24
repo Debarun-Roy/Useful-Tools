@@ -3,6 +3,7 @@ package calculator.service;
 import calculator.expression.ExpressionBuilderFactory;
 import calculator.repository.ComputeRepository;
 import calculator.utilities.BooleanUtils;
+import calculator.utilities.CombinedUtils;
 import calculator.utilities.IntermediateUtils;
 
 /**
@@ -70,10 +71,7 @@ public class CalculatorService {
                 return BooleanUtils.validateExpression(expr);
 
             case "combined":
-                // Combined expressions may be pure arithmetic, pure boolean, or mixed.
-                // Try arithmetic first. If that fails, try boolean.
-                if (tryArithmeticValidation(expr)) return true;
-                return BooleanUtils.validateExpression(expr);
+                return tryCombinedValidation(expr);
 
             default:
                 // simple, intermediate, trig
@@ -92,6 +90,17 @@ public class CalculatorService {
             return true;
         } catch (ArithmeticException ae) {
             // Division by zero etc. — expression IS syntactically valid.
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    private boolean tryCombinedValidation(String expr) {
+        try {
+            CombinedUtils.evaluateCombinedExpression(expr);
+            return true;
+        } catch (ArithmeticException ae) {
             return true;
         } catch (Throwable t) {
             return false;

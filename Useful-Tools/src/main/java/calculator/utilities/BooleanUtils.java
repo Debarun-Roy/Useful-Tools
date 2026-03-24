@@ -77,9 +77,11 @@ public class BooleanUtils {
             return 0.0;
         }
 
+        String normalizedExpr = InputNormalizer.normalize(expr);
+
         Pattern p = Pattern.compile(
                 "(?i)\\b(majority|parity)\\b\\s*\\(((?:[^()]++|\\((?:[^()]++|\\([^()]*\\))*\\))*)\\)");
-        Matcher m = p.matcher(expr);
+        Matcher m = p.matcher(normalizedExpr);
 
         if (m.find()) {
             String funcName = m.group(1);
@@ -93,7 +95,7 @@ public class BooleanUtils {
             return applyFunction(funcName, evaluatedArgs);
         }
 
-        ExpressionBuilder exp = buildBooleanExpression(expr);
+        ExpressionBuilder exp = buildBooleanExpression(normalizedExpr);
         Expression e = exp.build();
         return e.evaluate();
     }
@@ -131,9 +133,15 @@ public class BooleanUtils {
     }
 
     static ExpressionBuilder buildBooleanExpression(String expr) {
-        return new ExpressionBuilder(expr)
+        ExpressionBuilder builder = new ExpressionBuilder(InputNormalizer.normalize(expr))
                 .function(new majority())
-                .function(new parity())
+                .function(new parity());
+
+        return addBooleanOperators(builder);
+    }
+
+    static ExpressionBuilder addBooleanOperators(ExpressionBuilder builder) {
+        return builder
                 .operator(new and())
                 .operator(new biconditional())
                 .operator(new converseNonimplication())
