@@ -167,11 +167,11 @@ const BOOL_BITWISE_BTNS = [
  *   cnimp(0,1) → 1   (converse nonimpl.:    a ⊅ b  =  !a && b)
  */
 const BOOL_LOGIC_BTNS = [
-  b('impl(',  'impl(',  'func'),   // replaces →
-  b('rimpl(', 'rimpl(', 'func'),   // replaces ←
-  b('bicon(', 'bicon(', 'func'),   // replaces ↔
-  b('nimp(',  'nimp(',  'func'),   // replaces ⊄
-  b('cnimp(', 'cnimp(', 'func'),   // replaces ⊅
+  b('impl(',  'implication(',  'func'),   // replaces →
+  b('rimpl(', 'reverseImplication(', 'func'),   // replaces ←
+  b('bicon(', 'biconditional(', 'func'),   // replaces ↔
+  b('nimp(',  'nonimplication(',  'func'),   // replaces ⊄
+  b('cnimp(', 'converseNonimplication(', 'func'),   // replaces ⊅
 ]
 
 const BOOL_FUNC_BTNS = [

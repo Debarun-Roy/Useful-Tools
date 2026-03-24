@@ -107,6 +107,9 @@ public class BooleanUtils {
         if (funcName.equalsIgnoreCase("parity")) {
             return new parity().apply(args);
         }
+        if (funcName.equalsIgnoreCase("majority")) {
+        	return new majority().apply(args);
+        }
         //if our function is found in our function registry
         for (Function f : FunctionRegistry.getFunctions()) {
         	if(f.getName().equals(funcName)) {
