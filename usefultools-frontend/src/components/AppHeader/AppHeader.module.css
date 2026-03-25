@@ -1,0 +1,77 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  min-height: 68px;
+  padding: 0 var(--space-xl);
+  background: rgba(255, 255, 255, 0.82);
+  border-bottom: 1px solid rgba(74, 111, 165, 0.16);
+  backdrop-filter: blur(18px);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.left,
+.right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.backBtn,
+.logoutBtn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 120ms, border-color 120ms, background 120ms, color 120ms;
+}
+
+.backBtn {
+  background: rgba(15, 27, 61, 0.03);
+  border: 1px solid rgba(74, 111, 165, 0.18);
+  color: var(--clr-text-muted);
+}
+
+.logoutBtn {
+  background: transparent;
+  border: 1px solid rgba(23, 58, 114, 0.24);
+  color: var(--clr-primary);
+}
+
+.backBtn:hover,
+.logoutBtn:hover {
+  transform: translateY(-1px);
+}
+
+.backBtn:hover {
+  border-color: rgba(23, 58, 114, 0.26);
+  color: var(--clr-primary);
+}
+
+.logoutBtn:hover {
+  background: var(--clr-primary);
+  color: #fff;
+}
+
+.userBadge {
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(126, 200, 227, 0.12);
+  border: 1px solid rgba(126, 200, 227, 0.24);
+  color: var(--clr-text-muted);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .header {
+    padding: 0 var(--space-md);
+    flex-wrap: wrap;
+    padding-top: var(--space-sm);
+    padding-bottom: var(--space-sm);
+  }
+}

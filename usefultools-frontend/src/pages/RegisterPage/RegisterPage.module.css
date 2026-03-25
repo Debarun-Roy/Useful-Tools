@@ -1,96 +1,91 @@
-/* Same form styles as LoginPage — intentional duplication for independence. */
-
 .error {
-  background-color: var(--clr-error-bg);
-  color:            var(--clr-error);
-  border:           1px solid var(--clr-error-border);
-  border-radius:    var(--radius-sm);
-  padding:          var(--space-sm) var(--space-md);
-  font-size:        var(--fs-sm);
-  margin-bottom:    var(--space-md);
-  line-height:      1.5;
+  background: rgba(255, 120, 140, 0.12);
+  color: #ffd7df;
+  border: 1px solid rgba(255, 173, 189, 0.28);
+  border-radius: 14px;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--fs-sm);
+  margin-bottom: var(--space-md);
+  line-height: 1.6;
 }
 
 .success {
-  background-color: var(--clr-success-bg);
-  color:            var(--clr-success);
-  border:           1px solid var(--clr-success-border);
-  border-radius:    var(--radius-sm);
-  padding:          var(--space-md);
-  font-size:        var(--fs-md);
-  font-weight:      500;
-  text-align:       center;
+  background: rgba(21, 113, 75, 0.16);
+  color: #d5ffe8;
+  border: 1px solid rgba(188, 239, 212, 0.22);
+  border-radius: 16px;
+  padding: var(--space-md);
+  font-size: var(--fs-md);
+  font-weight: 500;
+  text-align: center;
 }
 
 .field {
-  display:        flex;
+  display: flex;
   flex-direction: column;
-  gap:            var(--space-xs);
-  margin-bottom:  var(--space-md);
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
 }
 
 .label {
-  font-size:   var(--fs-sm);
+  font-size: var(--fs-sm);
   font-weight: 600;
-  color:       var(--clr-text);
+  color: rgba(255, 255, 255, 0.88);
 }
 
 .input {
-  width:         100%;
-  padding:       10px var(--space-md);
-  background:    var(--clr-input-bg);
-  border:        1px solid var(--clr-border);
-  border-radius: var(--radius-md);
-  font-size:     var(--fs-md);
-  color:         var(--clr-text);
-  outline:       none;
-  box-shadow:    var(--shadow-input);
-  transition:    border-color var(--transition), box-shadow var(--transition);
+  width: 100%;
+  padding: 12px var(--space-md);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  font-size: var(--fs-md);
+  color: #fff;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
 }
 
 .input::placeholder {
-  color: var(--clr-text-muted);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .input:focus {
-  border-color: var(--clr-accent);
-  box-shadow:   0 0 0 3px rgba(74, 144, 217, 0.18);
+  border-color: rgba(130, 210, 255, 0.64);
+  box-shadow: 0 0 0 4px rgba(130, 210, 255, 0.16);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .input:disabled {
   opacity: 0.6;
-  cursor:  not-allowed;
+  cursor: not-allowed;
 }
 
 .button {
-  width:         100%;
-  padding:       12px;
-  margin-top:    var(--space-sm);
-  background:    var(--clr-primary);
-  color:         #ffffff;
-  border:        none;
-  border-radius: var(--radius-md);
-  font-size:     var(--fs-md);
-  font-weight:   600;
-  transition:    background-color var(--transition), transform var(--transition);
+  width: 100%;
+  padding: 13px;
+  margin-top: var(--space-sm);
+  background: linear-gradient(135deg, rgba(130, 210, 255, 0.92), rgba(74, 111, 165, 0.94));
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+  box-shadow: 0 16px 36px rgba(11, 28, 52, 0.26);
 }
 
 .button:hover:not(:disabled) {
-  background: var(--clr-primary-dark);
-}
-
-.button:active:not(:disabled) {
-  transform: translateY(1px);
+  transform: translateY(-1px);
 }
 
 .button:disabled {
   opacity: 0.65;
-  cursor:  not-allowed;
+  cursor: not-allowed;
 }
 
 .footer {
-  text-align:  center;
-  margin-top:  var(--space-lg);
-  font-size:   var(--fs-sm);
-  color:       var(--clr-text-muted);
+  text-align: center;
+  margin-top: var(--space-lg);
+  font-size: var(--fs-sm);
+  color: rgba(255, 255, 255, 0.7);
 }

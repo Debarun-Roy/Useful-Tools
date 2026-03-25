@@ -1,172 +1,125 @@
-/* ─── Page shell ─────────────────────────────────────────────────────────── */
 .page {
-  min-height:       100vh;
-  display:          flex;
-  flex-direction:   column;
-  background-color: var(--clr-bg);
+  min-height: 100vh;
 }
 
-/* ─── Header / nav bar ───────────────────────────────────────────────────── */
-.header {
-  display:          flex;
-  align-items:      center;
-  justify-content:  space-between;
-  padding:          0 var(--space-xl);
-  height:           64px;
-  background:       var(--clr-surface);
-  border-bottom:    1px solid var(--clr-border);
-  box-shadow:       0 1px 4px rgba(0, 0, 0, 0.06);
-  position:         sticky;
-  top:              0;
-  z-index:          10;
-}
-
-.brand {
-  display:     flex;
-  align-items: center;
-  gap:         var(--space-sm);
-}
-
-.brandIcon {
-  font-size:  1.5rem;
-  color:      var(--clr-primary);
-  line-height: 1;
-}
-
-.brandName {
-  font-size:      var(--fs-lg);
-  font-weight:    700;
-  color:          var(--clr-primary);
-  letter-spacing: -0.02em;
-}
-
-.userArea {
-  display:     flex;
-  align-items: center;
-  gap:         var(--space-md);
-}
-
-.usernameLabel {
-  font-size: var(--fs-sm);
-  color:     var(--clr-text-muted);
-}
-
-.logoutButton {
-  padding:       6px var(--space-md);
-  background:    transparent;
-  color:         var(--clr-primary);
-  border:        1px solid var(--clr-primary);
-  border-radius: var(--radius-md);
-  font-size:     var(--fs-sm);
-  font-weight:   600;
-  transition:    background-color var(--transition), color var(--transition);
-}
-
-.logoutButton:hover {
-  background: var(--clr-primary);
-  color:      #ffffff;
-}
-
-/* ─── Main content area ──────────────────────────────────────────────────── */
-.main {
-  flex:    1;
-  padding: var(--space-2xl) var(--space-xl);
-  max-width: 960px;
-  width:   100%;
-  margin:  0 auto;
-}
-
-.welcome {
-  margin-bottom: var(--space-xl);
-}
-
-.greeting {
-  font-size:      var(--fs-2xl);
-  font-weight:    700;
-  color:          var(--clr-text);
-  letter-spacing: -0.03em;
-  margin-bottom:  var(--space-xs);
-}
-
-.subtitle {
-  font-size: var(--fs-lg);
-  color:     var(--clr-text-muted);
-}
-
-/* ─── Feature grid ───────────────────────────────────────────────────────── */
-.grid {
-  display:               grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap:                   var(--space-md);
-}
-
-/* ─── Feature card (available) ───────────────────────────────────────────── */
-.card {
-  display:        flex;
+.chrome {
+  display: flex;
   flex-direction: column;
-  align-items:    flex-start;
-  gap:            var(--space-xs);
-  padding:        var(--space-lg);
-  background:     var(--clr-surface);
-  border:         1px solid var(--clr-border);
-  border-radius:  var(--radius-lg);
-  box-shadow:     var(--shadow-card);
-  text-align:     left;
-  transition:     transform var(--transition), box-shadow var(--transition),
-                  border-color var(--transition);
+  gap: var(--space-xl);
+  padding: var(--space-md) 0 var(--space-2xl);
+}
+
+.main {
+  width: min(1240px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-md);
+}
+
+.card,
+.cardDisabled {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-xl);
+  text-align: left;
+  border-radius: 22px;
+  border: 1px solid rgba(74, 111, 165, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(242, 247, 255, 0.78));
+  box-shadow: 0 18px 48px rgba(15, 27, 61, 0.1);
+  backdrop-filter: blur(16px);
+  transition: transform 140ms, box-shadow 140ms, border-color 140ms;
 }
 
 .card:hover {
-  transform:    translateY(-2px);
-  box-shadow:   0 8px 24px rgba(0, 0, 0, 0.1);
-  border-color: var(--clr-accent);
+  transform: translateY(-4px);
+  box-shadow: 0 28px 64px rgba(15, 27, 61, 0.14);
+  border-color: rgba(130, 210, 255, 0.36);
 }
 
-.card:active {
-  transform: translateY(0);
-}
-
-/* ─── Feature card (disabled / coming soon) ──────────────────────────────── */
 .cardDisabled {
-  /* Identical layout, but muted and non-interactive */
-  display:        flex;
-  flex-direction: column;
-  align-items:    flex-start;
-  gap:            var(--space-xs);
-  padding:        var(--space-lg);
-  background:     var(--clr-surface);
-  border:         1px solid var(--clr-border);
-  border-radius:  var(--radius-lg);
-  text-align:     left;
-  opacity:        0.55;
-  cursor:         not-allowed;
+  opacity: 0.58;
+  cursor: not-allowed;
 }
 
-/* ─── Card internals ─────────────────────────────────────────────────────── */
+.cardTop {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .cardIcon {
-  font-size:     1.75rem;
-  margin-bottom: var(--space-xs);
-  line-height:   1;
+  display: grid;
+  place-items: center;
+  min-width: 42px;
+  height: 42px;
+  padding: 0 10px;
+  border-radius: 12px;
+  background: rgba(23, 58, 114, 0.08);
+  color: var(--clr-primary);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.cardSprint {
+  color: var(--clr-text-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .cardLabel {
-  font-size:   var(--fs-md);
+  font-size: 1.2rem;
   font-weight: 700;
-  color:       var(--clr-text);
+  color: var(--clr-text);
+  letter-spacing: -0.03em;
 }
 
 .cardDesc {
-  font-size:   var(--fs-sm);
-  color:       var(--clr-text-muted);
-  line-height: 1.4;
+  color: var(--clr-text-muted);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
 }
 
-.cardBadge {
-  margin-top:     var(--space-sm);
-  font-size:      0.75rem;
-  font-weight:    600;
-  color:          var(--clr-primary);
-  background:     #e8edf8;
-  padding:        2px 8px;
-  border-radius:  999px;  /* pill shape */
+.cardStatus,
+.cardStatusPending {
+  margin-top: var(--space-sm);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cardStatus {
+  background: rgba(130, 210, 255, 0.14);
+  border: 1px solid rgba(130, 210, 255, 0.22);
+  color: var(--clr-primary);
+}
+
+.cardStatusPending {
+  background: rgba(23, 58, 114, 0.06);
+  border: 1px solid rgba(74, 111, 165, 0.18);
+  color: var(--clr-text-muted);
+}
+
+@media (max-width: 720px) {
+  .chrome {
+    gap: var(--space-lg);
+    padding-top: var(--space-sm);
+  }
+
+  .main {
+    width: calc(100% - 24px);
+  }
 }

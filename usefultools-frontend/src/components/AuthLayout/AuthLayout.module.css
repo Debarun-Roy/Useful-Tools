@@ -1,61 +1,68 @@
-/* ─── Full-page background ───────────────────────────────────────────────── */
 .page {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Diagonal gradient using our brand primary colours */
-  background: linear-gradient(
-    135deg,
-    var(--clr-primary) 0%,
-    var(--clr-primary-light) 100%
-  );
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
   padding: var(--space-md);
+  background:
+    radial-gradient(circle at top left, rgba(130, 210, 255, 0.2), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(23, 58, 114, 0.16), transparent 24%),
+    linear-gradient(135deg, #0f1b3d 0%, #17376a 55%, #162847 100%);
 }
 
-/* ─── Centred card ────────────────────────────────────────────────────────── */
+.orbit {
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  border: 1px solid rgba(130, 210, 255, 0.14);
+  box-shadow:
+    0 0 0 48px rgba(130, 210, 255, 0.04),
+    0 0 0 96px rgba(130, 210, 255, 0.025);
+}
+
 .card {
-  background: var(--clr-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  padding: var(--space-2xl) var(--space-xl);
+  position: relative;
+  z-index: 1;
   width: 100%;
-  max-width: 440px;
-  /* Subtle upward animation when the card first appears */
-  animation: slideUp 200ms ease both;
+  max-width: 480px;
+  padding: var(--space-2xl) var(--space-xl);
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(24px);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.26);
+  color: #fff;
 }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ─── Brand header ────────────────────────────────────────────────────────── */
-.brand {
+.header {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  justify-content: space-between;
+  gap: var(--space-md);
   margin-bottom: var(--space-xl);
 }
 
-.brandIcon {
-  font-size: 1.75rem;
-  color: var(--clr-primary);
-  line-height: 1;
-}
-
-.brandName {
-  font-size: var(--fs-lg);
+.kicker {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.76rem;
   font-weight: 700;
-  color: var(--clr-primary);
-  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
-/* ─── Page title ──────────────────────────────────────────────────────────── */
 .title {
-  font-size: var(--fs-xl);
-  font-weight: 700;
-  color: var(--clr-text);
-  margin-bottom: var(--space-lg);
-  letter-spacing: -0.02em;
+  margin-bottom: var(--space-sm);
+  color: #fff;
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  line-height: 0.98;
+  letter-spacing: -0.05em;
+}
+
+.subtitle {
+  margin-bottom: var(--space-xl);
+  color: rgba(255, 255, 255, 0.68);
+  font-size: var(--fs-sm);
+  line-height: 1.7;
 }

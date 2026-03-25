@@ -58,8 +58,9 @@ public class NumberTheoryGenerator {
 		LinkedHashMap<Long, String> resultMap = new LinkedHashMap<>();
 		if(n<=0)
 			return resultMap;
-		for(long i=-n/2,c=0;i<=n/2;i++) {
-			resultMap.put(c,String.valueOf(i));
+		long start = -(n / 2L);
+		for(long i = start, c = 0L; c < n; i++, c++) {
+			resultMap.put(c, String.valueOf(i));
 		}
 		return resultMap;
 	}
