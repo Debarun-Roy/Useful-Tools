@@ -2,8 +2,6 @@ package numberanalyzer.categories;
 
 public class Factorials {
 	
-	PrimeNumbers pn = new PrimeNumbers();
-	
 	public long findNthFactorial(int num, int n) { // nth factorial of 2n is n!!!....!!! = 2n*(2n-n)*1
 		if(num<=1)
 			return 1;
@@ -37,6 +35,12 @@ public class Factorials {
 	public long findPrimorial(int num) {
 		if(num==1)
 			return 1;
+		// Avoid constructor recursion:
+		//   Patterns -> new Factorials()
+		//   Factorials -> new PrimeNumbers()
+		//   PrimeNumbers -> new Patterns()
+		// Create PrimeNumbers only when primorial logic is actually used.
+		PrimeNumbers pn = new PrimeNumbers();
 		long p=1L;
 		int c=0;
 		for(int i=2;c<num;i++) {
