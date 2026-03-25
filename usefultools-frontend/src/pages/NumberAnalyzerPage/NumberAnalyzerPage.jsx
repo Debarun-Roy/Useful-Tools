@@ -1,4 +1,4 @@
-import { startTransition, useState } from 'react'
+import { startTransition, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   classifyNumber,
@@ -10,200 +10,118 @@ import {
 import { useAuth } from '../../auth/AuthContext'
 import styles from './NumberAnalyzerPage.module.css'
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 const TABS = [
-  { id: 'classify', label: 'Classify' },
-  { id: 'base', label: 'Base Lab' },
-  { id: 'series', label: 'Series Studio' },
+  { id: 'classify', label: 'Classify', icon: '◎' },
+  { id: 'base',     label: 'Base Lab', icon: '⬡' },
+  { id: 'series',   label: 'Series Studio', icon: '≋' },
 ]
 
+// Hue assigned to each category — drives the card accent colour in CSS
+const CATEGORY_HUE = {
+  'Number Theory':       '210',
+  'Primes':              '280',
+  'Factors':             '340',
+  'Recreational':        '40',
+  'Patterns':            '160',
+  'Base Representations':'100',
+}
+
 const BASE_OPTIONS = [
-  { value: 'all', label: 'All bases', hint: 'Binary, octal and hexadecimal for one number.' },
-  { value: 'binary', label: 'Binary', hint: 'Only the binary representation.' },
-  { value: 'octal', label: 'Octal', hint: 'Only the octal representation.' },
-  { value: 'hex', label: 'Hex', hint: 'Only the hexadecimal representation.' },
-  { value: 'all in range', label: 'All in range', hint: 'Every number from 0 to N, inclusive.' },
+  { value: 'all',          label: 'All bases',     hint: 'Binary · Octal · Hex for one number' },
+  { value: 'binary',       label: 'Binary',        hint: 'Base-2 only' },
+  { value: 'octal',        label: 'Octal',         hint: 'Base-8 only' },
+  { value: 'hex',          label: 'Hexadecimal',   hint: 'Base-16 only' },
+  { value: 'all in range', label: 'Range',         hint: 'Every integer from 0 to N' },
 ]
 
 const SERIES_CATALOG = [
   {
     category: 'Base Representation',
-    description: 'Represent numbers in alternate bases.',
-    options: [
-      { value: 'Binary', label: 'Binary' },
-      { value: 'Octal', label: 'Octal' },
-      { value: 'Hex', label: 'Hex' },
-      { value: 'All', label: 'All bases' },
-    ],
+    icon: '⬡',
+    options: ['Binary','Octal','Hex','All'],
   },
   {
     category: 'Factorials',
-    description: 'Factorial-derived growth families.',
-    options: [
-      { value: 'Factorial', label: 'Factorial' },
-      { value: 'Superfactorial', label: 'Superfactorial' },
-      { value: 'Hyperfactorial', label: 'Hyperfactorial' },
-      { value: 'Primorial', label: 'Primorial' },
-    ],
+    icon: '!',
+    options: ['Factorial','Superfactorial','Hyperfactorial','Primorial'],
   },
   {
     category: 'Factors',
-    description: 'Sequences driven by divisor structure.',
-    options: [
-      { value: 'Perfect', label: 'Perfect' },
-      { value: 'Imperfect', label: 'Imperfect' },
-      { value: 'Arithmetic', label: 'Arithmetic' },
-      { value: 'Inharmonious', label: 'Inharmonious' },
-      { value: 'Blum', label: 'Blum' },
-      { value: 'Humble', label: 'Humble' },
-      { value: 'Abundant', label: 'Abundant' },
-      { value: 'Deficient', label: 'Deficient' },
-      { value: 'Amicable', label: 'Amicable' },
-      { value: 'Untouchable', label: 'Untouchable' },
-    ],
+    icon: '÷',
+    options: ['Perfect','Imperfect','Arithmetic','Inharmonious','Blum','Humble','Abundant','Deficient','Amicable','Untouchable'],
   },
   {
     category: 'Number Theory',
-    description: 'Core integer classes.',
-    options: [
-      { value: 'Integer', label: 'Integers' },
-      { value: 'Natural', label: 'Natural' },
-      { value: 'Odd', label: 'Odd' },
-      { value: 'Even', label: 'Even' },
-      { value: 'Whole', label: 'Whole' },
-      { value: 'Negative', label: 'Negative' },
-    ],
+    icon: '∈',
+    options: ['Integer','Natural','Odd','Even','Whole','Negative'],
   },
   {
     category: 'Primes',
-    description: 'Prime-related families and pairings.',
-    options: [
-      { value: 'Prime', label: 'Prime' },
-      { value: 'Semi Prime', label: 'Semi Prime' },
-      { value: 'Emirp', label: 'Emirp' },
-      { value: 'Additive Prime', label: 'Additive Prime' },
-      { value: 'Anagrammatic Prime', label: 'Anagrammatic Prime' },
-      { value: 'Circular Prime', label: 'Circular Prime' },
-      { value: 'Killer Prime', label: 'Killer Prime' },
-      { value: 'Prime Palindrome', label: 'Prime Palindrome' },
-      { value: 'Twin Primes', label: 'Twin Primes' },
-      { value: 'Cousin Primes', label: 'Cousin Primes' },
-      { value: 'Sexy Primes', label: 'Sexy Primes' },
-      { value: 'Sophie German Primes', label: 'Sophie German Primes' },
-    ],
+    icon: 'ℙ',
+    options: ['Prime','Semi Prime','Emirp','Additive Prime','Anagrammatic Prime','Circular Prime','Killer Prime','Prime Palindrome','Twin Primes','Cousin Primes','Sexy Primes','Sophie German Primes'],
   },
   {
     category: 'Patterns',
-    description: 'Recurrences, figurate numbers and structural patterns.',
-    options: [
-      { value: 'Fibonacci', label: 'Fibonacci' },
-      { value: 'Tribonacci', label: 'Tribonacci' },
-      { value: 'Tetranacci', label: 'Tetranacci' },
-      { value: 'Pentanacci', label: 'Pentanacci' },
-      { value: 'Hexanacci', label: 'Hexanacci' },
-      { value: 'Heptanacci', label: 'Heptanacci' },
-      { value: 'Perrin', label: 'Perrin' },
-      { value: 'Lucas', label: 'Lucas' },
-      { value: 'Padovan', label: 'Padovan' },
-      { value: 'Keith', label: 'Keith' },
-      { value: 'Palindrome', label: 'Palindrome' },
-      { value: 'Hypotenuse', label: 'Hypotenuse' },
-      { value: 'Perfect Square', label: 'Perfect Square' },
-      { value: 'Perfect Cube', label: 'Perfect Cube' },
-      { value: 'Perfect Powers', label: 'Perfect Powers' },
-      { value: 'Catalan Numbers', label: 'Catalan Numbers' },
-      { value: 'Triangular Numbers', label: 'Triangular Numbers' },
-      { value: 'Pentagonal Numbers', label: 'Pentagonal Numbers' },
-      { value: 'Standard Hexagonal Numbers', label: 'Standard Hexagonal Numbers' },
-      { value: 'Centered Hexagonal Numbers', label: 'Centered Hexagonal Numbers' },
-      { value: 'Hexagonal Numbers', label: 'Hexagonal Numbers' },
-      { value: 'Heptagonal Numbers', label: 'Heptagonal Numbers' },
-      { value: 'Octagonal Numbers', label: 'Octagonal Numbers' },
-      { value: 'Tetrahedral Numbers', label: 'Tetrahedral Numbers' },
-      { value: 'Stella Octangula Numbers', label: 'Stella Octangula Numbers' },
-    ],
+    icon: '∿',
+    options: ['Fibonacci','Tribonacci','Tetranacci','Pentanacci','Hexanacci','Heptanacci','Perrin','Lucas','Padovan','Keith','Palindrome','Hypotenuse','Perfect Square','Perfect Cube','Perfect Powers','Catalan Numbers','Triangular Numbers','Pentagonal Numbers','Standard Hexagonal Numbers','Centered Hexagonal Numbers','Hexagonal Numbers','Heptagonal Numbers','Octagonal Numbers','Tetrahedral Numbers','Stella Octangula Numbers'],
   },
   {
     category: 'Recreational',
-    description: 'Named curiosities and digit-based properties.',
-    options: [
-      { value: 'Armstrong', label: 'Armstrong' },
-      { value: 'Harshad', label: 'Harshad' },
-      { value: 'Disarium', label: 'Disarium' },
-      { value: 'Happy', label: 'Happy' },
-      { value: 'Sad', label: 'Sad' },
-      { value: 'Duck', label: 'Duck' },
-      { value: 'Dudeney', label: 'Dudeney' },
-      { value: 'Buzz', label: 'Buzz' },
-      { value: 'Spy', label: 'Spy' },
-      { value: 'Kaprekar', label: 'Kaprekar' },
-      { value: 'Tech', label: 'Tech' },
-      { value: 'Magic', label: 'Magic' },
-      { value: 'Smith', label: 'Smith' },
-      { value: 'Munchausen', label: 'Munchausen' },
-      { value: 'Repdigits', label: 'Repdigits' },
-      { value: 'Gapful', label: 'Gapful' },
-      { value: 'Hungry', label: 'Hungry' },
-      { value: 'Pronic', label: 'Pronic' },
-      { value: 'Neon', label: 'Neon' },
-      { value: 'Automorphic', label: 'Automorphic' },
-    ],
+    icon: '✦',
+    options: ['Armstrong','Harshad','Disarium','Happy','Sad','Duck','Dudeney','Buzz','Spy','Kaprekar','Tech','Magic','Smith','Munchausen','Repdigits','Gapful','Hungry','Pronic','Neon','Automorphic'],
   },
 ]
 
 const DEFAULT_SERIES_SELECTION = {
-  'Number Theory': ['Integer', 'Odd', 'Even'],
-  Primes: ['Prime', 'Twin Primes'],
-  Patterns: ['Fibonacci', 'Perfect Square'],
-  Recreational: ['Happy', 'Armstrong'],
+  'Number Theory': ['Integer','Odd','Even'],
+  Primes:          ['Prime','Twin Primes'],
+  Patterns:        ['Fibonacci','Perfect Square'],
+  Recreational:    ['Happy','Armstrong'],
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function getIntegerError(value, label = 'Number') {
-  const trimmed = value.trim()
-
-  if (!trimmed) return `${label} is required.`
-  if (!/^-?\d+$/.test(trimmed)) return `${label} must be a whole number.`
-
+  const t = value.trim()
+  if (!t) return `${label} is required.`
+  if (!/^-?\d+$/.test(t)) return `${label} must be a whole number.`
   return ''
 }
 
 function getPositiveIntegerError(value, label = 'Terms') {
-  const trimmed = value.trim()
-
-  if (!trimmed) return `${label} is required.`
-  if (!/^\d+$/.test(trimmed) || Number(trimmed) < 1) {
-    return `${label} must be a positive integer.`
-  }
-
+  const t = value.trim()
+  if (!t) return `${label} is required.`
+  if (!/^\d+$/.test(t) || Number(t) < 1) return `${label} must be a positive integer ≥ 1.`
   return ''
-}
-
-function getCategorySelections(selection, category) {
-  return selection[category] || []
 }
 
 function countFindings(analysis) {
   return Object.values(analysis || {}).reduce(
-    (total, category) => total + Object.keys(category || {}).length,
-    0,
-  )
+    (n, cat) => n + Object.keys(cat || {}).length, 0)
 }
 
 function countActiveCategories(analysis) {
-  return Object.values(analysis || {}).filter(category => Object.keys(category || {}).length > 0).length
+  return Object.values(analysis || {}).filter(
+    cat => Object.keys(cat || {}).length > 0).length
 }
 
-function formatChoiceMap(selection) {
-  return Object.entries(selection).reduce((acc, [category, values]) => {
-    if (values.length > 0) acc[category] = values
+function formatChoiceMap(sel) {
+  return Object.entries(sel).reduce((acc, [cat, vals]) => {
+    if (vals.length > 0) acc[cat] = vals
     return acc
   }, {})
 }
 
 function displayPairs(value) {
-  return Object.entries(value || {}).map(([key, item]) => ({
-    key,
-    value: String(item),
-  }))
+  return Object.entries(value || {}).map(([k, v]) => ({ key: k, value: String(v) }))
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function Pulse() {
+  return <span className={styles.pulse} aria-hidden="true" />
 }
 
 function BaseResultPanel({ choice, result }) {
@@ -211,125 +129,118 @@ function BaseResultPanel({ choice, result }) {
 
   if (typeof result === 'string') {
     return (
-      <section className={styles.resultSection}>
-        <div className={styles.metricCard}>
-          <span className={styles.metricLabel}>Result</span>
-          <code className={styles.singleValue}>{result}</code>
+      <div className={styles.resultBlock}>
+        <div className={styles.monoCard}>
+          <span className={styles.monoLabel}>Result</span>
+          <code className={styles.monoValue}>{result}</code>
         </div>
-      </section>
+      </div>
     )
   }
 
   if (choice === 'all in range') {
     return (
-      <section className={styles.resultSection}>
-        <div className={styles.resultHeader}>
-          <h2 className={styles.sectionTitle}>Range output</h2>
-          <p className={styles.sectionHint}>Each row contains the representations returned for one number.</p>
+      <div className={styles.resultBlock}>
+        <div className={styles.resultBlockHeader}>
+          <h3 className={styles.resultBlockTitle}>Range output</h3>
+          <span className={styles.dimText}>Every integer 0 → N</span>
         </div>
-        <div className={styles.stack}>
-          {Object.entries(result).map(([number, representations]) => (
-            <article key={number} className={styles.resultCard}>
-              <div className={styles.resultCardHeader}>
-                <h3 className={styles.resultCardTitle}>{number}</h3>
-              </div>
-              <div className={styles.keyValueGrid}>
-                {displayPairs(representations).map(entry => (
-                  <div key={`${number}-${entry.key}`} className={styles.kvRow}>
-                    <span className={styles.kvKey}>{entry.key}</span>
-                    <code className={styles.kvValue}>{entry.value}</code>
-                  </div>
-                ))}
-              </div>
-            </article>
+        <div className={styles.monoTable}>
+          {Object.entries(result).map(([num, reps]) => (
+            <div key={num} className={styles.monoRow}>
+              <span className={styles.monoRowKey}>{num}</span>
+              <span className={styles.monoRowSep}>→</span>
+              <span className={styles.monoRowVal}>
+                {displayPairs(reps).map(e => `${e.key}: ${e.value}`).join('  ·  ')}
+              </span>
+            </div>
           ))}
         </div>
-      </section>
+      </div>
     )
   }
 
   return (
-    <section className={styles.resultSection}>
-      <div className={styles.resultHeader}>
-        <h2 className={styles.sectionTitle}>Representations</h2>
+    <div className={styles.resultBlock}>
+      <div className={styles.kvGrid}>
+        {displayPairs(result).map(e => (
+          <div key={e.key} className={styles.kvItem}>
+            <span className={styles.kvLabel}>Base {e.key}</span>
+            <code className={styles.kvCode}>{e.value}</code>
+          </div>
+        ))}
       </div>
-      <article className={styles.resultCard}>
-        <div className={styles.keyValueGrid}>
-          {displayPairs(result).map(entry => (
-            <div key={entry.key} className={styles.kvRow}>
-              <span className={styles.kvKey}>{entry.key}</span>
-              <code className={styles.kvValue}>{entry.value}</code>
-            </div>
-          ))}
-        </div>
-      </article>
-    </section>
+    </div>
   )
 }
 
 function SeriesResults({ result }) {
   if (!result) return null
-
   return (
-    <section className={styles.resultSection}>
-      <div className={styles.resultHeader}>
-        <h2 className={styles.sectionTitle}>Generated series</h2>
-        <p className={styles.sectionHint}>Keys and values are rendered exactly as returned by the backend.</p>
+    <div className={styles.resultBlock}>
+      <div className={styles.resultBlockHeader}>
+        <h3 className={styles.resultBlockTitle}>Generated series</h3>
       </div>
-      <div className={styles.stack}>
-        {Object.entries(result).map(([category, seriesMap]) => (
-          <article key={category} className={styles.resultCard}>
-            <div className={styles.resultCardHeader}>
-              <h3 className={styles.resultCardTitle}>{category}</h3>
-              <span className={styles.metricPill}>{Object.keys(seriesMap || {}).length} series</span>
+      {Object.entries(result).map(([category, seriesMap]) => (
+        <div key={category} className={styles.seriesCategory}>
+          <div className={styles.seriesCategoryHeader}>
+            <span className={styles.seriesCategoryIcon}>
+              {SERIES_CATALOG.find(c => c.category === category)?.icon ?? '•'}
+            </span>
+            <h4 className={styles.seriesCategoryName}>{category}</h4>
+            <span className={styles.seriesCount}>{Object.keys(seriesMap || {}).length} series</span>
+          </div>
+          {Object.entries(seriesMap || {}).map(([name, values]) => (
+            <div key={`${category}-${name}`} className={styles.seriesItem}>
+              <div className={styles.seriesItemHeader}>
+                <span className={styles.seriesItemName}>{name}</span>
+                <span className={styles.seriesItemCount}>{Object.keys(values || {}).length} terms</span>
+              </div>
+              <div className={styles.seriesTerms}>
+                {displayPairs(values).map(e => (
+                  <span key={`${name}-${e.key}`} className={styles.termChip}>
+                    <span className={styles.termIndex}>{e.key}</span>
+                    <code className={styles.termValue}>{e.value}</code>
+                  </span>
+                ))}
+              </div>
             </div>
-            <div className={styles.stack}>
-              {Object.entries(seriesMap || {}).map(([seriesName, values]) => (
-                <section key={`${category}-${seriesName}`} className={styles.innerCard}>
-                  <div className={styles.innerCardHeader}>
-                    <h4 className={styles.innerCardTitle}>{seriesName}</h4>
-                    <span className={styles.innerCardCount}>{Object.keys(values || {}).length} entries</span>
-                  </div>
-                  <div className={styles.keyValueGrid}>
-                    {displayPairs(values).map(entry => (
-                      <div key={`${category}-${seriesName}-${entry.key}`} className={styles.kvRow}>
-                        <span className={styles.kvKey}>{entry.key}</span>
-                        <code className={styles.kvValue}>{entry.value}</code>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
+          ))}
+        </div>
+      ))}
+    </div>
   )
 }
 
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export default function NumberAnalyserPage() {
-  const [activeTab, setActiveTab] = useState('classify')
-  const [classifyInput, setClassifyInput] = useState('153')
-  const [classifyLoading, setClassifyLoading] = useState(false)
-  const [classifyError, setClassifyError] = useState('')
-  const [classifyResult, setClassifyResult] = useState(null)
-
-  const [baseInput, setBaseInput] = useState('42')
-  const [baseChoice, setBaseChoice] = useState('all')
-  const [baseLoading, setBaseLoading] = useState(false)
-  const [baseError, setBaseError] = useState('')
-  const [baseResult, setBaseResult] = useState(null)
-
-  const [seriesTerms, setSeriesTerms] = useState('12')
-  const [seriesMode, setSeriesMode] = useState('selected')
-  const [seriesSelection, setSeriesSelection] = useState(DEFAULT_SERIES_SELECTION)
-  const [seriesLoading, setSeriesLoading] = useState(false)
-  const [seriesError, setSeriesError] = useState('')
-  const [seriesResult, setSeriesResult] = useState(null)
-
   const { username, logout } = useAuth()
   const navigate = useNavigate()
+
+  const [activeTab, setActiveTab] = useState('classify')
+
+  // Classify state
+  const [classifyInput,   setClassifyInput]   = useState('153')
+  const [classifyLoading, setClassifyLoading] = useState(false)
+  const [classifyError,   setClassifyError]   = useState('')
+  const [classifyResult,  setClassifyResult]  = useState(null)
+  const [classifyTime,    setClassifyTime]    = useState(null)
+
+  // Base state
+  const [baseInput,   setBaseInput]   = useState('42')
+  const [baseChoice,  setBaseChoice]  = useState('all')
+  const [baseLoading, setBaseLoading] = useState(false)
+  const [baseError,   setBaseError]   = useState('')
+  const [baseResult,  setBaseResult]  = useState(null)
+
+  // Series state
+  const [seriesTerms,     setSeriesTerms]     = useState('12')
+  const [seriesMode,      setSeriesMode]      = useState('selected')
+  const [seriesSelection, setSeriesSelection] = useState(DEFAULT_SERIES_SELECTION)
+  const [seriesLoading,   setSeriesLoading]   = useState(false)
+  const [seriesError,     setSeriesError]     = useState('')
+  const [seriesResult,    setSeriesResult]    = useState(null)
 
   async function handleLogout() {
     try { await logoutUser() } catch { /* ignore */ }
@@ -337,23 +248,23 @@ export default function NumberAnalyserPage() {
     navigate('/login')
   }
 
-  async function handleClassifySubmit(event) {
-    event.preventDefault()
+  // ── Classify ──────────────────────────────────────────────────────────────
 
-    const inputError = getIntegerError(classifyInput)
-    if (inputError) {
-      setClassifyError(inputError)
-      setClassifyResult(null)
-      return
-    }
+  async function handleClassifySubmit(e) {
+    e.preventDefault()
+    const err = getIntegerError(classifyInput)
+    if (err) { setClassifyError(err); setClassifyResult(null); return }
 
     setClassifyLoading(true)
     setClassifyError('')
     setClassifyResult(null)
+    setClassifyTime(null)
+    const t0 = performance.now()
 
     try {
       const { data } = await classifyNumber(classifyInput.trim())
       if (data.success) {
+        setClassifyTime(Math.round(performance.now() - t0))
         startTransition(() => setClassifyResult(data.data))
       } else {
         setClassifyError(data.error || 'Could not analyse the supplied number.')
@@ -365,15 +276,12 @@ export default function NumberAnalyserPage() {
     }
   }
 
-  async function handleBaseSubmit(event) {
-    event.preventDefault()
+  // ── Base ──────────────────────────────────────────────────────────────────
 
-    const inputError = getIntegerError(baseInput)
-    if (inputError) {
-      setBaseError(inputError)
-      setBaseResult(null)
-      return
-    }
+  async function handleBaseSubmit(e) {
+    e.preventDefault()
+    const err = getIntegerError(baseInput)
+    if (err) { setBaseError(err); setBaseResult(null); return }
 
     setBaseLoading(true)
     setBaseError('')
@@ -381,11 +289,8 @@ export default function NumberAnalyserPage() {
 
     try {
       const { data } = await fetchBaseRepresentation(baseInput.trim(), baseChoice)
-      if (data.success) {
-        startTransition(() => setBaseResult(data.data))
-      } else {
-        setBaseError(data.error || 'Could not fetch the requested base representation.')
-      }
+      if (data.success) startTransition(() => setBaseResult(data.data))
+      else setBaseError(data.error || 'Could not fetch the requested base representation.')
     } catch {
       setBaseError('Could not reach the server. Please check that Tomcat is running.')
     } finally {
@@ -393,48 +298,34 @@ export default function NumberAnalyserPage() {
     }
   }
 
-  function toggleSeriesSelection(category, value) {
-    setSeriesResult(null)
-    setSeriesSelection(current => {
-      const currentValues = getCategorySelections(current, category)
-      const nextValues = currentValues.includes(value)
-        ? currentValues.filter(item => item !== value)
-        : [...currentValues, value]
+  // ── Series ────────────────────────────────────────────────────────────────
 
+  function toggleSeriesOption(category, value) {
+    setSeriesResult(null)
+    setSeriesSelection(cur => {
+      const prev = cur[category] || []
       return {
-        ...current,
-        [category]: nextValues,
+        ...cur,
+        [category]: prev.includes(value)
+          ? prev.filter(v => v !== value)
+          : [...prev, value],
       }
     })
   }
 
-  function selectCategory(category, values) {
+  function setCategory(category, values) {
     setSeriesResult(null)
-    setSeriesSelection(current => ({
-      ...current,
-      [category]: values,
-    }))
+    setSeriesSelection(cur => ({ ...cur, [category]: values }))
   }
 
-  function clearAllSeriesSelections() {
-    setSeriesResult(null)
-    setSeriesSelection({})
-  }
+  async function handleSeriesSubmit(e) {
+    e.preventDefault()
+    const err = getPositiveIntegerError(seriesTerms)
+    if (err) { setSeriesError(err); return }
 
-  async function handleSeriesSubmit(event) {
-    event.preventDefault()
-
-    const inputError = getPositiveIntegerError(seriesTerms)
-    if (inputError) {
-      setSeriesError(inputError)
-      setSeriesResult(null)
-      return
-    }
-
-    const formattedChoiceMap = formatChoiceMap(seriesSelection)
-    if (seriesMode === 'selected' && Object.keys(formattedChoiceMap).length === 0) {
-      setSeriesError('Select at least one series before using selected mode.')
-      setSeriesResult(null)
+    const choiceMap = formatChoiceMap(seriesSelection)
+    if (seriesMode === 'selected' && Object.keys(choiceMap).length === 0) {
+      setSeriesError('Select at least one series before using Selected mode.')
       return
     }
 
@@ -443,17 +334,12 @@ export default function NumberAnalyserPage() {
     setSeriesResult(null)
 
     try {
-      const request = seriesMode === 'all'
+      const req = seriesMode === 'all'
         ? fetchAllSeries(Number(seriesTerms.trim()))
-        : fetchSelectedSeries(Number(seriesTerms.trim()), formattedChoiceMap)
-
-      const { data } = await request
-
-      if (data.success) {
-        startTransition(() => setSeriesResult(data.data))
-      } else {
-        setSeriesError(data.error || 'Could not generate the requested series.')
-      }
+        : fetchSelectedSeries(Number(seriesTerms.trim()), choiceMap)
+      const { data } = await req
+      if (data.success) startTransition(() => setSeriesResult(data.data))
+      else setSeriesError(data.error || 'Could not generate the requested series.')
     } catch {
       setSeriesError('Could not reach the server. Please check that Tomcat is running.')
     } finally {
@@ -461,343 +347,400 @@ export default function NumberAnalyserPage() {
     }
   }
 
-  const classifyAnalysis = classifyResult?.analysis || {}
-  const totalFindings = countFindings(classifyAnalysis)
-  const activeCategories = countActiveCategories(classifyAnalysis)
+  // ── Derived ───────────────────────────────────────────────────────────────
+
+  const analysis       = classifyResult?.analysis || {}
+  const totalFindings  = countFindings(analysis)
+  const activeCats     = countActiveCategories(analysis)
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <div className={styles.page}>
+
+      {/* ── Header ─────────────────────────────────────────────────────── */}
       <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <span className={styles.brandIcon} aria-hidden="true">#</span>
-          <span className={styles.brandName}>UsefulTools</span>
+          <div className={styles.brand}>
+            <span className={styles.brandMark} aria-hidden="true">#</span>
+            <span className={styles.brandName}>UsefulTools</span>
+          </div>
           <button className={styles.backBtn} onClick={() => navigate('/dashboard')}>
-            Back to dashboard
+            ← Dashboard
           </button>
         </div>
         <div className={styles.headerRight}>
-          <span className={styles.usernameLabel}>{username}</span>
+          <span className={styles.userBadge}>{username}</span>
           <button className={styles.logoutBtn} onClick={handleLogout}>Sign out</button>
         </div>
       </header>
 
-      <main className={styles.main}>
-        <section className={styles.hero}>
-          <div>
-            <span className={styles.eyebrow}>Sprint 3</span>
-            <h1 className={styles.title}>Number Analyser</h1>
-            <p className={styles.subtitle}>
-              Frontend coverage for the current Java analyzer stack: classification,
-              base representations, and sequence generation.
-            </p>
+      {/* ── Hero ───────────────────────────────────────────────────────── */}
+      <section className={styles.hero}>
+        <div className={styles.heroGrid} aria-hidden="true" />
+        <div className={styles.heroContent}>
+          <div className={styles.heroBadge}>Sprint 3 · Number Analyser</div>
+          <h1 className={styles.heroTitle}>
+            Number<br/>
+            <span className={styles.heroTitleAccent}>Observatory</span>
+          </h1>
+          <p className={styles.heroSub}>
+            Classify integers across 60+ mathematical categories, explore base representations,
+            and generate number sequences — all powered by the Java analysis engine.
+          </p>
+        </div>
+        <div className={styles.heroStats}>
+          <div className={styles.statCard}>
+            <span className={styles.statValue}>60+</span>
+            <span className={styles.statLabel}>classifications</span>
           </div>
-          <div className={styles.heroStats}>
-            <div className={styles.metricCard}>
-              <span className={styles.metricLabel}>Tabs</span>
-              <strong className={styles.metricValue}>3</strong>
-            </div>
-            <div className={styles.metricCard}>
-              <span className={styles.metricLabel}>Series categories</span>
-              <strong className={styles.metricValue}>{SERIES_CATALOG.length}</strong>
-            </div>
+          <div className={styles.statCard}>
+            <span className={styles.statValue}>62</span>
+            <span className={styles.statLabel}>number bases</span>
           </div>
-        </section>
+          <div className={styles.statCard}>
+            <span className={styles.statValue}>7</span>
+            <span className={styles.statLabel}>series families</span>
+          </div>
+        </div>
+      </section>
 
-        <nav className={styles.tabBar} aria-label="Number analyser tools">
+      <main className={styles.main}>
+
+        {/* ── Tab bar ──────────────────────────────────────────────────── */}
+        <nav className={styles.tabBar} aria-label="Analyser tools">
           {TABS.map(tab => (
             <button
               key={tab.id}
               className={activeTab === tab.id ? styles.tabActive : styles.tab}
               onClick={() => setActiveTab(tab.id)}
             >
+              <span className={styles.tabIcon} aria-hidden="true">{tab.icon}</span>
               {tab.label}
             </button>
           ))}
         </nav>
 
+        {/* ══════════════════════════════════════════════════════════════ */}
+        {/* CLASSIFY TAB                                                   */}
+        {/* ══════════════════════════════════════════════════════════════ */}
         {activeTab === 'classify' && (
-          <section className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <div>
-                <h2 className={styles.sectionTitle}>Classify a single number</h2>
-                <p className={styles.sectionHint}>
-                  Calls `POST /api/analyzer/classify` and renders every category the service returns.
-                </p>
-              </div>
-            </div>
+          <div className={styles.panel}>
 
-            <form className={styles.controlCard} onSubmit={handleClassifySubmit}>
-              <div className={styles.formRow}>
-                <label className={styles.fieldLabel} htmlFor="classify-number">Integer</label>
-                <input
-                  id="classify-number"
-                  className={styles.input}
-                  type="text"
-                  inputMode="numeric"
-                  value={classifyInput}
-                  onChange={event => {
-                    setClassifyInput(event.target.value)
-                    setClassifyError('')
-                    setClassifyResult(null)
-                  }}
-                  placeholder="e.g. 153"
-                  disabled={classifyLoading}
-                />
+            <form className={styles.inputCard} onSubmit={handleClassifySubmit}>
+              <div className={styles.inputCardHeader}>
+                <div>
+                  <h2 className={styles.cardTitle}>Classify a number</h2>
+                  <p className={styles.cardHint}>
+                    Enter any integer. The engine checks it against every known
+                    mathematical category and returns all matches.
+                  </p>
+                </div>
               </div>
-              <div className={styles.actionRow}>
-                <button className={styles.primaryBtn} type="submit" disabled={classifyLoading}>
-                  {classifyLoading ? 'Analysing...' : 'Analyse number'}
+
+              <div className={styles.numberInputRow}>
+                <div className={styles.numberInputWrap}>
+                  <span className={styles.numberInputPrefix}>ℕ</span>
+                  <input
+                    className={styles.numberInput}
+                    type="text"
+                    inputMode="numeric"
+                    value={classifyInput}
+                    onChange={e => {
+                      setClassifyInput(e.target.value)
+                      setClassifyError('')
+                      setClassifyResult(null)
+                    }}
+                    placeholder="e.g. 153"
+                    disabled={classifyLoading}
+                    autoFocus
+                  />
+                </div>
+                <button
+                  className={styles.analyseBtn}
+                  type="submit"
+                  disabled={classifyLoading}
+                >
+                  {classifyLoading
+                    ? <><Pulse /><span>Analysing…</span></>
+                    : 'Analyse →'}
                 </button>
               </div>
-              {classifyError && <div className={styles.errorBanner}>{classifyError}</div>}
+
+              {classifyError && (
+                <div className={styles.errorBanner} role="alert">{classifyError}</div>
+              )}
             </form>
 
+            {/* Results */}
             {classifyResult && (
               <>
-                <section className={styles.summaryGrid}>
-                  <div className={styles.metricCard}>
-                    <span className={styles.metricLabel}>Analysed number</span>
-                    <strong className={styles.metricValue}>{classifyResult.number}</strong>
+                {/* Summary strip */}
+                <div className={styles.summaryStrip}>
+                  <div className={styles.summaryNum}>
+                    <span className={styles.summaryNumLabel}>Analysed</span>
+                    <code className={styles.summaryNumValue}>{classifyResult.number}</code>
                   </div>
-                  <div className={styles.metricCard}>
-                    <span className={styles.metricLabel}>Findings</span>
-                    <strong className={styles.metricValue}>{totalFindings}</strong>
+                  <div className={styles.summaryMetrics}>
+                    <div className={styles.metricBadge}>
+                      <span className={styles.metricN}>{totalFindings}</span>
+                      <span className={styles.metricLabel}>findings</span>
+                    </div>
+                    <div className={styles.metricBadge}>
+                      <span className={styles.metricN}>{activeCats}</span>
+                      <span className={styles.metricLabel}>categories</span>
+                    </div>
+                    {classifyTime !== null && (
+                      <div className={styles.metricBadge}>
+                        <span className={styles.metricN}>{classifyTime}</span>
+                        <span className={styles.metricLabel}>ms</span>
+                      </div>
+                    )}
                   </div>
-                  <div className={styles.metricCard}>
-                    <span className={styles.metricLabel}>Active categories</span>
-                    <strong className={styles.metricValue}>{activeCategories}</strong>
-                  </div>
-                </section>
+                </div>
 
-                <section className={styles.resultSection}>
-                  <div className={styles.grid}>
-                    {Object.entries(classifyAnalysis).map(([category, findings]) => {
-                      const entries = Object.values(findings || {})
-                      return (
-                        <article key={category} className={styles.resultCard}>
-                          <div className={styles.resultCardHeader}>
-                            <h3 className={styles.resultCardTitle}>{category}</h3>
-                            <span className={styles.metricPill}>{entries.length}</span>
-                          </div>
-                          {entries.length > 0 ? (
-                            <ul className={styles.findingList}>
-                              {entries.map((entry, index) => (
-                                <li key={`${category}-${index}`} className={styles.findingItem}>{entry}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className={styles.emptyState}>No matches returned for this category.</p>
-                          )}
-                        </article>
-                      )
-                    })}
-                  </div>
-                </section>
+                {/* Category cards */}
+                <div className={styles.categoryGrid}>
+                  {Object.entries(analysis).map(([category, findings]) => {
+                    const entries = Object.values(findings || {})
+                    const hue = CATEGORY_HUE[category] ?? '210'
+                    return (
+                      <div
+                        key={category}
+                        className={styles.categoryCard}
+                        style={{ '--hue': hue }}
+                      >
+                        <div className={styles.categoryCardHeader}>
+                          <h3 className={styles.categoryName}>{category}</h3>
+                          <span className={styles.categoryCount}>{entries.length}</span>
+                        </div>
+                        {entries.length > 0 ? (
+                          <ul className={styles.findingList}>
+                            {entries.map((txt, i) => (
+                              <li key={i} className={styles.findingItem}>
+                                <span className={styles.findingDot} aria-hidden="true">·</span>
+                                {txt}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className={styles.emptyCategory}>No matches in this category.</p>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </>
             )}
-          </section>
+          </div>
         )}
 
+        {/* ══════════════════════════════════════════════════════════════ */}
+        {/* BASE LAB TAB                                                   */}
+        {/* ══════════════════════════════════════════════════════════════ */}
         {activeTab === 'base' && (
-          <section className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <div>
-                <h2 className={styles.sectionTitle}>Base representations</h2>
-                <p className={styles.sectionHint}>
-                  Covers `POST /api/analyzer/base-representation`, including the range mode exposed by the backend.
-                </p>
-              </div>
-            </div>
+          <div className={styles.panel}>
 
-            <form className={styles.controlCard} onSubmit={handleBaseSubmit}>
-              <div className={styles.formRow}>
-                <label className={styles.fieldLabel} htmlFor="base-number">Integer</label>
-                <input
-                  id="base-number"
-                  className={styles.input}
-                  type="text"
-                  inputMode="numeric"
-                  value={baseInput}
-                  onChange={event => {
-                    setBaseInput(event.target.value)
-                    setBaseError('')
-                    setBaseResult(null)
-                  }}
-                  placeholder="e.g. 42"
-                  disabled={baseLoading}
-                />
+            <form className={styles.inputCard} onSubmit={handleBaseSubmit}>
+              <div className={styles.inputCardHeader}>
+                <div>
+                  <h2 className={styles.cardTitle}>Base representations</h2>
+                  <p className={styles.cardHint}>
+                    See any integer in binary, octal, hexadecimal, or all 62 bases at once.
+                    Range mode covers every integer from 0 to N.
+                  </p>
+                </div>
               </div>
 
-              <div className={styles.optionGrid}>
-                {BASE_OPTIONS.map(option => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={baseChoice === option.value ? styles.optionCardActive : styles.optionCard}
-                    onClick={() => {
-                      setBaseChoice(option.value)
+              <div className={styles.numberInputRow}>
+                <div className={styles.numberInputWrap}>
+                  <span className={styles.numberInputPrefix}>ℕ</span>
+                  <input
+                    className={styles.numberInput}
+                    type="text"
+                    inputMode="numeric"
+                    value={baseInput}
+                    onChange={e => {
+                      setBaseInput(e.target.value)
+                      setBaseError('')
                       setBaseResult(null)
                     }}
+                    placeholder="e.g. 42"
+                    disabled={baseLoading}
+                  />
+                </div>
+              </div>
+
+              <div className={styles.baseOptionGrid}>
+                {BASE_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    className={baseChoice === opt.value
+                      ? styles.baseOptionActive
+                      : styles.baseOption}
+                    onClick={() => { setBaseChoice(opt.value); setBaseResult(null) }}
                     disabled={baseLoading}
                   >
-                    <span className={styles.optionTitle}>{option.label}</span>
-                    <span className={styles.optionHint}>{option.hint}</span>
+                    <span className={styles.baseOptionLabel}>{opt.label}</span>
+                    <span className={styles.baseOptionHint}>{opt.hint}</span>
                   </button>
                 ))}
               </div>
 
               <div className={styles.actionRow}>
-                <button className={styles.primaryBtn} type="submit" disabled={baseLoading}>
-                  {baseLoading ? 'Loading...' : 'Fetch representation'}
+                <button className={styles.analyseBtn} type="submit" disabled={baseLoading}>
+                  {baseLoading
+                    ? <><Pulse /><span>Loading…</span></>
+                    : 'Fetch →'}
                 </button>
               </div>
-              {baseError && <div className={styles.errorBanner}>{baseError}</div>}
+
+              {baseError && (
+                <div className={styles.errorBanner} role="alert">{baseError}</div>
+              )}
             </form>
 
             <BaseResultPanel choice={baseChoice} result={baseResult} />
-          </section>
+          </div>
         )}
 
+        {/* ══════════════════════════════════════════════════════════════ */}
+        {/* SERIES STUDIO TAB                                              */}
+        {/* ══════════════════════════════════════════════════════════════ */}
         {activeTab === 'series' && (
-          <section className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <div>
-                <h2 className={styles.sectionTitle}>Series Studio</h2>
-                <p className={styles.sectionHint}>
-                  Uses the exact category and selection strings expected by the current Java controllers.
-                </p>
-              </div>
-            </div>
+          <div className={styles.panel}>
 
-            <form className={styles.controlCard} onSubmit={handleSeriesSubmit}>
-              <div className={styles.formRow}>
-                <label className={styles.fieldLabel} htmlFor="series-terms">Terms</label>
-                <input
-                  id="series-terms"
-                  className={styles.input}
-                  type="text"
-                  inputMode="numeric"
-                  value={seriesTerms}
-                  onChange={event => {
-                    setSeriesTerms(event.target.value)
-                    setSeriesError('')
-                    setSeriesResult(null)
-                  }}
-                  placeholder="e.g. 12"
-                  disabled={seriesLoading}
-                />
+            <form className={styles.inputCard} onSubmit={handleSeriesSubmit}>
+              <div className={styles.inputCardHeader}>
+                <div>
+                  <h2 className={styles.cardTitle}>Series Studio</h2>
+                  <p className={styles.cardHint}>
+                    Generate the first N terms of any number sequence — from Fibonacci
+                    to Sophie Germain primes to Munchausen numbers.
+                  </p>
+                </div>
               </div>
 
-              <div className={styles.modeRow}>
-                <button
-                  type="button"
-                  className={seriesMode === 'selected' ? styles.modeBtnActive : styles.modeBtn}
-                  onClick={() => {
-                    setSeriesMode('selected')
-                    setSeriesResult(null)
-                  }}
-                  disabled={seriesLoading}
-                >
-                  Selected series
-                </button>
-                <button
-                  type="button"
-                  className={seriesMode === 'all' ? styles.modeBtnActive : styles.modeBtn}
-                  onClick={() => {
-                    setSeriesMode('all')
-                    setSeriesResult(null)
-                  }}
-                  disabled={seriesLoading}
-                >
-                  All series
-                </button>
+              <div className={styles.seriesControls}>
+                <div className={styles.numberInputWrap} style={{ maxWidth: 220 }}>
+                  <span className={styles.numberInputPrefix}>N</span>
+                  <input
+                    className={styles.numberInput}
+                    type="text"
+                    inputMode="numeric"
+                    value={seriesTerms}
+                    onChange={e => {
+                      setSeriesTerms(e.target.value)
+                      setSeriesError('')
+                      setSeriesResult(null)
+                    }}
+                    placeholder="terms, e.g. 12"
+                    disabled={seriesLoading}
+                  />
+                </div>
+
+                <div className={styles.modeToggle}>
+                  <button
+                    type="button"
+                    className={seriesMode === 'selected' ? styles.modeActive : styles.modeBtn}
+                    onClick={() => { setSeriesMode('selected'); setSeriesResult(null) }}
+                    disabled={seriesLoading}
+                  >
+                    Selected
+                  </button>
+                  <button
+                    type="button"
+                    className={seriesMode === 'all' ? styles.modeActive : styles.modeBtn}
+                    onClick={() => { setSeriesMode('all'); setSeriesResult(null) }}
+                    disabled={seriesLoading}
+                  >
+                    All
+                  </button>
+                </div>
               </div>
 
               {seriesMode === 'selected' && (
-                <>
-                  <div className={styles.inlineActions}>
+                <div className={styles.catalogSection}>
+                  <div className={styles.catalogActions}>
                     <button
                       type="button"
-                      className={styles.secondaryBtn}
-                      onClick={() => {
-                        setSeriesSelection(DEFAULT_SERIES_SELECTION)
-                        setSeriesResult(null)
-                      }}
+                      className={styles.ghostBtn}
+                      onClick={() => { setSeriesSelection(DEFAULT_SERIES_SELECTION); setSeriesResult(null) }}
                       disabled={seriesLoading}
                     >
-                      Use starter set
+                      Starter set
                     </button>
                     <button
                       type="button"
-                      className={styles.secondaryBtn}
-                      onClick={clearAllSeriesSelections}
+                      className={styles.ghostBtn}
+                      onClick={() => { setSeriesSelection({}); setSeriesResult(null) }}
                       disabled={seriesLoading}
                     >
-                      Clear selections
+                      Clear all
                     </button>
                   </div>
 
                   <div className={styles.catalogGrid}>
-                    {SERIES_CATALOG.map(category => {
-                      const selected = getCategorySelections(seriesSelection, category.category)
-
+                    {SERIES_CATALOG.map(cat => {
+                      const sel = seriesSelection[cat.category] || []
                       return (
-                        <article key={category.category} className={styles.catalogCard}>
-                          <div className={styles.catalogHeader}>
-                            <div>
-                              <h3 className={styles.catalogTitle}>{category.category}</h3>
-                              <p className={styles.catalogHint}>{category.description}</p>
-                            </div>
-                            <div className={styles.inlineActions}>
-                              <button
-                                type="button"
-                                className={styles.miniBtn}
-                                onClick={() => selectCategory(category.category, category.options.map(option => option.value))}
-                                disabled={seriesLoading}
-                              >
-                                All
-                              </button>
-                              <button
-                                type="button"
-                                className={styles.miniBtn}
-                                onClick={() => selectCategory(category.category, [])}
-                                disabled={seriesLoading}
-                              >
-                                None
-                              </button>
-                            </div>
+                        <div key={cat.category} className={styles.catalogCard}>
+                          <div className={styles.catalogCardHeader}>
+                            <span className={styles.catalogIcon}>{cat.icon}</span>
+                            <h4 className={styles.catalogName}>{cat.category}</h4>
+                            <button
+                              type="button"
+                              className={styles.miniBtn}
+                              onClick={() => setCategory(cat.category, cat.options)}
+                              disabled={seriesLoading}
+                            >All</button>
+                            <button
+                              type="button"
+                              className={styles.miniBtn}
+                              onClick={() => setCategory(cat.category, [])}
+                              disabled={seriesLoading}
+                            >None</button>
                           </div>
-                          <div className={styles.chipGrid}>
-                            {category.options.map(option => (
+                          <div className={styles.chipCloud}>
+                            {cat.options.map(opt => (
                               <button
-                                key={`${category.category}-${option.value}`}
+                                key={opt}
                                 type="button"
-                                className={selected.includes(option.value) ? styles.chipActive : styles.chip}
-                                onClick={() => toggleSeriesSelection(category.category, option.value)}
+                                className={sel.includes(opt) ? styles.chipActive : styles.chip}
+                                onClick={() => toggleSeriesOption(cat.category, opt)}
                                 disabled={seriesLoading}
                               >
-                                {option.label}
+                                {opt}
                               </button>
                             ))}
                           </div>
-                        </article>
+                        </div>
                       )
                     })}
                   </div>
-                </>
+                </div>
               )}
 
               <div className={styles.actionRow}>
-                <button className={styles.primaryBtn} type="submit" disabled={seriesLoading}>
-                  {seriesLoading ? 'Generating...' : seriesMode === 'all' ? 'Generate all series' : 'Generate selected series'}
+                <button className={styles.analyseBtn} type="submit" disabled={seriesLoading}>
+                  {seriesLoading
+                    ? <><Pulse /><span>Generating…</span></>
+                    : seriesMode === 'all'
+                      ? 'Generate all →'
+                      : 'Generate selected →'}
                 </button>
               </div>
-              {seriesError && <div className={styles.errorBanner}>{seriesError}</div>}
+
+              {seriesError && (
+                <div className={styles.errorBanner} role="alert">{seriesError}</div>
+              )}
             </form>
 
             <SeriesResults result={seriesResult} />
-          </section>
+          </div>
         )}
+
       </main>
     </div>
   )
