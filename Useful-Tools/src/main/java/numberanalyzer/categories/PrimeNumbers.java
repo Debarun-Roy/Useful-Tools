@@ -6,7 +6,7 @@ import numberanalyzer.utilities.CommonUtils;
 public class PrimeNumbers {
 
 	CommonUtils cu = new CommonUtils();
-	NumberCheck nc = new NumberCheck();
+//	NumberCheck nc = new NumberCheck();
 	Patterns p = new Patterns();
 	
 	public boolean isPrime(long num) {
@@ -89,10 +89,36 @@ public class PrimeNumbers {
 	}
 	
 	public boolean isThabitPrime(long num) {
-		return isPrime(num)&&nc.isThabit(num);
+		return isPrime(num)&&isThabitNumber(num);
 	}
 	
 	public boolean isTetrahedralPrime(long num) {
 		return isPrime(num)&&p.isTetrahedral(num);
+	}
+	
+	/**
+	 * PrimeNumbers and NumberCheck originally instantiated each other as fields:
+	 *
+	 *   PrimeNumbers -> new NumberCheck()
+	 *   NumberCheck  -> new PrimeNumbers()
+	 *
+	 * That constructor cycle caused a StackOverflowError as soon as the analyzer
+	 * service created PrimeNumbers. Keep the Thabit check local here so
+	 * PrimeNumbers no longer depends on NumberCheck during construction.
+	 */
+	private boolean isThabitNumber(long num) {
+		if (num <= 0) {
+			return false;
+		}
+		for (int i = 0; i <= num / 2; i++) {
+			long value = 3 * (long) Math.pow(2, i) - 1;
+			if (value == num) {
+				return true;
+			}
+			if (value > num) {
+				return false;
+			}
+		}
+		return false;
 	}
 }

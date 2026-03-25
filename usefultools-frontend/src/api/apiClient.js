@@ -84,4 +84,32 @@ export const evaluateComplex = (operation) =>
  
 export const validateExpression = (expr, mode = 'simple') =>
   request(`/calculator/validate?expr=${encodeURIComponent(expr)}&mode=${encodeURIComponent(mode)}`)
+
+export const classifyNumber = (number) =>
+  request('/analyzer/classify', {
+    method: 'POST',
+    isForm: true,
+    body: { number },
+  })
+
+export const fetchBaseRepresentation = (number, choice) =>
+  request('/analyzer/base-representation', {
+    method: 'POST',
+    isForm: true,
+    body: { number, choice },
+  })
+
+export const fetchAllSeries = (terms) =>
+  request('/analyzer/series/all', {
+    method: 'POST',
+    isJson: true,
+    body: { terms },
+  })
+
+export const fetchSelectedSeries = (terms, choiceMap) =>
+  request('/analyzer/series/selected', {
+    method: 'POST',
+    isJson: true,
+    body: { terms, choiceMap },
+  })
  

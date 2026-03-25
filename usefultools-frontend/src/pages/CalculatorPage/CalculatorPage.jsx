@@ -51,6 +51,29 @@ const MATH_FUNC_BTNS = [
   b('log(',   'log(',   'func'), b('log2(',  'log2(',  'func'), b('log10(', 'log10(', 'func'),
   b('logn(',  'logn(',  'func'), b('sqrt(',  'sqrt(',  'func'), b('cbrt(',  'cbrt(',  'func'),
   b('abs(',   'abs(',   'func'), b('ceil(',  'ceil(',  'func'), b('floor(', 'floor(', 'func'),
+  b('sinh(', 'sinh(', 'func'),
+  b('cosh(', 'cosh(', 'func'),
+  b('tanh(', 'tanh(', 'func'),
+  b('cosech(', 'cosech(', 'func'),
+  b('sech(', 'sech(', 'func'),
+  b('coth(', 'coth(', 'func'),
+  b('asinh(', 'asinh(', 'func'),
+  b('acosh(', 'acosh(', 'func'),
+  b('atanh(', 'atanh(', 'func'),
+  b('acosech(', 'acosech(', 'func'),
+  b('acoth(', 'acoth(', 'func'),
+  b('sinhd(', 'sinhd(', 'func'),
+  b('coshd(', 'coshd(', 'func'),
+  b('tanhd(', 'tanhd(', 'func'),
+  b('cosechd(', 'cosechd(', 'func'),
+  b('sechd(', 'sechd(', 'func'),
+  b('cothd(', 'cothd(', 'func'),
+  b('asinhd(', 'asinhd(', 'func'),
+  b('acoshd(', 'acoshd(', 'func'),
+  b('atanhd(', 'atanhd(', 'func'),
+  b('acosechd(', 'acosechd(', 'func'),
+  b('asechd(', 'asechd(', 'func'),
+  b('acothd(', 'acothd(', 'func'),
 ]
 
 const CUSTOM_FUNC_BTNS = [
@@ -117,6 +140,35 @@ const TRIG_RAD_BTNS = [
 const TRIG_DEG_BTNS = [
   b('sind(',   'sind(',   'func'), b('cosd(',   'cosd(',   'func'), b('tand(',   'tand(',   'func'),
   b('cosecd(', 'cosecd(', 'func'), b('secd(',   'secd(',   'func'), b('cotd(',   'cotd(',   'func'),
+]
+
+const TRIG_DEG_HYP = [
+  b('sinh(', 'sinh(', 'func'),
+  b('cosh(', 'cosh(', 'func'),
+  b('tanh(', 'tanh(', 'func'),
+  b('cosech(', 'cosech(', 'func'),
+  b('sech(', 'sech(', 'func'),
+  b('coth(', 'coth(', 'func'),
+  b('asinh(', 'asinh(', 'func'),
+  b('acosh(', 'acosh(', 'func'),
+  b('atanh(', 'atanh(', 'func'),
+  b('acosech(', 'acosech(', 'func'),
+  b('acoth(', 'acoth(', 'func'),
+]
+
+const TRIG_DEG_COMBINED = [
+  b('sinhd(', 'sinhd(', 'func'),
+  b('coshd(', 'coshd(', 'func'),
+  b('tanhd(', 'tanhd(', 'func'),
+  b('cosechd(', 'cosechd(', 'func'),
+  b('sechd(', 'sechd(', 'func'),
+  b('cothd(', 'cothd(', 'func'),
+  b('asinhd(', 'asinhd(', 'func'),
+  b('acoshd(', 'acoshd(', 'func'),
+  b('atanhd(', 'atanhd(', 'func'),
+  b('acosechd(', 'acosechd(', 'func'),
+  b('asechd(', 'asechd(', 'func'),
+  b('acothd(', 'acothd(', 'func'),
 ]
 
 const BOOL_VAL_BTNS = [
@@ -213,6 +265,8 @@ const BUTTON_GROUPS = {
     GRP('Arithmetic',      ARITH_BTNS),
     GRP('Trig (Radians)',  TRIG_RAD_BTNS),
     GRP('Trig (Degrees)',  TRIG_DEG_BTNS),
+    GRP('Trig (Hyperbolic)', TRIG_DEG_HYP),
+    GRP('Trig (Combined)', TRIG_DEG_COMBINED),
     GRP('Constants',       CONST_BTNS),
   ],
   combined: [
@@ -221,6 +275,8 @@ const BUTTON_GROUPS = {
     GRP('Math Functions',  [...MATH_FUNC_BTNS, ...CUSTOM_FUNC_BTNS]),
     GRP('Trig (Radians)',  TRIG_RAD_BTNS),
     GRP('Trig (Degrees)',  TRIG_DEG_BTNS),
+    GRP('Trig (Hyperbolic)', TRIG_DEG_HYP),
+    GRP('Trig (Combined)', TRIG_DEG_COMBINED),
     GRP('Boolean Ops',     BOOL_BITWISE_BTNS),
     GRP('Logic Functions', BOOL_LOGIC_BTNS),
     GRP('Boolean Funcs',   BOOL_FUNC_BTNS),

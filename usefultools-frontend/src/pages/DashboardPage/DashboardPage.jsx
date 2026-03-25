@@ -22,7 +22,7 @@ const FEATURES = [
     label:  'Number Analyser',
     path:   '/analyser',
     sprint: 3,
-    ready:  false,
+    ready:  true,
     icon:   '🔢',
     desc:   'Classify numbers and generate sequences',
   },

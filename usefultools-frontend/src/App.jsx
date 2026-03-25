@@ -6,6 +6,7 @@ import RegisterPage       from './pages/RegisterPage/RegisterPage'
 import UpdatePasswordPage from './pages/UpdatePasswordPage/UpdatePasswordPage'
 import DashboardPage      from './pages/DashboardPage/DashboardPage'
 import CalculatorPage     from './pages/CalculatorPage/CalculatorPage'
+import NumberAnalyserPage from './pages/NumberAnalyzerPage/NumberAnalyzerPage'
 
 export default function App() {
   return (
@@ -26,6 +27,9 @@ export default function App() {
           } />
           <Route path="/calculator" element={
             <ProtectedRoute><CalculatorPage /></ProtectedRoute>
+          } />
+          <Route path="/analyser" element={
+            <ProtectedRoute><NumberAnalyserPage /></ProtectedRoute>
           } />
 
           {/* ── Fallback ──────────────────────────────────────────────── */}
