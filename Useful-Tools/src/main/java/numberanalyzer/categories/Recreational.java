@@ -193,10 +193,22 @@ public class Recreational {
         return cu.findSumOfDigits(num * num) == num;
     }
 
+    /**
+     * A magic number repeatedly reduces to 1 by summing its digits.
+     *
+     * The previous base case used `num < 9`, which left 9 out:
+     *   isMagic(9) -> isMagic(sumDigits(9)) -> isMagic(9) -> ...
+     * causing infinite recursion and a StackOverflowError.
+     *
+     * Any single-digit value other than 1 should terminate as false.
+     */
     public boolean isMagic(long num) {
+        num = Math.abs(num);
+
         if (num == 1) return true;
-        else if (num < 9) return false;
-        else return isMagic(cu.findSumOfDigits(num));
+        if (num <= 9) return false;
+
+        return isMagic(cu.findSumOfDigits(num));
     }
 
     public boolean isSmith(long num) {
