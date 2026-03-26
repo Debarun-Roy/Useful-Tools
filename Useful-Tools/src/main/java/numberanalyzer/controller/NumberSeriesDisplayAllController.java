@@ -3,6 +3,7 @@ package numberanalyzer.controller;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.LinkedHashMap;
+import java.util.function.LongPredicate;
 
 import com.google.gson.Gson;
 import common.ApiResponse;
@@ -13,9 +14,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import numberanalyzer.categories.BaseNRepresentation;
+import numberanalyzer.categories.Factors;
+import numberanalyzer.categories.Patterns;
+import numberanalyzer.categories.PrimeNumbers;
+import numberanalyzer.categories.Recreational;
 import numberanalyzer.generators.BaseNRepresentationGenerator;
 import numberanalyzer.generators.FactorialGenerator;
-import numberanalyzer.generators.FactorsGenerator;
 import numberanalyzer.generators.NumberTheoryGenerator;
 import numberanalyzer.generators.PatternsGenerator;
 import numberanalyzer.generators.PrimeNumbersGenerator;
@@ -37,6 +41,8 @@ import numberanalyzer.utilities.RequestData;
 public class NumberSeriesDisplayAllController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
+    private static final long MIN_BOUNDED_SEARCH = 250L;
+    private static final long MAX_BOUNDED_SEARCH = 5000L;
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -49,7 +55,6 @@ public class NumberSeriesDisplayAllController extends HttpServlet {
             HttpSession session = request.getSession();
             Gson gson = new Gson();
 
-            FactorsGenerator             fg   = new FactorsGenerator();
             BaseNRepresentationGenerator bnrg = new BaseNRepresentationGenerator();
             FactorialGenerator           facg = new FactorialGenerator();
             NumberTheoryGenerator        ntg  = new NumberTheoryGenerator();
@@ -57,6 +62,10 @@ public class NumberSeriesDisplayAllController extends HttpServlet {
             PrimeNumbersGenerator        png  = new PrimeNumbersGenerator();
             RecreationalGenerator        rg   = new RecreationalGenerator();
             BaseNRepresentation          bnr  = new BaseNRepresentation();
+            Factors                      fac  = new Factors();
+            PrimeNumbers                 pn   = new PrimeNumbers();
+            Patterns                     pat  = new Patterns();
+            Recreational                 rec  = new Recreational();
             JsonBodyParser               jsonParser = new JsonBodyParser();
 
             Integer terms;
@@ -77,124 +86,132 @@ public class NumberSeriesDisplayAllController extends HttpServlet {
                 session.setAttribute("terms", terms);
             }
 
-            LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<Long, String>>> result
+            long boundedSearchLimit = computeBoundedSearchLimit(terms);
+
+            LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, Object>>> categories
                     = new LinkedHashMap<>();
-            LinkedHashMap<String, LinkedHashMap<Long, String>> seq;
+            LinkedHashMap<String, LinkedHashMap<String, Object>> seq;
 
             // Base Representation
             seq = new LinkedHashMap<>();
-            seq.put("Binary", bnrg.generateAllBinaryRepresentations(terms));
-            seq.put("Octal",  bnrg.generateAllOctalRepresentations(terms));
-            seq.put("Hex",    bnrg.generateAllHexRepresentations(terms));
+            seq.put("Binary", exactSeries(bnrg.generateAllBinaryRepresentations(terms), terms));
+            seq.put("Octal",  exactSeries(bnrg.generateAllOctalRepresentations(terms), terms));
+            seq.put("Hex",    exactSeries(bnrg.generateAllHexRepresentations(terms), terms));
             LinkedHashMap<Integer, String> allBases = bnr.findAllBases(terms);
             LinkedHashMap<Long, String> allResult = new LinkedHashMap<>();
             allBases.forEach((k, v) -> allResult.put((long) k, v));
-            seq.put("All", allResult);
-            result.put("Base Representation", seq);
+            seq.put("All", exactSeries(allResult, terms));
+            categories.put("Base Representation", seq);
 
             // Factorials
             seq = new LinkedHashMap<>();
-            seq.put("Factorial",      facg.generateFactorial(terms));
-            seq.put("Superfactorial", facg.generateSuperfactorial(terms));
-            seq.put("Hyperfactorial", facg.generateHyperfactorial(terms));
-            seq.put("Primorial",      facg.generatePrimorial(terms));
-            result.put("Factorials", seq);
+            seq.put("Factorial",      exactSeries(facg.generateFactorial(terms), terms));
+            seq.put("Superfactorial", exactSeries(facg.generateSuperfactorial(terms), terms));
+            seq.put("Hyperfactorial", exactSeries(facg.generateHyperfactorial(terms), terms));
+            seq.put("Primorial",      exactSeries(facg.generatePrimorial(terms), terms));
+            categories.put("Factorials", seq);
 
             // Factors
             seq = new LinkedHashMap<>();
-            seq.put("Perfect",      fg.generatePerfect(terms));
-            seq.put("Imperfect",    fg.generateImperfect(terms));
-            seq.put("Arithmetic",   fg.generateArithmetic(terms));
-            seq.put("Inharmonious", fg.generateInharmonious(terms));
-            seq.put("Blum",         fg.generateBlum(terms));
-            seq.put("Humble",       fg.generateHumble(terms));
-            seq.put("Abundant",     fg.generateAbundant(terms));
-            seq.put("Deficient",    fg.generateDeficient(terms));
-            seq.put("Amicable",     fg.generateAmicable(terms));
-            seq.put("Untouchable",  fg.generateUntouchable(terms));
-            result.put("Factors", seq);
+            seq.put("Perfect",      boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, fac::isPerfect), terms, boundedSearchLimit));
+            seq.put("Imperfect",    boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, fac::isImperfect), terms, boundedSearchLimit));
+            seq.put("Arithmetic",   boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, fac::isArithmetic), terms, boundedSearchLimit));
+            seq.put("Inharmonious", boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, fac::isInharmonious), terms, boundedSearchLimit));
+            seq.put("Blum",         boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, fac::isBlum), terms, boundedSearchLimit));
+            seq.put("Humble",       boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, fac::isHumble), terms, boundedSearchLimit));
+            seq.put("Abundant",     boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, fac::isAbundant), terms, boundedSearchLimit));
+            seq.put("Deficient",    boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, fac::isDeficient), terms, boundedSearchLimit));
+            seq.put("Amicable",     boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, fac::isAmicable), terms, boundedSearchLimit));
+            seq.put("Untouchable",  boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, fac::isUntouchable), terms, boundedSearchLimit));
+            categories.put("Factors", seq);
 
             // Number Theory
             seq = new LinkedHashMap<>();
-            seq.put("Integers", ntg.generateIntegers(terms));
-            seq.put("Natural",  ntg.generateNatural(terms));
-            seq.put("Odd",      ntg.generateOdd(terms));
-            seq.put("Even",     ntg.generateEven(terms));
-            seq.put("Whole",    ntg.generateWhole(terms));
-            seq.put("Negative", ntg.generateNegative(terms));
-            result.put("Number Theory", seq);
+            seq.put("Integers", exactSeries(ntg.generateIntegers(terms), terms));
+            seq.put("Natural",  exactSeries(ntg.generateNatural(terms), terms));
+            seq.put("Odd",      exactSeries(ntg.generateOdd(terms), terms));
+            seq.put("Even",     exactSeries(ntg.generateEven(terms), terms));
+            seq.put("Whole",    exactSeries(ntg.generateWhole(terms), terms));
+            seq.put("Negative", exactSeries(ntg.generateNegative(terms), terms));
+            categories.put("Number Theory", seq);
 
             // Primes
             seq = new LinkedHashMap<>();
-            seq.put("Prime",                png.generatePrime(terms));
-            seq.put("Semi Prime",           png.generateSemiPrime(terms));
-            seq.put("Emirp",                png.generateEmirp(terms));
-            seq.put("Additive Prime",       png.generateAdditivePrime(terms));
-            seq.put("Anagrammatic Prime",   png.generateAnagrammaticPrime(terms));
-            seq.put("Circular Prime",       png.generateCircularPrime(terms));
-            seq.put("Killer Prime",         png.generateKillerPrime(terms));
-            seq.put("Prime Palindrome",     png.generatePrimePalindrome(terms));
-            seq.put("Twin Primes",          png.generateTwinPrimes(terms));
-            seq.put("Cousin Primes",        png.generateCousinPrimes(terms));
-            seq.put("Sexy Primes",          png.generateSexyPrimes(terms));
-            seq.put("Sophie German Primes", png.generateSophieGermanPrimes(terms));
-            result.put("Primes", seq);
+            seq.put("Prime",                exactSeries(png.generatePrime(terms), terms));
+            seq.put("Semi Prime",           exactSeries(png.generateSemiPrime(terms), terms));
+            seq.put("Emirp",                exactSeries(png.generateEmirp(terms), terms));
+            seq.put("Additive Prime",       exactSeries(png.generateAdditivePrime(terms), terms));
+            seq.put("Anagrammatic Prime",   boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, pn::isAnagrammaticPrime), terms, boundedSearchLimit));
+            seq.put("Circular Prime",       boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, pn::isCircularPrime), terms, boundedSearchLimit));
+            seq.put("Killer Prime",         boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, pn::isKillerPrime), terms, boundedSearchLimit));
+            seq.put("Prime Palindrome",     exactSeries(png.generatePrimePalindrome(terms), terms));
+            seq.put("Twin Primes",          exactSeries(png.generateTwinPrimes(terms), terms));
+            seq.put("Cousin Primes",        exactSeries(png.generateCousinPrimes(terms), terms));
+            seq.put("Sexy Primes",          exactSeries(png.generateSexyPrimes(terms), terms));
+            seq.put("Sophie German Primes", exactSeries(png.generateSophieGermanPrimes(terms), terms));
+            categories.put("Primes", seq);
 
             // Patterns
             seq = new LinkedHashMap<>();
-            seq.put("Fibonacci",                  pg.generateFibonacci(terms));
-            seq.put("Tribonacci",                 pg.generateTribonacci(terms));
-            seq.put("Tetranacci",                 pg.generateTetranacci(terms));
-            seq.put("Pentanacci",                 pg.generatePentanacci(terms));
-            seq.put("Hexanacci",                  pg.generateHexanacci(terms));
-            seq.put("Heptanacci",                 pg.generateHeptanacci(terms));
-            seq.put("Perrin",                     pg.generatePerrin(terms));
-            seq.put("Lucas",                      pg.generateLucas(terms));
-            seq.put("Padovan",                    pg.generatePadovan(terms));
-            seq.put("Keith",                      pg.generateKeith(terms));
-            seq.put("Palindrome",                 pg.generatePalindrome(terms));
-            seq.put("Hypotenuse",                 pg.generateHypotenuse(terms));
-            seq.put("Perfect Square",             pg.generatePerfectSquare(terms));
-            seq.put("Perfect Cube",               pg.generatePerfectCube(terms));
-            seq.put("Perfect Powers",             pg.generatePerfectPowers(terms));
-            seq.put("Catalan Numbers",            pg.generateCatalanNumbers(terms));
-            seq.put("Triangular Numbers",         pg.generateTriangularNumbers(terms));
-            seq.put("Pentagonal Numbers",         pg.generatePentagonalNumbers(terms));
-            seq.put("Standard Hexagonal Numbers", pg.generateStandardHexagonalNumbers(terms));
-            seq.put("Centered Hexagonal Numbers", pg.generateCenteredHexagonalNumbers(terms));
-            seq.put("Hexagonal Numbers",          pg.generateHexagonalNumbers(terms));
-            seq.put("Heptagonal Numbers",         pg.generateHeptagonalNumbers(terms));
-            seq.put("Octagonal Numbers",          pg.generateOctagonalNumbers(terms));
-            seq.put("Tetrahedral Numbers",        pg.generateTetrahedralNumbers(terms));
-            seq.put("Stella Octangula Numbers",   pg.generateStellaOctangulaNumbers(terms));
-            result.put("Patterns", seq);
+            seq.put("Fibonacci",                  exactSeries(pg.generateFibonacci(terms), terms));
+            seq.put("Tribonacci",                 exactSeries(pg.generateTribonacci(terms), terms));
+            seq.put("Tetranacci",                 exactSeries(pg.generateTetranacci(terms), terms));
+            seq.put("Pentanacci",                 exactSeries(pg.generatePentanacci(terms), terms));
+            seq.put("Hexanacci",                  exactSeries(pg.generateHexanacci(terms), terms));
+            seq.put("Heptanacci",                 exactSeries(pg.generateHeptanacci(terms), terms));
+            seq.put("Perrin",                     exactSeries(pg.generatePerrin(terms), terms));
+            seq.put("Lucas",                      exactSeries(pg.generateLucas(terms), terms));
+            seq.put("Padovan",                    exactSeries(pg.generatePadovan(terms), terms));
+            seq.put("Keith",                      exactSeries(pg.generateKeith(terms), terms));
+            seq.put("Palindrome",                 exactSeries(pg.generatePalindrome(terms), terms));
+            seq.put("Hypotenuse",                 boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, pat::isHypotenuse), terms, boundedSearchLimit));
+            seq.put("Perfect Square",             exactSeries(pg.generatePerfectSquare(terms), terms));
+            seq.put("Perfect Cube",               exactSeries(pg.generatePerfectCube(terms), terms));
+            seq.put("Perfect Powers",             boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, pat::isPerfectPower), terms, boundedSearchLimit));
+            seq.put("Catalan Numbers",            exactSeries(pg.generateCatalanNumbers(terms), terms));
+            seq.put("Triangular Numbers",         exactSeries(pg.generateTriangularNumbers(terms), terms));
+            seq.put("Pentagonal Numbers",         exactSeries(pg.generatePentagonalNumbers(terms), terms));
+            seq.put("Standard Hexagonal Numbers", exactSeries(pg.generateStandardHexagonalNumbers(terms), terms));
+            seq.put("Centered Hexagonal Numbers", exactSeries(pg.generateCenteredHexagonalNumbers(terms), terms));
+            seq.put("Hexagonal Numbers",          exactSeries(pg.generateHexagonalNumbers(terms), terms));
+            seq.put("Heptagonal Numbers",         exactSeries(pg.generateHeptagonalNumbers(terms), terms));
+            seq.put("Octagonal Numbers",          exactSeries(pg.generateOctagonalNumbers(terms), terms));
+            seq.put("Tetrahedral Numbers",        exactSeries(pg.generateTetrahedralNumbers(terms), terms));
+            seq.put("Stella Octangula Numbers",   exactSeries(pg.generateStellaOctangulaNumbers(terms), terms));
+            categories.put("Patterns", seq);
 
             // Recreational
             seq = new LinkedHashMap<>();
-            seq.put("Armstrong",   rg.generateArmstrong(terms));
-            seq.put("Harshad",     rg.generateHarshad(terms));
-            seq.put("Disarium",    rg.generateDisarium(terms));
-            seq.put("Happy",       rg.generateHappy(terms));
-            seq.put("Sad",         rg.generateSad(terms));
-            seq.put("Duck",        rg.generateDuck(terms));
-            seq.put("Dudeney",     rg.generateDudeney(terms));
-            seq.put("Buzz",        rg.generateBuzz(terms));
-            seq.put("Spy",         rg.generateSpy(terms));
-            seq.put("Kaprekar",    rg.generateKaprekar(terms));
-            seq.put("Tech",        rg.generateTech(terms));
-            seq.put("Magic",       rg.generateMagic(terms));
-            seq.put("Smith",       rg.generateSmith(terms));
-            seq.put("Munchausen",  rg.generateMunchausen(terms));
-            seq.put("Repdigits",   rg.generateRepdigits(terms));
-            seq.put("Gapful",      rg.generateGapful(terms));
-            seq.put("Hungry",      rg.generateHungry(terms));
-            seq.put("Pronic",      rg.generatePronic(terms));
-            seq.put("Neon",        rg.generateNeon(terms));
-            seq.put("Automorphic", rg.generateAutomorphic(terms));
-            result.put("Recreational", seq);
+            seq.put("Armstrong",   boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, rec::isArmstrong), terms, boundedSearchLimit));
+            seq.put("Harshad",     exactSeries(rg.generateHarshad(terms), terms));
+            seq.put("Disarium",    exactSeries(rg.generateDisarium(terms), terms));
+            seq.put("Happy",       exactSeries(rg.generateHappy(terms), terms));
+            seq.put("Sad",         exactSeries(rg.generateSad(terms), terms));
+            seq.put("Duck",        exactSeries(rg.generateDuck(terms), terms));
+            seq.put("Dudeney",     boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, rec::isDudeney), terms, boundedSearchLimit));
+            seq.put("Buzz",        exactSeries(rg.generateBuzz(terms), terms));
+            seq.put("Spy",         exactSeries(rg.generateSpy(terms), terms));
+            seq.put("Kaprekar",    boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, rec::isKaprekar), terms, boundedSearchLimit));
+            seq.put("Tech",        boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, rec::isTech), terms, boundedSearchLimit));
+            seq.put("Magic",       exactSeries(rg.generateMagic(terms), terms));
+            seq.put("Smith",       exactSeries(rg.generateSmith(terms), terms));
+            seq.put("Munchausen",  boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, rec::isMunchausen), terms, boundedSearchLimit));
+            seq.put("Repdigits",   exactSeries(rg.generateRepdigits(terms), terms));
+            seq.put("Gapful",      exactSeries(rg.generateGapful(terms), terms));
+            seq.put("Hungry",      exactSeries(rg.generateHungry(terms), terms));
+            seq.put("Pronic",      exactSeries(rg.generatePronic(terms), terms));
+            seq.put("Neon",        boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, rec::isNeon), terms, boundedSearchLimit));
+            seq.put("Automorphic", boundedSeries(collectBoundedMatches(terms, boundedSearchLimit, rec::isAutomorphic), terms, boundedSearchLimit));
+            categories.put("Recreational", seq);
+
+            LinkedHashMap<String, Object> data = new LinkedHashMap<>();
+            data.put("mode", "mixed");
+            data.put("requestedTerms", terms);
+            data.put("boundedSearchLimit", boundedSearchLimit);
+            data.put("categories", categories);
 
             response.setStatus(HttpServletResponse.SC_OK);
-            out.print(gson.toJson(ApiResponse.ok(result)));
+            out.print(gson.toJson(ApiResponse.ok(data)));
             out.flush();
 
         } catch (Exception e) {
@@ -205,5 +222,45 @@ public class NumberSeriesDisplayAllController extends HttpServlet {
                         "Series generation failed: " + e.getMessage(), "INTERNAL_ERROR")));
             }
         }
+    }
+
+    private long computeBoundedSearchLimit(int requestedTerms) {
+        long scaled = (long) requestedTerms * 40L;
+        return Math.max(MIN_BOUNDED_SEARCH, Math.min(MAX_BOUNDED_SEARCH, scaled));
+    }
+
+    private LinkedHashMap<String, Object> exactSeries(LinkedHashMap<Long, String> values, int requestedTerms) {
+        LinkedHashMap<String, Object> payload = new LinkedHashMap<>();
+        payload.put("strategy", "exact");
+        payload.put("requestedTerms", requestedTerms);
+        payload.put("returnedTerms", values.size());
+        payload.put("fulfilledRequest", values.size() >= requestedTerms);
+        payload.put("values", values);
+        return payload;
+    }
+
+    private LinkedHashMap<String, Object> boundedSeries(
+            LinkedHashMap<Long, String> values, int requestedTerms, long searchLimit) {
+        LinkedHashMap<String, Object> payload = new LinkedHashMap<>();
+        payload.put("strategy", "bounded-search");
+        payload.put("requestedTerms", requestedTerms);
+        payload.put("returnedTerms", values.size());
+        payload.put("fulfilledRequest", values.size() >= requestedTerms);
+        payload.put("searchedUpTo", searchLimit);
+        payload.put("values", values);
+        return payload;
+    }
+
+    private LinkedHashMap<Long, String> collectBoundedMatches(
+            int requestedTerms, long searchLimit, LongPredicate predicate) {
+        LinkedHashMap<Long, String> resultMap = new LinkedHashMap<>();
+        if (requestedTerms <= 0 || searchLimit < 1) return resultMap;
+
+        for (long candidate = 1L, count = 0L; candidate <= searchLimit && count < requestedTerms; candidate++) {
+            if (predicate.test(candidate)) {
+                resultMap.put(++count, String.valueOf(candidate));
+            }
+        }
+        return resultMap;
     }
 }

@@ -1,36 +1,80 @@
-/* ─── Full-page background ───────────────────────────────────────────────── */
+/*
+ * Auth pages (Login / Register / Update Password)
+ * Observatory theme: deep space background, dot-grid, glassy card.
+ */
+
+/* ─── Full-page dark background ─────────────────────────────────────────── */
 .page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Diagonal gradient using our brand primary colours */
-  background: linear-gradient(
-    135deg,
-    var(--clr-primary) 0%,
-    var(--clr-primary-light) 100%
-  );
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #080d1a 0%, #0f1b3d 45%, #0a1628 100%);
   padding: var(--space-md);
 }
 
-/* ─── Centred card ────────────────────────────────────────────────────────── */
+/* Dot-grid overlay */
+.page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(74,144,217,0.18) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+}
+
+/* Radial glow — top right */
+.page::after {
+  content: '';
+  position: absolute;
+  top: -100px;
+  right: -80px;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(74,144,217,0.14) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+/* Second glow — bottom left */
+.glow2 {
+  position: absolute;
+  bottom: -80px;
+  left: -60px;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(126,200,227,0.08) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+/* ─── Glass card ─────────────────────────────────────────────────────────── */
 .card {
-  background: var(--clr-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  padding: var(--space-2xl) var(--space-xl);
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 440px;
-  /* Subtle upward animation when the card first appears */
-  animation: slideUp 200ms ease both;
+  background: rgba(22,27,34,0.85);
+  border: 1px solid rgba(74,144,217,0.2);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl) var(--space-xl);
+  box-shadow:
+    0 24px 64px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(255,255,255,0.04) inset,
+    var(--shadow-glow);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  animation: cardRise 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+@keyframes cardRise {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
 
-/* ─── Brand header ────────────────────────────────────────────────────────── */
+/* ─── Brand header ───────────────────────────────────────────────────────── */
 .brand {
   display: flex;
   align-items: center;
@@ -38,24 +82,51 @@
   margin-bottom: var(--space-xl);
 }
 
-.brandIcon {
-  font-size: 1.75rem;
-  color: var(--clr-primary);
-  line-height: 1;
+.brandMark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--clr-primary), var(--clr-accent-bright));
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1rem;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(74,144,217,0.35);
 }
 
 .brandName {
   font-size: var(--fs-lg);
-  font-weight: 700;
-  color: var(--clr-primary);
-  letter-spacing: -0.02em;
+  font-weight: 800;
+  color: var(--clr-dark-text);
+  letter-spacing: -0.03em;
 }
 
-/* ─── Page title ──────────────────────────────────────────────────────────── */
+.brandDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--clr-accent);
+  margin-left: 2px;
+  align-self: flex-end;
+  margin-bottom: 4px;
+  box-shadow: 0 0 8px var(--clr-accent);
+}
+
+/* ─── Page title ─────────────────────────────────────────────────────────── */
 .title {
   font-size: var(--fs-xl);
-  font-weight: 700;
-  color: var(--clr-text);
+  font-weight: 800;
+  color: var(--clr-dark-text);
   margin-bottom: var(--space-lg);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+/* ─── Thin separator line ────────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(74,144,217,0.25), transparent);
+  margin-bottom: var(--space-lg);
 }

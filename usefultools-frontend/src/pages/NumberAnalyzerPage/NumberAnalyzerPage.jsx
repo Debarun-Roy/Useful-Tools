@@ -1,4 +1,4 @@
-import { startTransition, useState, useEffect } from 'react'
+import { startTransition, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   classifyNumber,
@@ -118,6 +118,29 @@ function displayPairs(value) {
   return Object.entries(value || {}).map(([k, v]) => ({ key: k, value: String(v) }))
 }
 
+function normalizeSeriesResult(result) {
+  if (!result) return null
+  if (result.categories) return result
+
+  const categories = Object.entries(result).reduce((acc, [category, seriesMap]) => {
+    acc[category] = Object.entries(seriesMap || {}).reduce((seriesAcc, [name, values]) => {
+      const valueMap = values || {}
+      const count = Object.keys(valueMap).length
+      seriesAcc[name] = {
+        strategy: 'exact',
+        requestedTerms: count,
+        returnedTerms: count,
+        fulfilledRequest: true,
+        values: valueMap,
+      }
+      return seriesAcc
+    }, {})
+    return acc
+  }, {})
+
+  return { mode: 'legacy', categories }
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function Pulse() {
@@ -175,13 +198,21 @@ function BaseResultPanel({ choice, result }) {
 }
 
 function SeriesResults({ result }) {
-  if (!result) return null
+  const normalized = normalizeSeriesResult(result)
+  if (!normalized) return null
+
+  const categories = normalized.categories || {}
   return (
     <div className={styles.resultBlock}>
       <div className={styles.resultBlockHeader}>
         <h3 className={styles.resultBlockTitle}>Generated series</h3>
       </div>
-      {Object.entries(result).map(([category, seriesMap]) => (
+      {normalized.mode === 'mixed' && (
+        <div className={styles.infoBanner}>
+          All mode now bounds sparse or finite series to the first {normalized.boundedSearchLimit} candidates.
+        </div>
+      )}
+      {Object.entries(categories).map(([category, seriesMap]) => (
         <div key={category} className={styles.seriesCategory}>
           <div className={styles.seriesCategoryHeader}>
             <span className={styles.seriesCategoryIcon}>
@@ -190,22 +221,45 @@ function SeriesResults({ result }) {
             <h4 className={styles.seriesCategoryName}>{category}</h4>
             <span className={styles.seriesCount}>{Object.keys(seriesMap || {}).length} series</span>
           </div>
-          {Object.entries(seriesMap || {}).map(([name, values]) => (
-            <div key={`${category}-${name}`} className={styles.seriesItem}>
-              <div className={styles.seriesItemHeader}>
-                <span className={styles.seriesItemName}>{name}</span>
-                <span className={styles.seriesItemCount}>{Object.keys(values || {}).length} terms</span>
+          {Object.entries(seriesMap || {}).map(([name, series]) => {
+            const values = series?.values || {}
+            const returnedTerms = series?.returnedTerms ?? Object.keys(values).length
+            const requestedTerms = series?.requestedTerms ?? returnedTerms
+            const sampled = series?.strategy === 'bounded-search'
+            const fulfilled = series?.fulfilledRequest ?? true
+
+            return (
+              <div key={`${category}-${name}`} className={styles.seriesItem}>
+                <div className={styles.seriesItemHeader}>
+                  <span className={styles.seriesItemName}>{name}</span>
+                  <div className={styles.seriesMeta}>
+                    <span className={styles.seriesItemCount}>
+                      {returnedTerms}
+                      {sampled ? ` / ${requestedTerms}` : ''} terms
+                    </span>
+                    {sampled && (
+                      <span className={styles.seriesBadge}>Sampled to {series.searchedUpTo}</span>
+                    )}
+                    {sampled && !fulfilled && (
+                      <span className={styles.seriesWarning}>Request not fully satisfied</span>
+                    )}
+                  </div>
+                </div>
+                {returnedTerms > 0 ? (
+                  <div className={styles.seriesTerms}>
+                    {displayPairs(values).map(e => (
+                      <span key={`${name}-${e.key}`} className={styles.termChip}>
+                        <span className={styles.termIndex}>{e.key}</span>
+                        <code className={styles.termValue}>{e.value}</code>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={styles.emptySeries}>No values were found within the applied search bound.</p>
+                )}
               </div>
-              <div className={styles.seriesTerms}>
-                {displayPairs(values).map(e => (
-                  <span key={`${name}-${e.key}`} className={styles.termChip}>
-                    <span className={styles.termIndex}>{e.key}</span>
-                    <code className={styles.termValue}>{e.value}</code>
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       ))}
     </div>

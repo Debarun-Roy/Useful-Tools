@@ -1,5 +1,7 @@
 package numberanalyzer.categories;
 
+import java.math.BigInteger;
+
 import numberanalyzer.utilities.CommonUtils;
 
 /**
@@ -42,24 +44,38 @@ public class Patterns {
     }
 
     public boolean isPerfectSquare(long num) {
+        if (num == Long.MIN_VALUE) return false;
         num = Math.abs(num);
         long low = 0L, high = num;
         while (low <= high) {
-            long mid = low + high / 2;
-            if (mid * mid == num)       return true;
-            else if (mid * mid > num)   high = mid - 1;
-            else                        low  = mid + 1;
+            long mid = low + (high - low) / 2;
+            long quotient = (mid == 0L) ? Long.MAX_VALUE : num / mid;
+            if (mid == 0L) {
+                if (num == 0L) return true;
+                low = 1L;
+            } else if (mid == quotient && num % mid == 0) {
+                return true;
+            } else if (mid > quotient) {
+                high = mid - 1;
+            } else {
+                low = mid + 1;
+            }
         }
         return false;
     }
 
     public boolean isPerfectCube(long num) {
-        long low = 0L, high = num;
+        if (num == Long.MIN_VALUE) return true;
+        long target = Math.abs(num);
+        BigInteger bigTarget = BigInteger.valueOf(target);
+        long low = 0L, high = target;
         while (low <= high) {
-            long mid = low + high / 2;
-            if (mid * mid * mid == num)       return true;
-            else if (mid * mid * mid > num)   high = mid - 1;
-            else                              low  = mid + 1;
+            long mid = low + (high - low) / 2;
+            BigInteger cube = BigInteger.valueOf(mid).pow(3);
+            int cmp = cube.compareTo(bigTarget);
+            if (cmp == 0) return true;
+            else if (cmp > 0) high = mid - 1;
+            else              low  = mid + 1;
         }
         return false;
     }

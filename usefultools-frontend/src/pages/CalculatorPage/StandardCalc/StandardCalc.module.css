@@ -1,81 +1,86 @@
+/*
+ * StandardCalc — observatory theme.
+ * All calculator UI lives in the light content area but uses the refined token set.
+ */
+
 /* ─── Outer wrapper ──────────────────────────────────────────────────────── */
 .calculator {
-  display:        flex;
+  display: flex;
   flex-direction: column;
-  gap:            var(--space-md);
+  gap: var(--space-md);
 }
 
-/* ─── Info note banner (Intermediate mode) ───────────────────────────────── */
+/* ─── Info note (Intermediate mode) ─────────────────────────────────────── */
 .note {
-  background:    #edf2ff;
-  color:         var(--clr-primary);
-  border:        1px solid #c5d3f5;
+  background: rgba(59,111,212,0.07);
+  color: var(--clr-primary);
+  border: 1px solid rgba(59,111,212,0.2);
   border-radius: var(--radius-sm);
-  padding:       var(--space-sm) var(--space-md);
-  font-size:     var(--fs-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
 }
 
-/* ─── Display panel (expression + result + error) ────────────────────────── */
+/* ─── Display panel ──────────────────────────────────────────────────────── */
 .displayPanel {
-  background:    var(--clr-surface);
-  border:        1px solid var(--clr-border);
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
   border-radius: var(--radius-lg);
-  padding:       var(--space-md);
-  box-shadow:    var(--shadow-card);
-  display:       flex;
+  padding: var(--space-md);
+  box-shadow: var(--shadow-sm);
+  display: flex;
   flex-direction: column;
-  gap:           var(--space-sm);
+  gap: var(--space-sm);
 }
 
 /* Expression input row */
 .expressionRow {
-  display:     flex;
+  display: flex;
   align-items: center;
-  gap:         var(--space-sm);
+  gap: var(--space-sm);
 }
 
 .expressionInput {
-  flex:          1;
-  padding:       10px var(--space-md);
-  background:    var(--clr-input-bg);
-  border:        1px solid var(--clr-border);
-  border-left:   3px solid transparent;   /* 3px reserved for validation colour */
+  flex: 1;
+  padding: 11px var(--space-md);
+  background: var(--clr-input-bg);
+  border: 1px solid var(--clr-border);
+  border-left: 3px solid transparent;
   border-radius: var(--radius-md);
-  font-size:     var(--fs-lg);
-  font-family:   'Courier New', 'Consolas', monospace;
-  color:         var(--clr-text);
-  outline:       none;
-  transition:    border-color var(--transition), box-shadow var(--transition);
+  font-size: var(--fs-lg);
+  font-family: var(--font-mono);
+  color: var(--clr-text);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
 
 .expressionInput:focus {
-  box-shadow: 0 0 0 3px rgba(74,144,217,0.18);
+  box-shadow: 0 0 0 3px rgba(74,144,217,0.15);
   border-color: var(--clr-accent);
 }
 
 .expressionInput::placeholder { color: var(--clr-text-muted); }
-.expressionInput:disabled      { opacity: 0.6; cursor: not-allowed; }
+.expressionInput:disabled { opacity: 0.6; cursor: not-allowed; }
 
-/* Validation indicator — left border colour */
 .inputValid   { border-left-color: var(--clr-success) !important; }
 .inputInvalid { border-left-color: var(--clr-error)   !important; }
 
-/* Validation dot — small coloured circle to the right of input */
+/* Validation dot */
 .validDot {
-  width:         10px;
-  height:        10px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  flex-shrink:   0;
-  transition:    background var(--transition);
+  flex-shrink: 0;
+  transition: background var(--transition);
 }
 
 /* Result row */
 .resultRow {
-  display:     flex;
+  display: flex;
   align-items: baseline;
-  gap:         var(--space-sm);
-  padding:     var(--space-xs) var(--space-md);
-  animation:   fadeIn 150ms ease both;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-md);
+  animation: fadeIn 150ms ease both;
 }
 
 @keyframes fadeIn {
@@ -83,149 +88,131 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.resultEquals {
-  font-size:   var(--fs-lg);
-  color:       var(--clr-text-muted);
-  font-weight: 500;
-}
+.resultEquals { font-size: var(--fs-lg); color: var(--clr-text-muted); font-weight: 500; }
 
 .resultValue {
-  font-size:      var(--fs-2xl);
-  font-weight:    700;
-  color:          var(--clr-primary);
-  font-family:    'Courier New', 'Consolas', monospace;
-  word-break:     break-all;
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  color: var(--clr-primary);
+  font-family: var(--font-mono);
+  word-break: break-all;
 }
 
 /* Error row */
 .errorRow {
-  background:    var(--clr-error-bg);
-  color:         var(--clr-error);
-  border:        1px solid var(--clr-error-border);
+  background: var(--clr-error-bg);
+  color: var(--clr-error);
+  border: 1px solid var(--clr-error-border);
   border-radius: var(--radius-sm);
-  padding:       var(--space-sm) var(--space-md);
-  font-size:     var(--fs-sm);
-  line-height:   1.5;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
 }
 
 /* ─── Control row (C / ⌫ / =) ───────────────────────────────────────────── */
 .controlRow {
   display: grid;
   grid-template-columns: 1fr 1fr 2fr;
-  gap:     var(--space-sm);
+  gap: var(--space-sm);
 }
 
 .btnClear, .btnBackspace, .btnEquals {
-  padding:       12px;
-  border:        none;
+  padding: 12px;
+  border: none;
   border-radius: var(--radius-md);
-  font-size:     var(--fs-md);
-  font-weight:   600;
-  transition:    background var(--transition), transform var(--transition);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
 }
 
-.btnClear {
-  background: #fee2e2;
-  color:      var(--clr-error);
-}
-.btnClear:hover:not(:disabled) { background: #fecaca; }
+.btnClear     { background: rgba(248,81,73,0.1); color: var(--clr-error); }
+.btnClear:hover:not(:disabled) { background: rgba(248,81,73,0.18); }
 
-.btnBackspace {
-  background: #fef3c7;
-  color:      #92400e;
-}
-.btnBackspace:hover:not(:disabled) { background: #fde68a; }
+.btnBackspace { background: rgba(210,153,34,0.1); color: #b08010; }
+.btnBackspace:hover:not(:disabled) { background: rgba(210,153,34,0.18); }
 
 .btnEquals {
-  background: var(--clr-primary);
-  color:      #fff;
-  font-size:  var(--fs-lg);
+  background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-light));
+  color: #fff;
+  font-size: var(--fs-lg);
+  box-shadow: 0 3px 12px rgba(59,111,212,0.25);
 }
-.btnEquals:hover:not(:disabled) { background: var(--clr-primary-dark); }
+.btnEquals:hover:not(:disabled) { box-shadow: 0 6px 18px rgba(59,111,212,0.35); }
 .btnEquals:active:not(:disabled) { transform: translateY(1px); }
 
-.btnClear:disabled,
-.btnBackspace:disabled,
-.btnEquals:disabled { opacity: 0.5; cursor: not-allowed; }
+.btnClear:disabled, .btnBackspace:disabled, .btnEquals:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
 
 /* ─── Button groups ──────────────────────────────────────────────────────── */
 .buttonGroups {
-  display:        flex;
+  display: flex;
   flex-direction: column;
-  gap:            var(--space-md);
+  gap: var(--space-md);
 }
 
 .group {
-  background:    var(--clr-surface);
-  border:        1px solid var(--clr-border);
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
   border-radius: var(--radius-md);
-  padding:       var(--space-md);
+  padding: var(--space-md);
 }
 
 .groupLabel {
-  font-size:     var(--fs-sm);
-  font-weight:   600;
-  color:         var(--clr-text-muted);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--clr-text-muted);
   margin-bottom: var(--space-sm);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.07em;
 }
 
-.buttonGrid {
-  display:   flex;
-  flex-wrap: wrap;
-  gap:       6px;
-}
+.buttonGrid { display: flex; flex-wrap: wrap; gap: 6px; }
 
-/* ─── Individual calculator buttons ──────────────────────────────────────── */
-/*
- * These class names are referenced dynamically in StandardCalc.jsx as:
- *   styles[`btn_${btn.type}`]
- * The button's type property ('digit','op','func','const','default') selects
- * the appropriate style. If no type matches, btn_default is used as fallback.
- */
-
-/* Base shared by all button types */
+/* ─── Button types ───────────────────────────────────────────────────────── */
 .btn_default, .btn_digit, .btn_op, .btn_func, .btn_const {
-  padding:       6px 12px;
-  border:        1px solid var(--clr-border);
+  padding: 6px 12px;
+  border: 1px solid var(--clr-border);
   border-radius: var(--radius-sm);
-  font-size:     var(--fs-sm);
-  font-weight:   500;
-  transition:    background var(--transition), transform var(--transition),
-                 box-shadow var(--transition);
-  white-space:   nowrap;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition), transform var(--transition);
 }
 
 .btn_default, .btn_digit {
   background: var(--clr-input-bg);
-  color:      var(--clr-text);
+  color: var(--clr-text);
+  font-family: var(--font-mono);
 }
 .btn_default:hover:not(:disabled),
-.btn_digit:hover:not(:disabled)  { background: #e2e8f0; }
+.btn_digit:hover:not(:disabled) { background: #e4e9f2; }
 
 .btn_op {
-  background: #eff6ff;
-  color:      #1d4ed8;
-  border-color: #bfdbfe;
+  background: rgba(59,111,212,0.06);
+  color: var(--clr-primary);
+  border-color: rgba(59,111,212,0.2);
+  font-family: var(--font-mono);
 }
-.btn_op:hover:not(:disabled) { background: #dbeafe; }
+.btn_op:hover:not(:disabled) { background: rgba(59,111,212,0.12); }
 
 .btn_func {
-  background:   #f5f3ff;
-  color:        #6d28d9;
-  border-color: #ddd6fe;
-  font-family:  'Courier New', 'Consolas', monospace;
+  background: rgba(126,200,227,0.07);
+  color: #0a7c8a;
+  border-color: rgba(126,200,227,0.3);
+  font-family: var(--font-mono);
 }
-.btn_func:hover:not(:disabled) { background: #ede9fe; }
+.btn_func:hover:not(:disabled) { background: rgba(126,200,227,0.14); }
 
 .btn_const {
-  background:   #f0fdf4;
-  color:        #166534;
-  border-color: #bbf7d0;
-  font-family:  'Courier New', 'Consolas', monospace;
+  background: rgba(63,185,80,0.06);
+  color: var(--clr-success);
+  border-color: rgba(63,185,80,0.2);
+  font-family: var(--font-mono);
 }
-.btn_const:hover:not(:disabled) { background: #dcfce7; }
+.btn_const:hover:not(:disabled) { background: rgba(63,185,80,0.12); }
 
 .btn_default:active:not(:disabled),
 .btn_digit:active:not(:disabled),
@@ -233,8 +220,7 @@
 .btn_func:active:not(:disabled),
 .btn_const:active:not(:disabled) { transform: translateY(1px); }
 
-.btn_default:disabled,
-.btn_digit:disabled,
-.btn_op:disabled,
-.btn_func:disabled,
-.btn_const:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn_default:disabled, .btn_digit:disabled,
+.btn_op:disabled, .btn_func:disabled, .btn_const:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}

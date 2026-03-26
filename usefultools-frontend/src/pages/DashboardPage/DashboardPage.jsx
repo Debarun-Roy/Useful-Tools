@@ -3,18 +3,12 @@ import { logoutUser }  from '../../api/apiClient'
 import { useAuth }     from '../../auth/AuthContext'
 import styles          from './DashboardPage.module.css'
 
-/**
- * ready: true  — card is clickable and navigates to the feature route.
- * ready: false — card is visually dimmed and shows a "Coming in Sprint N" badge.
- *
- * Update the ready flag here as each sprint is completed and tested.
- */
 const FEATURES = [
   {
     label:  'Calculator',
     path:   '/calculator',
     sprint: 2,
-    ready:  true,           // ← Sprint 2 complete
+    ready:  true,
     icon:   '🧮',
     desc:   'Arithmetic, boolean, trig, complex and more',
   },
@@ -57,14 +51,15 @@ export default function DashboardPage() {
   return (
     <div className={styles.page}>
 
+      {/* ── Sticky header ─────────────────────────────────────────────── */}
       <header className={styles.header}>
         <div className={styles.brand}>
-          <span className={styles.brandIcon} aria-hidden="true">⚙</span>
+          <span className={styles.brandMark} aria-hidden="true">#</span>
           <span className={styles.brandName}>UsefulTools</span>
         </div>
         <div className={styles.userArea}>
           <span className={styles.usernameLabel}>
-            Signed in as <strong>{username}</strong>
+            Signed in as <strong style={{ color: 'var(--clr-dark-text)' }}>{username}</strong>
           </span>
           <button className={styles.logoutButton} onClick={handleLogout}>
             Sign out
@@ -72,13 +67,26 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className={styles.main}>
-
-        <div className={styles.welcome}>
-          <h1 className={styles.greeting}>Welcome back, {username}.</h1>
-          <p className={styles.subtitle}>What would you like to do today?</p>
+      {/* ── Hero section ──────────────────────────────────────────────── */}
+      <section className={styles.hero} aria-label="Welcome">
+        <div className={styles.heroInner}>
+          <div className={styles.heroBadge}>
+            <span className={styles.statusDot} aria-hidden="true" />
+            Mission Control · {new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' })}
+          </div>
+          <h1 className={styles.greeting}>
+            Welcome back,{' '}
+            <span className={styles.greetingAccent}>{username}</span>.
+          </h1>
+          <p className={styles.subtitle}>
+            Select a tool below to get started.
+          </p>
         </div>
+      </section>
 
+      {/* ── Feature grid ──────────────────────────────────────────────── */}
+      <main className={styles.main}>
+        <p className={styles.sectionTitle}>Available tools</p>
         <div className={styles.grid}>
           {FEATURES.map(feature => (
             <button
@@ -87,17 +95,19 @@ export default function DashboardPage() {
               onClick={() => feature.ready && navigate(feature.path)}
               disabled={!feature.ready}
             >
-              <span className={styles.cardIcon} aria-hidden="true">{feature.icon}</span>
+              <div className={styles.cardIconWrap}>
+                <span className={styles.cardIcon} aria-hidden="true">{feature.icon}</span>
+              </div>
               <span className={styles.cardLabel}>{feature.label}</span>
               <span className={styles.cardDesc}>{feature.desc}</span>
               {!feature.ready && (
-                <span className={styles.cardBadge}>Coming in Sprint {feature.sprint}</span>
+                <span className={styles.cardBadge}>Sprint {feature.sprint}</span>
               )}
             </button>
           ))}
         </div>
-
       </main>
+
     </div>
   )
 }
