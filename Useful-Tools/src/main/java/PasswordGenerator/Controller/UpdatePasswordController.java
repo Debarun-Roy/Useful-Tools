@@ -11,12 +11,25 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import passwordgenerator.dao.UserDAO;
 import passwordgenerator.utilities.HashingUtils;
 
 /**
+ * SECURITY FIX — username is now read from the HTTP session, never from the
+ * request parameter.
+ *
+ * The original read username from request.getParameter("username"). Any
+ * authenticated user could change another user's password simply by sending
+ * a different username in the form body — e.g. posting username=victim to
+ * update victim's password without knowing their current one. This is an
+ * account-takeover vulnerability.
+ *
+ * Fix: username is extracted exclusively from the session (set by
+ * LoginController after successful authentication). The client-supplied
+ * username parameter is ignored entirely.
+ *
  * CHANGE 6: Path renamed /UpdatePassword → /api/auth/update-password
- * All other content identical to the batch-1 version.
  */
 @WebServlet("/api/auth/update-password")
 public class UpdatePasswordController extends HttpServlet {
@@ -34,14 +47,26 @@ public class UpdatePasswordController extends HttpServlet {
 
         try (PrintWriter out = response.getWriter()) {
 
-            String username        = request.getParameter("username");
+            // ── Read username from session — NEVER from request parameters ──
+            HttpSession session = request.getSession(false);
+            String username = (session != null)
+                    ? (String) session.getAttribute("username")
+                    : null;
+
+            if (username == null || username.isBlank()) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "You must be logged in to update your password.",
+                        "UNAUTHENTICATED")));
+                return;
+            }
+
             String updatedPassword = request.getParameter("updated_password");
 
-            if (username == null || username.isBlank()
-                    || updatedPassword == null || updatedPassword.isBlank()) {
+            if (updatedPassword == null || updatedPassword.isBlank()) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 out.print(gson.toJson(ApiResponse.fail(
-                        "Username and updated_password are required.", "MISSING_PARAMETERS")));
+                        "updated_password is required.", "MISSING_PARAMETERS")));
                 return;
             }
 
@@ -53,13 +78,7 @@ public class UpdatePasswordController extends HttpServlet {
                 return;
             }
 
-            if (!UserDAO.checkIfUserExists(username.trim())) {
-                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                out.print(gson.toJson(ApiResponse.fail(
-                        "No account found for this username.", "USER_NOT_FOUND")));
-                return;
-            }
-
+            // Username is taken from session — no need to verify it exists separately.
             String hashedPassword = HashingUtils.generateHashedPassword(updatedPassword);
             UserDAO.updateUserDetails(username.trim(), hashedPassword);
 

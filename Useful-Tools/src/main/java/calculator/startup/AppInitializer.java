@@ -5,35 +5,16 @@ import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.annotation.WebListener;
 
 /**
- * Eagerly loads every calculator function class at application startup so their
- * static initialiser blocks fire and register entries into FunctionRegistry
- * before the first HTTP request arrives.
+ * Eagerly loads every calculator function class at startup so their static
+ * initialiser blocks fire and register entries into FunctionRegistry before
+ * the first HTTP request arrives.
  *
- * WHY THE HYPERBOLIC FUNCTIONS WERE FAILING:
- * The new hyperbolic function classes (sinh, cosh, tanh, asinh, acosh, etc.)
- * were created and have correct static { FunctionRegistry.register(...) } blocks,
- * but they were not listed in FUNCTION_CLASSES below.
- *
- * Without a Class.forName() call here, the JVM never loads those classes, so
- * their static blocks never fire, and they are never registered in FunctionRegistry.
- *
- * When IntermediateUtils.applyFunction searches FunctionRegistry for "asinh" and
- * finds nothing, it falls through to ExpressionBuilderFactory.create("asinh(1.0)").
- * The factory builds an ExpressionBuilder and calls builder::function for every
- * entry in FunctionRegistry — which includes "asin" (the inverse trig function)
- * but NOT "asinh" (unregistered). exp4j's tokenizer then reads "asin" as a prefix
- * match inside "asinh", emits it as a function token, and leaves "h" as an unknown
- * variable. The expression fails.
- *
- * The fix: add every new function class to FUNCTION_CLASSES so Class.forName
- * loads it, fires the static block, and registers it in FunctionRegistry.
- * After that, IntermediateUtils finds the function in FunctionRegistry and
- * calls f.apply(args) directly — exp4j's tokenizer is never involved.
- *
- * NOTE: Adjust class names below to exactly match your .java file names if any
- * differ from the pattern used here (e.g. if you named the class Sinh vs sinh).
- *
- * OPERATOR_CLASSES is intentionally empty — see previous commit comments.
+ * FIX: Removed "calculator.functions.not" which does not exist.
+ * The unary NOT operator lives in calculator.operators.not (extends Operator,
+ * not Function). It is added directly by BooleanUtils.buildBooleanExpression()
+ * and CombinedUtils.buildCombinedExpression() — not via FunctionRegistry or
+ * AppInitializer. Having it here caused a harmless ClassNotFoundException
+ * WARNING at every startup.
  */
 @WebListener
 public class AppInitializer implements ServletContextListener {
@@ -87,7 +68,6 @@ public class AppInitializer implements ServletContextListener {
         "calculator.functions.atan2",
 
         // ── Hyperbolic trig (radians) ─────────────────────────────────────
-        // These were NOT here before — the missing registration was the bug.
         "calculator.functions.sinh",
         "calculator.functions.cosh",
         "calculator.functions.tanh",
@@ -104,10 +84,6 @@ public class AppInitializer implements ServletContextListener {
         "calculator.functions.cothd",
 
         // ── Arc hyperbolic (radians) ──────────────────────────────────────
-        // These share prefixes with existing inverse trig functions (asinh/asin,
-        // acosh/acos, etc.) but that is NOT a problem: IntermediateUtils finds
-        // them in FunctionRegistry by EXACT name and calls f.apply() directly,
-        // bypassing exp4j's tokenizer entirely.
         "calculator.functions.asinh",
         "calculator.functions.acosh",
         "calculator.functions.atanh",
@@ -123,26 +99,29 @@ public class AppInitializer implements ServletContextListener {
         "calculator.functions.asechd",
         "calculator.functions.acothd",
 
-        // ── Boolean / logic ───────────────────────────────────────────────
+        // ── Boolean / logic (variadic or fixed-arity functions) ───────────
+        // NOTE: boolean OPERATORS (and, or, not, etc.) are NOT loaded here.
+        // They live in calculator.operators.* and are added directly by
+        // BooleanUtils.buildBooleanExpression() / CombinedUtils.buildCombinedExpression().
         "calculator.functions.majority",
         "calculator.functions.parity",
-        "calculator.functions.not",
 
         // ── Geometry ──────────────────────────────────────────────────────
         "calculator.functions.TwoDdistance",
         "calculator.functions.ThreeDdistance",
-        // ── Boolean ──────────────────────────────────────────────────────
+
+        // ── Named boolean functions (registered in FunctionRegistry) ──────
         "calculator.functions.implication",
         "calculator.functions.biconditional",
         "calculator.functions.converseNonimplication",
         "calculator.functions.nonimplication",
-        "calculator.functions.reverseImplication"
+        "calculator.functions.reverseImplication",
+        "calculator.functions.xor",
+        "calculator.functions.xnor",
+        "calculator.functions.nand",
+        "calculator.functions.nor",
     };
 
-    // Intentionally empty — all boolean/logic operators are registered
-    // directly in BooleanUtils.buildBooleanExpression() and
-    // CombinedUtils.buildCombinedExpression() to avoid exp4j rejecting
-    // unicode symbols at global registration time.
     private static final String[] OPERATOR_CLASSES = {};
 
     @Override

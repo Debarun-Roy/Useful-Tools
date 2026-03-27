@@ -14,14 +14,24 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import passwordgenerator.dao.UserPasswordDAO;
 import passwordgenerator.models.PasswordModel;
 import passwordgenerator.utilities.EncryptionUtils;
 import passwordgenerator.utilities.HashingUtils;
 
 /**
+ * SECURITY FIX — username is now read from the HTTP session, not from the
+ * request parameter.
+ *
+ * The original accepted username as a form parameter. Any authenticated user
+ * could call this endpoint with username=victim to insert vault entries into
+ * another user's account. Because the INSERT uses ON CONFLICT (username, platform)
+ * DO UPDATE, this could also silently overwrite a victim's stored passwords.
+ *
+ * Fix: username is extracted exclusively from the session.
+ *
  * CHANGE 6: Path renamed /SavePassword → /api/passwords/save
- * All other content identical to the batch-1 version.
  */
 @WebServlet("/api/passwords/save")
 public class SavePasswordDetailsController extends HttpServlet {
@@ -39,16 +49,28 @@ public class SavePasswordDetailsController extends HttpServlet {
 
         try (PrintWriter out = response.getWriter()) {
 
-            String username = request.getParameter("username");
+            // ── Username from session only ───────────────────────────────────
+            HttpSession session = request.getSession(false);
+            String username = (session != null)
+                    ? (String) session.getAttribute("username")
+                    : null;
+
+            if (username == null || username.isBlank()) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "You must be logged in to save passwords.",
+                        "UNAUTHENTICATED")));
+                return;
+            }
+
             String password = request.getParameter("password");
             String platform = request.getParameter("platform");
 
-            if (username == null || username.isBlank()
-                    || password == null || password.isBlank()
+            if (password == null || password.isBlank()
                     || platform == null || platform.isBlank()) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 out.print(gson.toJson(ApiResponse.fail(
-                        "Username, platform, and password are all required.", "MISSING_PARAMETERS")));
+                        "Platform and password are required.", "MISSING_PARAMETERS")));
                 return;
             }
 
