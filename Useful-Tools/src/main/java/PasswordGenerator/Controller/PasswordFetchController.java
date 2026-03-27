@@ -11,23 +11,24 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import passwordgenerator.dao.UserPasswordDAO;
 
 /**
- * Fetches stored passwords for a user — either all platforms or one specific platform.
+ * Fetches stored passwords for the currently authenticated user.
  *
- * CHANGE 3: The forward() call in the catch block has been replaced with a
- *   structured JSON error response. The success paths already returned JSON
- *   but were not wrapped in ApiResponse — they now are.
+ * FIX (SECURITY): The original read username from the query parameter
+ *   ?username=..., allowing any authenticated user to fetch another user's
+ *   passwords simply by changing the query string. The username is now read
+ *   exclusively from the HTTP session, which was written by LoginController
+ *   after a successful authentication and cannot be forged by the client.
  *
  * CHANGE 5: HTTP status codes applied.
- *   400 for missing/invalid parameters, 500 for server errors.
- *
  * CHANGE 6: Path renamed /FetchPasswords → /api/passwords/fetch
  *
  * ── Request ───────────────────────────────────────────────────────────────
- * GET /api/passwords/fetch?username={user}&choice=All+Passwords
- * GET /api/passwords/fetch?username={user}&choice=Single&platform={platform}
+ * GET /api/passwords/fetch?choice=All+Passwords
+ * GET /api/passwords/fetch?choice=Single&platform={platform}
  *
  * ── Response (All Passwords) ──────────────────────────────────────────────
  * 200: {
@@ -59,16 +60,21 @@ public class PasswordFetchController extends HttpServlet {
 
         try (PrintWriter out = response.getWriter()) {
 
-            String username = request.getParameter("username");
-            String choice   = request.getParameter("choice");
+            // ── Read username from session — never from query parameters ────
+            HttpSession session = request.getSession(false);
+            String username = (session != null)
+                    ? (String) session.getAttribute("username")
+                    : null;
 
-            // ── Input validation ────────────────────────────────────────────
             if (username == null || username.isBlank()) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 out.print(gson.toJson(ApiResponse.fail(
-                        "Parameter 'username' is required.", "MISSING_USERNAME")));
+                        "You must be logged in to fetch passwords.",
+                        "UNAUTHENTICATED")));
                 return;
             }
+
+            String choice = request.getParameter("choice");
 
             if (choice == null || choice.isBlank()) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -81,7 +87,7 @@ public class PasswordFetchController extends HttpServlet {
             // ── Fetch ───────────────────────────────────────────────────────
             if (choice.equalsIgnoreCase("All Passwords")) {
                 LinkedHashMap<Integer, LinkedHashMap<String, String>> passwords =
-                        UserPasswordDAO.fetchUserPasswords(username.trim());
+                        UserPasswordDAO.fetchUserPasswords(username);
                 response.setStatus(HttpServletResponse.SC_OK);
                 out.print(gson.toJson(ApiResponse.ok(passwords)));
 

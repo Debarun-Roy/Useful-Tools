@@ -1,0 +1,357 @@
+/*
+ * Financial Calculator Theme — consistent with application design
+ * Uses the observatory design tokens and standardized component styling
+ */
+
+/* ─── Container ──────────────────────────────────────────────────────────── */
+.financialCalcContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.calculatorContent {
+  width: min(1240px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+/* ─── Calculator wrapper ─────────────────────────────────────────────────── */
+.calculator {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* ─── Display Panel ──────────────────────────────────────────────────────── */
+.displayPanel {
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* ─── Input Layout ───────────────────────────────────────────────────────── */
+.inputGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-md);
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.label {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--clr-text);
+  display: block;
+}
+
+.input,
+.select {
+  padding: 11px var(--space-md);
+  background: var(--clr-input-bg);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-md);
+  font-family: var(--font);
+  color: var(--clr-text);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.input:focus,
+.select:focus {
+  border-color: var(--clr-accent);
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.15);
+}
+
+.input::placeholder {
+  color: var(--clr-text-muted);
+}
+
+.input:disabled,
+.select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b6fd4' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-sm) center;
+  background-size: 20px;
+  padding-right: 36px;
+}
+
+/* ─── Tenure Row (special layout for EMI) ─────────────────────────────── */
+.tenureRow {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.tenureRow .input {
+  flex: 1;
+}
+
+.tenureRow .select {
+  flex: 0 0 120px;
+  padding-right: 32px;
+}
+
+/* ─── Error Styling ──────────────────────────────────────────────────────── */
+.errorRow {
+  background: var(--clr-error-bg);
+  color: var(--clr-error);
+  border: 1px solid var(--clr-error-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  animation: slideDown 150ms ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Results Grid ───────────────────────────────────────────────────────── */
+.resultsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+  animation: fadeIn 200ms ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Result Card ────────────────────────────────────────────────────────── */
+.resultCard {
+  background: linear-gradient(135deg, rgba(74, 144, 217, 0.05), rgba(126, 200, 227, 0.05));
+  border: 1px solid rgba(74, 111, 165, 0.15);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.resultCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 144, 217, 0.15);
+}
+
+.resultLabel {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--clr-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.resultValue {
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  color: var(--clr-primary);
+  font-family: var(--font-mono);
+  word-break: break-word;
+}
+
+.resultValue.positive {
+  color: var(--clr-success);
+}
+
+.resultValue.negative {
+  color: var(--clr-error);
+}
+
+/* ─── Breakdown Section (Salary) ────────────────────────────────────────── */
+.breakdownSection {
+  background: linear-gradient(135deg, rgba(74, 144, 217, 0.03), rgba(126, 200, 227, 0.03));
+  border: 1px solid rgba(74, 111, 165, 0.1);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.breakdownTitle {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--clr-text);
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.breakdownTitle::before {
+  content: '';
+  width: 4px;
+  height: 20px;
+  background: linear-gradient(135deg, var(--clr-primary), var(--clr-accent-bright));
+  border-radius: 2px;
+}
+
+.breakdownGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+}
+
+.breakdownItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--clr-surface);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--clr-border);
+}
+
+.breakdownLabel {
+  font-size: var(--fs-sm);
+  color: var(--clr-text-muted);
+  font-weight: 500;
+}
+
+.breakdownValue {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--clr-primary);
+  font-family: var(--font-mono);
+}
+
+/* ─── Control Row (Buttons) ──────────────────────────────────────────────── */
+.controlRow {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: var(--space-md);
+}
+
+.btnClear,
+.btnEquals {
+  padding: 12px var(--space-md);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btnClear {
+  background: rgba(248, 81, 73, 0.1);
+  color: var(--clr-error);
+  border: 1px solid rgba(248, 81, 73, 0.2);
+}
+
+.btnClear:hover:not(:disabled) {
+  background: rgba(248, 81, 73, 0.18);
+  border-color: rgba(248, 81, 73, 0.4);
+  transform: translateY(-1px);
+}
+
+.btnClear:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btnClear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnEquals {
+  background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-light));
+  color: #fff;
+  font-size: var(--fs-lg);
+  box-shadow: 0 3px 12px rgba(59, 111, 212, 0.25);
+}
+
+.btnEquals:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(59, 111, 212, 0.35);
+}
+
+.btnEquals:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btnEquals:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ─── Responsive Design ──────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .displayPanel {
+    padding: var(--space-md);
+  }
+
+  .inputGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .resultsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .breakdownGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .controlRow {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .financialCalcContainer {
+    gap: var(--space-sm);
+  }
+
+  .displayPanel {
+    padding: var(--space-md);
+    gap: var(--space-md);
+  }
+
+  .input,
+  .select {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  .controlRow {
+    grid-template-columns: 1fr;
+  }
+
+  .btnClear,
+  .btnEquals {
+    width: 100%;
+  }
+}

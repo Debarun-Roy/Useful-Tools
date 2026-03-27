@@ -1,12 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider }   from './auth/AuthContext'
-import ProtectedRoute     from './components/ProtectedRoute'
-import LoginPage          from './pages/LoginPage/LoginPage'
-import RegisterPage       from './pages/RegisterPage/RegisterPage'
-import UpdatePasswordPage from './pages/UpdatePasswordPage/UpdatePasswordPage'
-import DashboardPage      from './pages/DashboardPage/DashboardPage'
-import CalculatorPage     from './pages/CalculatorPage/CalculatorPage'
-import NumberAnalyserPage from './pages/NumberAnalyzerPage/NumberAnalyzerPage'
+import { AuthProvider }       from './auth/AuthContext'
+import ProtectedRoute         from './components/ProtectedRoute'
+import LoginPage              from './pages/LoginPage/LoginPage'
+import RegisterPage           from './pages/RegisterPage/RegisterPage'
+import UpdatePasswordPage     from './pages/UpdatePasswordPage/UpdatePasswordPage'
+import DashboardPage          from './pages/DashboardPage/DashboardPage'
+import CalculatorPage         from './pages/CalculatorPage/CalculatorPage'
+import NumberAnalyserPage     from './pages/NumberAnalyzerPage/NumberAnalyzerPage'
+import PasswordVaultPage      from './pages/PasswordVaultPage/PasswordVaultPage'
 
 export default function App() {
   return (
@@ -30,6 +31,9 @@ export default function App() {
           } />
           <Route path="/analyser" element={
             <ProtectedRoute><NumberAnalyserPage /></ProtectedRoute>
+          } />
+          <Route path="/vault" element={
+            <ProtectedRoute><PasswordVaultPage /></ProtectedRoute>
           } />
 
           {/* ── Fallback ──────────────────────────────────────────────── */}

@@ -1,0 +1,581 @@
+import { useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../auth/AuthContext'
+import {
+  generatePassword,
+  savePassword,
+  fetchAllPasswords,
+  fetchPlatformPassword,
+  logoutUser,
+} from '../../api/apiClient'
+import styles from './PasswordVaultPage.module.css'
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const TABS = [
+  { id: 'generate', label: 'Generate',  icon: '⚡' },
+  { id: 'save',     label: 'Save',      icon: '🔒' },
+  { id: 'vault',    label: 'My Vault',  icon: '🗄' },
+]
+
+const CHAR_TYPES = [
+  { key: 'Numbers',              label: 'Numbers',           example: '0–9' },
+  { key: 'Special Characters',   label: 'Special Chars',     example: '!@#$' },
+  { key: 'Uppercase Alphabets',  label: 'Uppercase',         example: 'A–Z' },
+  { key: 'Lowercase Alphabets',  label: 'Lowercase',         example: 'a–z' },
+]
+
+const MIN_LEN = 8
+const MAX_LEN = 128
+
+// ─── Small helpers ────────────────────────────────────────────────────────────
+
+function Pulse() {
+  return <span className={styles.pulse} aria-hidden="true" />
+}
+
+function StrengthBar({ password }) {
+  if (!password) return null
+
+  let score = 0
+  if (password.length >= 12) score++
+  if (password.length >= 20) score++
+  if (/[A-Z]/.test(password)) score++
+  if (/[a-z]/.test(password)) score++
+  if (/[0-9]/.test(password)) score++
+  if (/[^A-Za-z0-9]/.test(password)) score++
+
+  const pct   = Math.round((score / 6) * 100)
+  const label = score <= 2 ? 'Weak' : score <= 4 ? 'Fair' : score <= 5 ? 'Strong' : 'Very strong'
+  const cls   = score <= 2 ? styles.barWeak : score <= 4 ? styles.barFair : styles.barStrong
+
+  return (
+    <div className={styles.strengthWrap}>
+      <div className={styles.strengthTrack}>
+        <div className={`${styles.strengthFill} ${cls}`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className={`${styles.strengthLabel} ${cls}`}>{label}</span>
+    </div>
+  )
+}
+
+function CopyButton({ text }) {
+  const [copied, setCopied] = useState(false)
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      /* fallback: select the text */
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      className={copied ? styles.copyBtnDone : styles.copyBtn}
+      onClick={handleCopy}
+      title="Copy to clipboard"
+    >
+      {copied ? '✓ Copied' : 'Copy'}
+    </button>
+  )
+}
+
+// ─── Generate tab ─────────────────────────────────────────────────────────────
+
+function GenerateTab({ username }) {
+  const [platform,   setPlatform]   = useState('')
+  const [length,     setLength]     = useState(16)
+  const [mode,       setMode]       = useState('auto')        // 'auto' | 'custom'
+  const [counts,     setCounts]     = useState({ Numbers: 4, 'Special Characters': 4, 'Uppercase Alphabets': 4, 'Lowercase Alphabets': 4 })
+  const [result,     setResult]     = useState(null)          // { password, length }
+  const [loading,    setLoading]    = useState(false)
+  const [saving,     setSaving]     = useState(false)
+  const [error,      setError]      = useState('')
+  const [saveMsg,    setSaveMsg]    = useState('')
+
+  function updateCount(key, val) {
+    const n = Math.max(0, Math.min(MAX_LEN, Number(val) || 0))
+    setCounts(c => ({ ...c, [key]: n }))
+  }
+
+  const customTotal = Object.values(counts).reduce((s, v) => s + v, 0)
+
+  async function handleGenerate(e) {
+    e.preventDefault()
+    if (!platform.trim()) { setError('Platform name is required.'); return }
+    if (mode === 'custom' && customTotal < MIN_LEN) {
+      setError(`Custom total is ${customTotal} — must be at least ${MIN_LEN}.`); return
+    }
+    if (mode === 'custom' && customTotal > MAX_LEN) {
+      setError(`Custom total is ${customTotal} — must be at most ${MAX_LEN}.`); return
+    }
+
+    setLoading(true); setError(''); setResult(null); setSaveMsg('')
+
+    try {
+      const { data } = mode === 'auto'
+        ? await generatePassword(username, platform.trim(), length, 'auto')
+        : await generatePassword(username, platform.trim(), customTotal, 'custom', counts)
+
+      if (data.success) {
+        setResult(data.data)
+      } else {
+        setError(data.error || 'Generation failed. Please try again.')
+      }
+    } catch {
+      setError('Could not reach the server. Please check that Tomcat is running.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSaveGenerated() {
+    if (!result) return
+    setSaving(true); setSaveMsg('')
+    try {
+      const { data } = await savePassword(username, platform.trim(), result.password)
+      if (data.success) {
+        setSaveMsg('Saved to vault!')
+      } else {
+        setSaveMsg(data.error || 'Save failed.')
+      }
+    } catch {
+      setSaveMsg('Could not reach the server.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className={styles.panel}>
+
+      <form className={styles.inputCard} onSubmit={handleGenerate}>
+        <div>
+          <h2 className={styles.cardTitle}>Generate a password</h2>
+          <p className={styles.cardHint}>
+            Instantly create a cryptographically strong password for any platform.
+            Use Auto mode for a randomised character mix, or Custom to control exact counts.
+          </p>
+        </div>
+
+        {/* Platform */}
+        <div className={styles.fieldGroup}>
+          <label className={styles.fieldLabel}>Platform / website</label>
+          <input
+            className={styles.textInput}
+            type="text"
+            value={platform}
+            onChange={e => { setPlatform(e.target.value); setError('') }}
+            placeholder="e.g. github.com"
+            disabled={loading}
+          />
+        </div>
+
+        {/* Mode selector */}
+        <div className={styles.modeToggle}>
+          <button
+            type="button"
+            className={mode === 'auto' ? styles.modeActive : styles.modeBtn}
+            onClick={() => setMode('auto')}
+            disabled={loading}
+          >Auto</button>
+          <button
+            type="button"
+            className={mode === 'custom' ? styles.modeActive : styles.modeBtn}
+            onClick={() => setMode('custom')}
+            disabled={loading}
+          >Custom</button>
+        </div>
+
+        {/* Auto: length slider */}
+        {mode === 'auto' && (
+          <div className={styles.fieldGroup}>
+            <div className={styles.sliderHeader}>
+              <label className={styles.fieldLabel}>Password length</label>
+              <code className={styles.sliderValue}>{length}</code>
+            </div>
+            <input
+              className={styles.slider}
+              type="range"
+              min={MIN_LEN}
+              max={MAX_LEN}
+              value={length}
+              onChange={e => setLength(Number(e.target.value))}
+              disabled={loading}
+            />
+            <div className={styles.sliderMinMax}>
+              <span>{MIN_LEN}</span><span>{MAX_LEN}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Custom: per-type count inputs */}
+        {mode === 'custom' && (
+          <div className={styles.customGrid}>
+            {CHAR_TYPES.map(ct => (
+              <div key={ct.key} className={styles.customCell}>
+                <span className={styles.customLabel}>{ct.label}</span>
+                <span className={styles.customExample}>{ct.example}</span>
+                <input
+                  className={styles.countInput}
+                  type="number"
+                  min={0}
+                  max={MAX_LEN}
+                  value={counts[ct.key]}
+                  onChange={e => updateCount(ct.key, e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+            ))}
+            <div className={styles.customTotal}>
+              Total: <strong>{customTotal}</strong> characters
+            </div>
+          </div>
+        )}
+
+        {error && <div className={styles.errorBanner} role="alert">{error}</div>}
+
+        <div className={styles.actionRow}>
+          <button className={styles.primaryBtn} type="submit" disabled={loading}>
+            {loading ? <><Pulse /><span>Generating…</span></> : '⚡ Generate'}
+          </button>
+        </div>
+      </form>
+
+      {/* Result panel */}
+      {result && (
+        <div className={styles.resultCard}>
+          <div className={styles.resultHeader}>
+            <span className={styles.resultPlatform}>{platform}</span>
+            <CopyButton text={result.password} />
+          </div>
+          <code className={styles.passwordDisplay}>{result.password}</code>
+          <StrengthBar password={result.password} />
+          <div className={styles.resultMeta}>
+            {result.length} characters · generated just now
+          </div>
+          <div className={styles.saveRow}>
+            <button
+              type="button"
+              className={styles.saveBtn}
+              onClick={handleSaveGenerated}
+              disabled={saving || !!saveMsg}
+            >
+              {saving ? <><Pulse /><span>Saving…</span></> : '🔒 Save to vault'}
+            </button>
+            {saveMsg && (
+              <span className={saveMsg.includes('!') ? styles.saveSuccess : styles.saveError}>
+                {saveMsg}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+    </div>
+  )
+}
+
+// ─── Save tab ─────────────────────────────────────────────────────────────────
+
+function SaveTab({ username }) {
+  const [platform,  setPlatform]  = useState('')
+  const [password,  setPassword]  = useState('')
+  const [show,      setShow]      = useState(false)
+  const [loading,   setLoading]   = useState(false)
+  const [success,   setSuccess]   = useState('')
+  const [error,     setError]     = useState('')
+
+  async function handleSave(e) {
+    e.preventDefault()
+    if (!platform.trim()) { setError('Platform name is required.'); return }
+    if (!password)        { setError('Password is required.'); return }
+
+    setLoading(true); setError(''); setSuccess('')
+
+    try {
+      const { data } = await savePassword(username, platform.trim(), password)
+      if (data.success) {
+        setSuccess(`Password for ${platform.trim()} saved successfully.`)
+        setPlatform(''); setPassword(''); setShow(false)
+      } else {
+        setError(data.error || 'Failed to save. Please try again.')
+      }
+    } catch {
+      setError('Could not reach the server. Please check that Tomcat is running.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className={styles.panel}>
+      <form className={styles.inputCard} onSubmit={handleSave}>
+        <div>
+          <h2 className={styles.cardTitle}>Save a password</h2>
+          <p className={styles.cardHint}>
+            Store an existing password in the vault. It is encrypted with RSA-2048
+            before being written to the database — only you can decrypt it.
+          </p>
+        </div>
+
+        <div className={styles.fieldGroup}>
+          <label className={styles.fieldLabel}>Platform / website</label>
+          <input
+            className={styles.textInput}
+            type="text"
+            value={platform}
+            onChange={e => { setPlatform(e.target.value); setError(''); setSuccess('') }}
+            placeholder="e.g. google.com"
+            disabled={loading}
+          />
+        </div>
+
+        <div className={styles.fieldGroup}>
+          <label className={styles.fieldLabel}>Password</label>
+          <div className={styles.passwordInputWrap}>
+            <input
+              className={styles.textInput}
+              type={show ? 'text' : 'password'}
+              value={password}
+              onChange={e => { setPassword(e.target.value); setError(''); setSuccess('') }}
+              placeholder="Enter the password to store"
+              disabled={loading}
+            />
+            <button
+              type="button"
+              className={styles.revealToggle}
+              onClick={() => setShow(s => !s)}
+              tabIndex={-1}
+              aria-label={show ? 'Hide password' : 'Show password'}
+            >
+              {show ? '🙈' : '👁'}
+            </button>
+          </div>
+          {password && <StrengthBar password={password} />}
+        </div>
+
+        {error   && <div className={styles.errorBanner}   role="alert">{error}</div>}
+        {success && <div className={styles.successBanner} role="status">{success}</div>}
+
+        <div className={styles.actionRow}>
+          <button className={styles.primaryBtn} type="submit" disabled={loading}>
+            {loading ? <><Pulse /><span>Encrypting…</span></> : '🔒 Encrypt & Save'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+// ─── Vault tab ────────────────────────────────────────────────────────────────
+
+function VaultTab() {
+  const [entries,   setEntries]   = useState(null)   // null = not loaded yet
+  const [loading,   setLoading]   = useState(false)
+  const [error,     setError]     = useState('')
+  const [search,    setSearch]    = useState('')
+  const [revealed,  setRevealed]  = useState({})     // { platform: bool }
+
+  const loadVault = useCallback(async () => {
+    setLoading(true); setError('')
+    try {
+      const { data } = await fetchAllPasswords()
+      if (data.success) {
+        // Convert indexed map to array for easier rendering
+        setEntries(Object.values(data.data))
+      } else {
+        setError(data.error || 'Could not load the vault.')
+      }
+    } catch {
+      setError('Could not reach the server. Please check that Tomcat is running.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  function toggleReveal(platform) {
+    setRevealed(r => ({ ...r, [platform]: !r[platform] }))
+  }
+
+  const filtered = (entries || []).filter(e =>
+    e.platform.toLowerCase().includes(search.toLowerCase())
+  )
+
+  return (
+    <div className={styles.panel}>
+      <div className={styles.inputCard}>
+        <div className={styles.vaultHeader}>
+          <div>
+            <h2 className={styles.cardTitle}>My Vault</h2>
+            <p className={styles.cardHint}>
+              All your stored passwords, decrypted on demand.
+            </p>
+          </div>
+          <button
+            type="button"
+            className={styles.refreshBtn}
+            onClick={loadVault}
+            disabled={loading}
+          >
+            {loading ? <><Pulse /><span>Loading…</span></> : entries === null ? '🔓 Open Vault' : '↺ Refresh'}
+          </button>
+        </div>
+
+        {error && <div className={styles.errorBanner} role="alert">{error}</div>}
+
+        {entries !== null && (
+          <>
+            {/* Search */}
+            <div className={styles.searchWrap}>
+              <span className={styles.searchIcon}>🔍</span>
+              <input
+                className={styles.searchInput}
+                type="text"
+                placeholder="Search platforms…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+
+            {/* Entry list */}
+            {filtered.length === 0 ? (
+              <p className={styles.emptyVault}>
+                {entries.length === 0
+                  ? 'No passwords stored yet. Use the Generate or Save tab to add some.'
+                  : `No platforms matching "${search}".`}
+              </p>
+            ) : (
+              <ul className={styles.entryList}>
+                {filtered.map(entry => {
+                  const isRevealed = !!revealed[entry.platform]
+                  return (
+                    <li key={entry.platform} className={styles.entryRow}>
+                      <div className={styles.entryPlatform}>
+                        <span className={styles.entryIcon} aria-hidden="true">🌐</span>
+                        <span className={styles.entryPlatformName}>{entry.platform}</span>
+                      </div>
+                      <div className={styles.entryPasswordWrap}>
+                        <code className={styles.entryPassword}>
+                          {isRevealed
+                            ? entry.decrypted_password
+                            : '••••••••••••'}
+                        </code>
+                        <button
+                          type="button"
+                          className={styles.revealBtn}
+                          onClick={() => toggleReveal(entry.platform)}
+                        >
+                          {isRevealed ? '🙈 Hide' : '👁 Reveal'}
+                        </button>
+                        {isRevealed && (
+                          <CopyButton text={entry.decrypted_password} />
+                        )}
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+
+            <div className={styles.vaultFooter}>
+              {filtered.length} of {entries.length} entries
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+
+export default function PasswordVaultPage() {
+  const { username, logout } = useAuth()
+  const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState('generate')
+
+  async function handleLogout() {
+    try { await logoutUser() } catch { /* ignore */ }
+    logout()
+    navigate('/login')
+  }
+
+  return (
+    <div className={styles.page}>
+
+      {/* ── Header ─────────────────────────────────────────────────────── */}
+      <header className={styles.header}>
+        <div className={styles.headerLeft}>
+          <div className={styles.brand}>
+            <span className={styles.brandMark} aria-hidden="true">#</span>
+            <span className={styles.brandName}>UsefulTools</span>
+          </div>
+          <button className={styles.backBtn} onClick={() => navigate('/dashboard')}>
+            ← Dashboard
+          </button>
+        </div>
+        <div className={styles.headerRight}>
+          <span className={styles.userBadge}>{username}</span>
+          <button className={styles.logoutBtn} onClick={handleLogout}>Sign out</button>
+        </div>
+      </header>
+
+      {/* ── Hero ───────────────────────────────────────────────────────── */}
+      <section className={styles.hero}>
+        <div className={styles.heroGrid} aria-hidden="true" />
+        <div className={styles.heroContent}>
+          <div className={styles.heroBadge}>Sprint 4 · Password Vault</div>
+          <h1 className={styles.heroTitle}>
+            Password<br />
+            <span className={styles.heroTitleAccent}>Vault</span>
+          </h1>
+          <p className={styles.heroSub}>
+            Generate strong passwords, store them encrypted with RSA-2048,
+            and retrieve them on demand — all within your private vault.
+          </p>
+        </div>
+        <div className={styles.heroStats}>
+          <div className={styles.statCard}>
+            <span className={styles.statValue}>RSA</span>
+            <span className={styles.statLabel}>2048-bit encryption</span>
+          </div>
+          <div className={styles.statCard}>
+            <span className={styles.statValue}>128</span>
+            <span className={styles.statLabel}>max length</span>
+          </div>
+          <div className={styles.statCard}>
+            <span className={styles.statValue}>4</span>
+            <span className={styles.statLabel}>char classes</span>
+          </div>
+        </div>
+      </section>
+
+      <main className={styles.main}>
+
+        {/* ── Tab bar ──────────────────────────────────────────────────── */}
+        <nav className={styles.tabBar} aria-label="Vault sections">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              className={activeTab === tab.id ? styles.tabActive : styles.tab}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <span className={styles.tabIcon} aria-hidden="true">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+
+        {activeTab === 'generate' && <GenerateTab username={username} />}
+        {activeTab === 'save'     && <SaveTab     username={username} />}
+        {activeTab === 'vault'    && <VaultTab />}
+
+      </main>
+    </div>
+  )
+}

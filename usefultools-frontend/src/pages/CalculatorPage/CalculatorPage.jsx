@@ -12,6 +12,7 @@ import ToolHero from '../../components/ToolHero/ToolHero'
 import PageTabs from '../../components/PageTabs/PageTabs'
 import StandardCalc from './StandardCalc/StandardCalc'
 import ComplexCalc from './ComplexCalc/ComplexCalc'
+import FinancialCalc from './FinancialCalc/FinancialCalc'
 import styles from './CalculatorPage.module.css'
 
 const TABS = [
@@ -21,6 +22,7 @@ const TABS = [
   { id: 'trig',         label: 'Trig',         icon: 'sin' },
   { id: 'combined',     label: 'Combined',     icon: 'mix' },
   { id: 'complex',      label: 'Complex',      icon: 'z' },
+  { id: 'financial',    label: 'Financial',    icon: '💰' },
 ]
 
 const EVALUATE_FNS = {
@@ -289,9 +291,9 @@ export default function CalculatorPage() {
           badge="Sprint 2 · Calculator"
           title="Computation"
           accent="Flight Deck"
-          description="Switch between arithmetic, boolean, trigonometric, combined, and complex modes inside the same futuristic tool shell."
+          description="Switch between arithmetic, boolean, trigonometric, combined, complex, and financial modes inside the same futuristic tool shell."
           stats={[
-            { value: '6', label: 'modes' },
+            { value: '7', label: 'modes' },
             { value: '50+', label: 'functions' },
             { value: '1', label: 'workspace' },
           ]}
@@ -308,6 +310,8 @@ export default function CalculatorPage() {
           <section className={styles.content}>
             {activeTab === 'complex'
               ? <ComplexCalc />
+              : activeTab === 'financial'
+              ? <FinancialCalc />
               : (
                 <StandardCalc
                   key={activeTab}

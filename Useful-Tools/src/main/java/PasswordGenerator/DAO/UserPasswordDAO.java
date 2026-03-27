@@ -14,23 +14,48 @@ import passwordgenerator.models.PasswordModel;
 import passwordgenerator.utilities.DecryptionUtils;
 
 /**
- * FIX (package): Renamed from PasswordGenerator.DAO to passwordgenerator.dao.
+ * FIX 1 (package): Renamed from PasswordGenerator.DAO to passwordgenerator.dao.
  *
- * FIX (JDBC indices): All pst.setXxx(0, ...) corrected to start at 1.
+ * FIX 2 (JDBC indices): All pst.setXxx(0, ...) corrected to start at 1.
  *
- * FIX (saveGeneratedPasswordDetails SQL): The original SQL listed 7 column
+ * FIX 3 (saveGeneratedPasswordDetails SQL): The original SQL listed 7 column
  *   names but only had 6 '?' placeholders. Added the missing 7th placeholder.
  *
- * FIX (saveEncryptionDetails SQL): "ON CONLICT ()" was a typo causing a SQL
- *   syntax error. Corrected to a proper UPSERT clause.
+ * FIX 4 (CRITICAL — encryption_table primary key):
+ *   The original saveEncryptionDetails used ON CONFLICT (username), meaning
+ *   there was ONE encryption row per user. Every time a new platform password
+ *   was saved, a new RSA key pair was generated and the old private key was
+ *   overwritten. This made every previously-saved platform's password permanently
+ *   undecryptable — the private key needed to decrypt it no longer existed.
  *
- * FIX (fetchUserPasswords SQL): Column alias "pt.platorm" corrected to
- *   "pt.platform".
+ *   Fix: encryption_table now uses a composite primary key (username, platform).
+ *   Each (user, platform) pair has its own RSA key pair. Re-saving a platform
+ *   updates only that platform's key, leaving all others intact.
  *
- * FIX (logger): Single class-level logger instance instead of per-method.
+ *   SCHEMA CHANGE REQUIRED — run this SQL once to recreate the table:
+ *     DROP TABLE IF EXISTS encryption_table;
+ *     CREATE TABLE encryption_table (
+ *       username         TEXT NOT NULL,
+ *       platform         TEXT NOT NULL,
+ *       encrypted_password TEXT,
+ *       private_key      TEXT,
+ *       created_date     TEXT,
+ *       PRIMARY KEY (username, platform)
+ *     );
  *
- * FIX (resource management): Connection/PreparedStatement/ResultSet are now
- *   always closed in a finally block to prevent connection leaks.
+ * FIX 5 (CRITICAL — wrong column in fetch queries):
+ *   Both fetchUserPasswords and fetchUserPlatformPassword selected
+ *   et.encrypted_password (from encryption_table — always the last-saved row)
+ *   instead of pt.encrypted_password (from password_table — per-platform).
+ *   Fixed to use pt.encrypted_password and et.private_key with the corrected
+ *   join condition ON (et.username = pt.username AND et.platform = pt.platform).
+ *
+ * FIX 6 (fetchUserPasswords SQL column alias): "pt.platorm" typo corrected.
+ *
+ * FIX 7 (resource management): Connection/PreparedStatement/ResultSet always
+ *   closed in finally blocks to prevent connection leaks.
+ *
+ * FIX 8 (logger): Single class-level logger instance instead of per-method.
  */
 public class UserPasswordDAO {
 
@@ -92,6 +117,12 @@ public class UserPasswordDAO {
         }
     }
 
+    /**
+     * FIX 5: Fetch now uses:
+     *   - pt.encrypted_password (per-platform ciphertext, not the last-saved one)
+     *   - et.private_key joined on BOTH username AND platform so each platform
+     *     gets its own private key
+     */
     public static LinkedHashMap<Integer, LinkedHashMap<String, String>> fetchUserPasswords(String username) {
         LinkedHashMap<Integer, LinkedHashMap<String, String>> lhmap = new LinkedHashMap<>();
         Connection conn = null;
@@ -100,10 +131,10 @@ public class UserPasswordDAO {
         try {
             conn = DatabaseUtils.getSQLite3Connection();
             logger.info("SQLite3 connection successful");
-            // FIX: "pt.platorm" typo corrected to "pt.platform"
-            String sql = "SELECT pt.platform, et.encrypted_password, et.private_key "
+            String sql = "SELECT pt.platform, pt.encrypted_password, et.private_key "
                     + "FROM password_table pt "
-                    + "INNER JOIN encryption_table et ON et.username = pt.username "
+                    + "INNER JOIN encryption_table et "
+                    + "    ON et.username = pt.username AND et.platform = pt.platform "
                     + "WHERE pt.username = ?;";
             pst = conn.prepareStatement(sql);
             pst.setString(1, username);
@@ -129,6 +160,10 @@ public class UserPasswordDAO {
         return lhmap;
     }
 
+    /**
+     * FIX 5: Uses pt.encrypted_password and joins encryption_table on both
+     * username AND platform to get the correct per-platform private key.
+     */
     public static LinkedHashMap<String, String> fetchUserPlatformPassword(String username, String platform) {
         LinkedHashMap<String, String> lhmap = new LinkedHashMap<>();
         Connection conn = null;
@@ -137,9 +172,10 @@ public class UserPasswordDAO {
         try {
             conn = DatabaseUtils.getSQLite3Connection();
             logger.info("SQLite3 connection successful");
-            String sql = "SELECT et.encrypted_password, et.private_key "
+            String sql = "SELECT pt.encrypted_password, et.private_key "
                     + "FROM password_table pt "
-                    + "INNER JOIN encryption_table et ON pt.username = et.username "
+                    + "INNER JOIN encryption_table et "
+                    + "    ON et.username = pt.username AND et.platform = pt.platform "
                     + "WHERE pt.username = ? AND pt.platform = ?;";
             pst = conn.prepareStatement(sql);
             pst.setString(1, username);
@@ -161,26 +197,30 @@ public class UserPasswordDAO {
         return lhmap;
     }
 
+    /**
+     * FIX 4: ON CONFLICT now targets (username, platform) — each platform gets
+     * its own key pair. Re-saving a platform replaces only that platform's key.
+     * All other platforms' keys remain intact and their passwords remain decryptable.
+     */
     public static void saveEncryptionDetails(PasswordModel pass) {
         Connection conn = null;
         PreparedStatement pst = null;
         try {
             conn = DatabaseUtils.getSQLite3Connection();
             logger.info("SQLite3 connection successful");
-            // FIX: "ON CONLICT ()" was a typo and invalid SQL — replaced with
-            // a proper UPSERT so re-saving encryption details doesn't fail.
             String sql = "INSERT INTO encryption_table "
-                    + "(username, encrypted_password, private_key, created_date) "
-                    + "VALUES (?, ?, ?, ?) "
-                    + "ON CONFLICT (username) DO UPDATE SET "
+                    + "(username, platform, encrypted_password, private_key, created_date) "
+                    + "VALUES (?, ?, ?, ?, ?) "
+                    + "ON CONFLICT (username, platform) DO UPDATE SET "
                     + "encrypted_password = excluded.encrypted_password, "
                     + "private_key = excluded.private_key, "
                     + "created_date = excluded.created_date;";
             pst = conn.prepareStatement(sql);
             pst.setString(1, pass.getUsername());
-            pst.setString(2, pass.getEncryptedPassword());
-            pst.setString(3, pass.getPrivateKey());
-            pst.setTimestamp(4, Timestamp.from(pass.getCreatedDate()));
+            pst.setString(2, pass.getPlatform());
+            pst.setString(3, pass.getEncryptedPassword());
+            pst.setString(4, pass.getPrivateKey());
+            pst.setTimestamp(5, Timestamp.from(pass.getCreatedDate()));
             pst.executeUpdate();
             logger.info("Encryption details stored in database");
         } catch (SQLException sqle) {

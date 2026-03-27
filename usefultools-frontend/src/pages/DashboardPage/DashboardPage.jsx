@@ -24,7 +24,7 @@ const FEATURES = [
     label:  'Password Vault',
     path:   '/vault',
     sprint: 4,
-    ready:  false,
+    ready:  true,
     icon:   '🔐',
     desc:   'Generate, save and retrieve passwords securely',
   },
@@ -51,7 +51,6 @@ export default function DashboardPage() {
   return (
     <div className={styles.page}>
 
-      {/* ── Sticky header ─────────────────────────────────────────────── */}
       <header className={styles.header}>
         <div className={styles.brand}>
           <span className={styles.brandMark} aria-hidden="true">#</span>
@@ -67,7 +66,6 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* ── Hero section ──────────────────────────────────────────────── */}
       <section className={styles.hero} aria-label="Welcome">
         <div className={styles.heroInner}>
           <div className={styles.heroBadge}>
@@ -84,7 +82,6 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* ── Feature grid ──────────────────────────────────────────────── */}
       <main className={styles.main}>
         <p className={styles.sectionTitle}>Available tools</p>
         <div className={styles.grid}>
