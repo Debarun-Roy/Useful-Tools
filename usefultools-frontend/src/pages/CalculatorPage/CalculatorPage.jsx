@@ -14,15 +14,17 @@ import StandardCalc from './StandardCalc/StandardCalc'
 import ComplexCalc from './ComplexCalc/ComplexCalc'
 import FinancialCalc from './FinancialCalc/FinancialCalc'
 import styles from './CalculatorPage.module.css'
+import HistoryTab from './HistoryTab/HistoryTab'
 
 const TABS = [
-  { id: 'simple',       label: 'Simple',       icon: '1+' },
-  { id: 'intermediate', label: 'Intermediate', icon: 'fx' },
-  { id: 'boolean',      label: 'Boolean',      icon: '&&' },
-  { id: 'trig',         label: 'Trigonometric',         icon: 'sin' },
-  { id: 'combined',     label: 'Combined',     icon: 'mix' },
-  { id: 'complex',      label: 'Complex',      icon: 'z' },
-  { id: 'financial',    label: 'Financial',    icon: '💰' },
+  { id: 'simple',       label: 'Simple',         icon: '1+' },
+  { id: 'intermediate', label: 'Intermediate',   icon: 'fx' },
+  { id: 'boolean',      label: 'Boolean',        icon: '&&' },
+  { id: 'trig',         label: 'Trigonometric',  icon: 'sin' },
+  { id: 'combined',     label: 'Combined',       icon: 'mix' },
+  { id: 'complex',      label: 'Complex',        icon: 'z' },
+  { id: 'financial',    label: 'Financial',      icon: '💰' },
+  { id: 'history',      label: 'History',        icon: '⧖' },
 ]
 
 const EVALUATE_FNS = {
@@ -312,6 +314,8 @@ export default function CalculatorPage() {
               ? <ComplexCalc />
               : activeTab === 'financial'
               ? <FinancialCalc />
+              : activeTab === 'history'
+              ? <HistoryTab />
               : (
                 <StandardCalc
                   key={activeTab}
@@ -320,7 +324,8 @@ export default function CalculatorPage() {
                   note={NOTES[activeTab] || ''}
                   mode={activeTab}
                 />
-              )}
+              )
+            }
           </section>
         </main>
       </div>

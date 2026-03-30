@@ -5,6 +5,7 @@ import TaxCalculator from './TaxCalculator'
 import CompoundInterest from './CompoundInterest'
 import SalaryBreakdown from './SalaryBreakdown'
 import styles from './FinancialCalc.module.css'
+import FinancialHistory from './FinancialHistory'
 
 const TABS = [
   { id: 'emi',        label: 'EMI',                icon: '📊' },
@@ -18,16 +19,12 @@ export default function FinancialCalc() {
 
   function renderCalculator() {
     switch (activeTab) {
-      case 'emi':
-        return <EMI />
-      case 'tax':
-        return <TaxCalculator />
-      case 'compound':
-        return <CompoundInterest />
-      case 'salary':
-        return <SalaryBreakdown />
-      default:
-        return <EMI />
+      case 'emi':      return <EMI />
+      case 'tax':      return <TaxCalculator />
+      case 'compound': return <CompoundInterest />
+      case 'salary':   return <SalaryBreakdown />
+      case 'history':  return <FinancialHistory />
+      default:         return <EMI />
     }
   }
 

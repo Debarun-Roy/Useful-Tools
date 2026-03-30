@@ -9,6 +9,7 @@ import {
   logoutUser,
 } from '../../api/apiClient'
 import styles from './PasswordVaultPage.module.css'
+import { deleteVaultEntry, updateVaultEntry } from '../../api/apiClient'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -374,25 +375,147 @@ function SaveTab({ username }) {
 
 // ─── Vault tab ────────────────────────────────────────────────────────────────
 
+// function VaultTab() {
+//   const [entries,   setEntries]   = useState(null)   // null = not loaded yet
+//   const [loading,   setLoading]   = useState(false)
+//   const [error,     setError]     = useState('')
+//   const [search,    setSearch]    = useState('')
+//   const [revealed,  setRevealed]  = useState({})     // { platform: bool }
+
+//   const loadVault = useCallback(async () => {
+//     setLoading(true); setError('')
+//     try {
+//       const { data } = await fetchAllPasswords()
+//       if (data.success) {
+//         // Convert indexed map to array for easier rendering
+//         setEntries(Object.values(data.data))
+//       } else {
+//         setError(data.error || 'Could not load the vault.')
+//       }
+//     } catch {
+//       setError('Could not reach the server. Please check that Tomcat is running.')
+//     } finally {
+//       setLoading(false)
+//     }
+//   }, [])
+
+//   function toggleReveal(platform) {
+//     setRevealed(r => ({ ...r, [platform]: !r[platform] }))
+//   }
+
+//   const filtered = (entries || []).filter(e =>
+//     e.platform.toLowerCase().includes(search.toLowerCase())
+//   )
+
+//   return (
+//     <div className={styles.panel}>
+//       <div className={styles.inputCard}>
+//         <div className={styles.vaultHeader}>
+//           <div>
+//             <h2 className={styles.cardTitle}>My Vault</h2>
+//             <p className={styles.cardHint}>
+//               All your stored passwords, decrypted on demand.
+//             </p>
+//           </div>
+//           <button
+//             type="button"
+//             className={styles.refreshBtn}
+//             onClick={loadVault}
+//             disabled={loading}
+//           >
+//             {loading ? <><Pulse /><span>Loading…</span></> : entries === null ? '🔓 Open Vault' : '↺ Refresh'}
+//           </button>
+//         </div>
+
+//         {error && <div className={styles.errorBanner} role="alert">{error}</div>}
+
+//         {entries !== null && (
+//           <>
+//             {/* Search */}
+//             <div className={styles.searchWrap}>
+//               <span className={styles.searchIcon}>🔍</span>
+//               <input
+//                 className={styles.searchInput}
+//                 type="text"
+//                 placeholder="Search platforms…"
+//                 value={search}
+//                 onChange={e => setSearch(e.target.value)}
+//               />
+//             </div>
+
+//             {/* Entry list */}
+//             {filtered.length === 0 ? (
+//               <p className={styles.emptyVault}>
+//                 {entries.length === 0
+//                   ? 'No passwords stored yet. Use the Generate or Save tab to add some.'
+//                   : `No platforms matching "${search}".`}
+//               </p>
+//             ) : (
+//               <ul className={styles.entryList}>
+//                 {filtered.map(entry => {
+//                   const isRevealed = !!revealed[entry.platform]
+//                   return (
+//                     <li key={entry.platform} className={styles.entryRow}>
+//                       <div className={styles.entryPlatform}>
+//                         <span className={styles.entryIcon} aria-hidden="true">🌐</span>
+//                         <span className={styles.entryPlatformName}>{entry.platform}</span>
+//                       </div>
+//                       <div className={styles.entryPasswordWrap}>
+//                         <code className={styles.entryPassword}>
+//                           {isRevealed
+//                             ? entry.decrypted_password
+//                             : '••••••••••••'}
+//                         </code>
+//                         <button
+//                           type="button"
+//                           className={styles.revealBtn}
+//                           onClick={() => toggleReveal(entry.platform)}
+//                         >
+//                           {isRevealed ? '🙈 Hide' : '👁 Reveal'}
+//                         </button>
+//                         {isRevealed && (
+//                           <CopyButton text={entry.decrypted_password} />
+//                         )}
+//                       </div>
+//                     </li>
+//                   )
+//                 })}
+//               </ul>
+//             )}
+
+//             <div className={styles.vaultFooter}>
+//               {filtered.length} of {entries.length} entries
+//             </div>
+//           </>
+//         )}
+//       </div>
+//     </div>
+//   )
+// }
+
 function VaultTab() {
-  const [entries,   setEntries]   = useState(null)   // null = not loaded yet
+  const [entries,   setEntries]   = useState(null)
   const [loading,   setLoading]   = useState(false)
   const [error,     setError]     = useState('')
   const [search,    setSearch]    = useState('')
-  const [revealed,  setRevealed]  = useState({})     // { platform: bool }
+  const [revealed,  setRevealed]  = useState({})
+  // { [platform]: 'confirming-delete' | 'editing' | null }
+  const [rowAction, setRowAction] = useState({})
+  const [editPass,  setEditPass]  = useState({}) // { [platform]: string }
+  const [actionMsg, setActionMsg] = useState({}) // { [platform]: { text, isError } }
 
   const loadVault = useCallback(async () => {
     setLoading(true); setError('')
     try {
       const { data } = await fetchAllPasswords()
       if (data.success) {
-        // Convert indexed map to array for easier rendering
         setEntries(Object.values(data.data))
+        setRowAction({}); setRevealed({}); setActionMsg({})
       } else {
         setError(data.error || 'Could not load the vault.')
       }
     } catch {
-      setError('Could not reach the server. Please check that Tomcat is running.')
+      setError('Could not reach the server.')
     } finally {
       setLoading(false)
     }
@@ -400,6 +523,62 @@ function VaultTab() {
 
   function toggleReveal(platform) {
     setRevealed(r => ({ ...r, [platform]: !r[platform] }))
+  }
+
+  function startDelete(platform) {
+    setRowAction(r => ({ ...r, [platform]: 'confirming-delete' }))
+    setActionMsg(m => ({ ...m, [platform]: null }))
+  }
+
+  function cancelAction(platform) {
+    setRowAction(r => ({ ...r, [platform]: null }))
+    setEditPass(p => ({ ...p, [platform]: '' }))
+  }
+
+  async function confirmDelete(platform) {
+    try {
+      const { data } = await deleteVaultEntry(platform)
+      if (data.success) {
+        setEntries(prev => prev.filter(e => e.platform !== platform))
+        setRowAction(r => ({ ...r, [platform]: null }))
+      } else {
+        setActionMsg(m => ({
+          ...m, [platform]: { text: data.error || 'Delete failed.', isError: true },
+        }))
+        setRowAction(r => ({ ...r, [platform]: null }))
+      }
+    } catch {
+      setActionMsg(m => ({
+        ...m, [platform]: { text: 'Could not reach the server.', isError: true },
+      }))
+      setRowAction(r => ({ ...r, [platform]: null }))
+    }
+  }
+
+  function startEdit(platform) {
+    setRowAction(r => ({ ...r, [platform]: 'editing' }))
+    setEditPass(p => ({ ...p, [platform]: '' }))
+    setActionMsg(m => ({ ...m, [platform]: null }))
+  }
+
+  async function confirmEdit(platform) {
+    const newPass = editPass[platform] || ''
+    if (!newPass.trim()) {
+      setActionMsg(m => ({ ...m, [platform]: { text: 'Password cannot be empty.', isError: true } }))
+      return
+    }
+    try {
+      const { data } = await updateVaultEntry(platform, newPass)
+      if (data.success) {
+        setActionMsg(m => ({ ...m, [platform]: { text: '✓ Password updated.', isError: false } }))
+        setRowAction(r => ({ ...r, [platform]: null }))
+        setEditPass(p => ({ ...p, [platform]: '' }))
+      } else {
+        setActionMsg(m => ({ ...m, [platform]: { text: data.error || 'Update failed.', isError: true } }))
+      }
+    } catch {
+      setActionMsg(m => ({ ...m, [platform]: { text: 'Could not reach the server.', isError: true } }))
+    }
   }
 
   const filtered = (entries || []).filter(e =>
@@ -412,9 +591,7 @@ function VaultTab() {
         <div className={styles.vaultHeader}>
           <div>
             <h2 className={styles.cardTitle}>My Vault</h2>
-            <p className={styles.cardHint}>
-              All your stored passwords, decrypted on demand.
-            </p>
+            <p className={styles.cardHint}>All your stored passwords, decrypted on demand.</p>
           </div>
           <button
             type="button"
@@ -430,7 +607,6 @@ function VaultTab() {
 
         {entries !== null && (
           <>
-            {/* Search */}
             <div className={styles.searchWrap}>
               <span className={styles.searchIcon}>🔍</span>
               <input
@@ -442,40 +618,101 @@ function VaultTab() {
               />
             </div>
 
-            {/* Entry list */}
             {filtered.length === 0 ? (
               <p className={styles.emptyVault}>
                 {entries.length === 0
-                  ? 'No passwords stored yet. Use the Generate or Save tab to add some.'
+                  ? 'No passwords stored yet.'
                   : `No platforms matching "${search}".`}
               </p>
             ) : (
               <ul className={styles.entryList}>
                 {filtered.map(entry => {
-                  const isRevealed = !!revealed[entry.platform]
+                  const { platform, decrypted_password } = entry
+                  const isRevealed   = !!revealed[platform]
+                  const action       = rowAction[platform] || null
+                  const msg          = actionMsg[platform] || null
+
                   return (
-                    <li key={entry.platform} className={styles.entryRow}>
-                      <div className={styles.entryPlatform}>
-                        <span className={styles.entryIcon} aria-hidden="true">🌐</span>
-                        <span className={styles.entryPlatformName}>{entry.platform}</span>
+                    <li key={platform} className={styles.entryRow}
+                        style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+
+                      {/* Main row */}
+                      <div style={{ display: 'flex', alignItems: 'center',
+                                    justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                        <div className={styles.entryPlatform}>
+                          <span className={styles.entryIcon} aria-hidden="true">🌐</span>
+                          <span className={styles.entryPlatformName}>{platform}</span>
+                        </div>
+
+                        <div className={styles.entryPasswordWrap}>
+                          <code className={styles.entryPassword}>
+                            {isRevealed ? decrypted_password : '••••••••••••'}
+                          </code>
+                          <button type="button" className={styles.revealBtn}
+                                  onClick={() => toggleReveal(platform)}>
+                            {isRevealed ? '🙈 Hide' : '👁 Reveal'}
+                          </button>
+                          {isRevealed && <CopyButton text={decrypted_password} />}
+                          <button type="button" className={styles.revealBtn}
+                                  onClick={() => action === 'editing' ? cancelAction(platform) : startEdit(platform)}>
+                            ✏️ {action === 'editing' ? 'Cancel' : 'Edit'}
+                          </button>
+                          <button type="button"
+                                  className={styles.revealBtn}
+                                  style={{ color: 'var(--clr-error)', borderColor: 'var(--clr-error-border)' }}
+                                  onClick={() => action === 'confirming-delete'
+                                    ? cancelAction(platform)
+                                    : startDelete(platform)}>
+                            🗑 {action === 'confirming-delete' ? 'Cancel' : 'Delete'}
+                          </button>
+                        </div>
                       </div>
-                      <div className={styles.entryPasswordWrap}>
-                        <code className={styles.entryPassword}>
-                          {isRevealed
-                            ? entry.decrypted_password
-                            : '••••••••••••'}
-                        </code>
-                        <button
-                          type="button"
-                          className={styles.revealBtn}
-                          onClick={() => toggleReveal(entry.platform)}
-                        >
-                          {isRevealed ? '🙈 Hide' : '👁 Reveal'}
-                        </button>
-                        {isRevealed && (
-                          <CopyButton text={entry.decrypted_password} />
-                        )}
-                      </div>
+
+                      {/* Inline edit form */}
+                      {action === 'editing' && (
+                        <div style={{ display: 'flex', gap: 8, marginTop: 8,
+                                      alignItems: 'center', flexWrap: 'wrap' }}>
+                          <input
+                            type="password"
+                            className={styles.textInput}
+                            style={{ flex: 1, minWidth: 180 }}
+                            placeholder="Enter new password"
+                            value={editPass[platform] || ''}
+                            onChange={e => setEditPass(p => ({ ...p, [platform]: e.target.value }))}
+                            autoFocus
+                          />
+                          <button type="button" className={styles.saveBtn}
+                                  onClick={() => confirmEdit(platform)}>
+                            Save
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Inline delete confirmation */}
+                      {action === 'confirming-delete' && (
+                        <div style={{ display: 'flex', gap: 8, marginTop: 8,
+                                      alignItems: 'center', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--clr-error)' }}>
+                            Remove <strong>{platform}</strong> from your vault?
+                          </span>
+                          <button type="button"
+                                  className={styles.saveBtn}
+                                  style={{ background: 'var(--clr-error)', color: '#fff',
+                                           border: 'none', padding: '7px 14px' }}
+                                  onClick={() => confirmDelete(platform)}>
+                            Yes, delete
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Action feedback */}
+                      {msg && (
+                        <div style={{ marginTop: 6, fontSize: 'var(--fs-sm)',
+                                      color: msg.isError ? 'var(--clr-error)' : 'var(--clr-success)',
+                                      fontWeight: 600 }}>
+                          {msg.text}
+                        </div>
+                      )}
                     </li>
                   )
                 })}

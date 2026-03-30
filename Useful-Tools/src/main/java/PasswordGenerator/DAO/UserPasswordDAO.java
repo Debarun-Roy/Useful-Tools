@@ -229,4 +229,44 @@ public class UserPasswordDAO {
             DatabaseUtils.closeSQLConnection(conn, pst, null);
         }
     }
+    /**
+     * Deletes the vault entry for the given (username, platform) pair from both
+     * encryption_table and password_table.
+     *
+     * Deletion order: encryption_table first, then password_table.
+     * SQLite does not enforce FK constraints by default, but this order is
+     * semantically correct — remove the key before the ciphertext.
+     *
+     * @return true if at least one row was deleted from password_table, false if
+     *         no matching entry was found.
+     */
+    public static boolean deleteVaultEntry(String username, String platform) {
+        Connection conn = null;
+        PreparedStatement pst = null;
+        try {
+            conn = DatabaseUtils.getSQLite3Connection();
+            logger.info("Deleting vault entry for user=" + username + " platform=" + platform);
+
+            pst = conn.prepareStatement(
+                    "DELETE FROM encryption_table WHERE username = ? AND platform = ?;");
+            pst.setString(1, username);
+            pst.setString(2, platform);
+            pst.executeUpdate();
+            pst.close();
+
+            pst = conn.prepareStatement(
+                    "DELETE FROM password_table WHERE username = ? AND platform = ?;");
+            pst.setString(1, username);
+            pst.setString(2, platform);
+            int rowsAffected = pst.executeUpdate();
+
+            logger.info("Vault entry deletion result: " + rowsAffected + " row(s) affected");
+            return rowsAffected > 0;
+        } catch (SQLException sqle) {
+            sqle.printStackTrace();
+            return false;
+        } finally {
+            DatabaseUtils.closeSQLConnection(conn, pst, null);
+        }
+    }
 }

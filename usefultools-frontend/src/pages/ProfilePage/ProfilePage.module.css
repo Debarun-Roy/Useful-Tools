@@ -1,0 +1,326 @@
+/* ─── Page shell ─────────────────────────────────────────────────────────── */
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f0f2f8;
+  font-family: var(--font);
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-xl);
+  height: 60px;
+  background: #fff;
+  border-bottom: 1px solid var(--clr-border);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+}
+
+.headerLeft, .headerRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.brand { display: flex; align-items: center; gap: var(--space-sm); }
+
+.brandMark {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-light));
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border-radius: 8px;
+}
+
+.brandName {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--clr-primary);
+  letter-spacing: -0.02em;
+}
+
+.backBtn {
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  transition: color 120ms, border-color 120ms;
+}
+.backBtn:hover { color: var(--clr-primary); border-color: var(--clr-primary); }
+
+.userBadge { font-size: var(--fs-sm); color: var(--clr-text-muted); }
+
+.logoutBtn {
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid var(--clr-primary);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--clr-primary);
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.logoutBtn:hover { background: var(--clr-primary); color: #fff; }
+
+/* ─── Hero ───────────────────────────────────────────────────────────────── */
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a0a2e 0%, #2d1458 50%, #1a0a2e 100%);
+  padding: 56px var(--space-xl) 52px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-xl);
+  flex-wrap: wrap;
+}
+
+.heroGrid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(180,120,255,0.2) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: 10%;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(160,80,255,0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.heroContent { position: relative; z-index: 1; max-width: 480px; }
+
+.heroBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(180,120,255,0.4);
+  background: rgba(180,120,255,0.1);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: var(--space-md);
+}
+
+.heroTitle {
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  font-weight: 800;
+  line-height: 1.0;
+  letter-spacing: -0.04em;
+  color: #fff;
+  margin-bottom: var(--space-md);
+}
+
+.heroAccent {
+  background: linear-gradient(90deg, #c084fc, #e879f9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.heroSub {
+  font-size: var(--fs-md);
+  color: rgba(255,255,255,0.5);
+  line-height: 1.6;
+}
+
+.heroStats {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  align-self: flex-end;
+}
+
+.statCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-md) var(--space-lg);
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+  min-width: 100px;
+}
+
+.statValue {
+  font-family: var(--font-mono);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #e879f9;
+  line-height: 1;
+}
+
+.statLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  text-align: center;
+}
+
+/* ─── Main ───────────────────────────────────────────────────────────────── */
+.main {
+  width: min(900px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: var(--space-xl) 0 var(--space-2xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.loading {
+  text-align: center;
+  color: var(--clr-text-muted);
+  padding: var(--space-2xl);
+}
+
+.errorBanner {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--clr-error-bg);
+  border: 1px solid var(--clr-error-border);
+  border-radius: 10px;
+  color: var(--clr-error);
+  font-size: var(--fs-sm);
+}
+
+/* ─── Identity card ──────────────────────────────────────────────────────── */
+.identityCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-xl);
+  background: #fff;
+  border: 1px solid var(--clr-border);
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  flex-wrap: wrap;
+}
+
+.avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c084fc, #e879f9);
+  display: grid;
+  place-items: center;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.identityInfo { flex: 1; min-width: 0; }
+
+.identityUsername {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--clr-text);
+  letter-spacing: -0.02em;
+}
+
+.identityMeta {
+  font-size: var(--fs-sm);
+  color: var(--clr-text-muted);
+  margin-top: 4px;
+}
+
+.changePassBtn {
+  padding: 9px 20px;
+  background: transparent;
+  border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--clr-primary);
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+  white-space: nowrap;
+}
+.changePassBtn:hover {
+  background: rgba(59,111,212,0.06);
+  border-color: var(--clr-primary);
+}
+
+/* ─── Stats grid ─────────────────────────────────────────────────────────── */
+.sectionLabel {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--clr-text-muted);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-md);
+}
+
+.statTile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: var(--space-lg);
+  background: #fff;
+  border: 1px solid var(--clr-border);
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  transition: transform 120ms, box-shadow 120ms;
+}
+.statTile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+.tileIcon { font-size: 1.5rem; }
+
+.tileValue {
+  font-family: var(--font-mono);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--clr-primary);
+  line-height: 1;
+}
+
+.tileLabel {
+  font-size: var(--fs-sm);
+  color: var(--clr-text-muted);
+  line-height: 1.4;
+}
+
+@media (max-width: 720px) {
+  .header  { padding: 0 var(--space-md); }
+  .hero    { padding: 40px var(--space-md) 36px; flex-direction: column; }
+  .heroStats { align-self: flex-start; }
+  .identityCard { gap: var(--space-md); }
+}

@@ -270,3 +270,30 @@ export const fetchAllPasswords = () =>
  */
 export const fetchPlatformPassword = (platform) =>
   request(`/passwords/fetch?choice=Single&platform=${encodeURIComponent(platform)}`)
+
+// ── Calculation History ───────────────────────────────────────────────────────
+
+export const fetchCalculationHistory = (page = 0, size = 20) =>
+  request(`/calculator/history?page=${page}&size=${size}`)
+
+export const fetchFinancialHistory = (type, page = 0, size = 10) =>
+  request(`/calculator/financial-history?type=${encodeURIComponent(type)}&page=${page}&size=${size}`)
+
+// ── User Profile ──────────────────────────────────────────────────────────────
+
+export const fetchUserProfile = () =>
+  request('/user/profile')
+
+// ── Vault Management ──────────────────────────────────────────────────────────
+
+export const deleteVaultEntry = (platform) =>
+  request(`/passwords/delete?platform=${encodeURIComponent(platform)}`, {
+    method: 'DELETE',
+  })
+
+export const updateVaultEntry = (platform, password) =>
+  request('/passwords/update', {
+    method: 'PUT',
+    isJson: true,
+    body: { platform, password },
+  })

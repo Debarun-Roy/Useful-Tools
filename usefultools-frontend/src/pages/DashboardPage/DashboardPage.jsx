@@ -29,6 +29,14 @@ const FEATURES = [
     desc:   'Generate, save and retrieve passwords securely',
   },
   {
+    label:  'Profile',
+    path:   '/profile',
+    sprint: 5,
+    ready:  true,
+    icon:   '👤',
+    desc:   'View your activity summary and account details',
+  },
+  {
     label:  'Update Password',
     path:   '/update-password',
     sprint: 1,
