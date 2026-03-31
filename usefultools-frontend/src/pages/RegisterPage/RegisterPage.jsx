@@ -9,6 +9,8 @@ const ERROR_MESSAGES = {
   INVALID_USERNAME:    'Username must be at least 3 characters long.',
   PASSWORD_TOO_SHORT:  'Password must be at least 8 characters long.',
   USERNAME_TAKEN:      'That username is already taken. Please choose another.',
+  // Sprint 6: rate limiting
+  RATE_LIMITED:        'Too many registration attempts. Please wait a moment before trying again.',
   INTERNAL_ERROR:      'Something went wrong on our end. Please try again.',
 }
 
@@ -21,7 +23,7 @@ export default function RegisterPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error,    setError]    = useState('')
-  const [success,  setSuccess]  = useState(false)  // true after successful registration
+  const [success,  setSuccess]  = useState(false)
   const [loading,  setLoading]  = useState(false)
 
   const navigate = useNavigate()
@@ -41,8 +43,6 @@ export default function RegisterPage() {
       const { data } = await registerUser(username.trim(), password)
 
       if (data.success) {
-        // Show the success state for 2 seconds, then navigate to login.
-        // setTimeout schedules a function to run after a delay (milliseconds).
         setSuccess(true)
         setTimeout(() => navigate('/login'), 2000)
       } else {
@@ -55,7 +55,6 @@ export default function RegisterPage() {
     }
   }
 
-  // ── Success state — shown while the 2-second redirect timer runs ──────────
   if (success) {
     return (
       <AuthLayout title="Account created">
@@ -66,7 +65,6 @@ export default function RegisterPage() {
     )
   }
 
-  // ── Default state — the registration form ────────────────────────────────
   return (
     <AuthLayout title="Create account">
 
@@ -79,9 +77,7 @@ export default function RegisterPage() {
         )}
 
         <div className={styles.field}>
-          <label htmlFor="username" className={styles.label}>
-            Username
-          </label>
+          <label htmlFor="username" className={styles.label}>Username</label>
           <input
             id="username"
             type="text"
@@ -96,9 +92,7 @@ export default function RegisterPage() {
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="password" className={styles.label}>
-            Password
-          </label>
+          <label htmlFor="password" className={styles.label}>Password</label>
           <input
             id="password"
             type="password"

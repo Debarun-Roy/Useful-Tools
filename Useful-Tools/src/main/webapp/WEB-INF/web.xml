@@ -1,45 +1,76 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-    NAMESPACE NOTE
-    ══════════════
-    The Eclipse-generated version of this file used:
-        version="2.4" xmlns="http://java.sun.com/xml/ns/j2ee"
-    That is the Servlet 2.4 / J2EE 1.4 specification from 2003.
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+           https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
+         version="5.0">
 
-    Every servlet and filter in this project uses:
-        import jakarta.servlet.*;
-    The jakarta.* package prefix only exists from Jakarta EE 9 onwards,
-    which corresponds to Servlet 5.0 and Tomcat 10+. The web.xml namespace
-    must match — otherwise the deployment descriptor contradicts the runtime.
-
-    The correct namespace for this project is therefore:
-        version="5.0" xmlns="https://jakarta.ee/xml/ns/jakartaee"
-
-    Tomcat 10+ will parse both, but declaring 2.4 while running 5.0 is
-    technically incorrect and disallows the use of modern schema features.
-    If strict schema validation is ever enabled, the old namespace fails.
--->
-<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="https://jakarta.ee/xml/ns/jakartaee" xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd" version="5.0">
   <display-name>UsefulTools</display-name>
+
   <welcome-file-list>
     <welcome-file>index.html</welcome-file>
   </welcome-file-list>
+
+  <!-- ── Filter declarations ─────────────────────────────────────────────── -->
+
   <filter>
     <filter-name>CorsFilter</filter-name>
     <filter-class>common.filter.CorsFilter</filter-class>
   </filter>
+
+  <!--
+    RateLimitFilter (Sprint 6): caps POST attempts per IP on auth endpoints.
+    Max 10 POST requests per IP per 60-second window on /api/auth/*.
+  -->
+  <filter>
+    <filter-name>RateLimitFilter</filter-name>
+    <filter-class>common.filter.RateLimitFilter</filter-class>
+  </filter>
+
+  <filter>
+    <filter-name>AuthFilter</filter-name>
+    <filter-class>common.filter.AuthFilter</filter-class>
+  </filter>
+
+  <!--
+    CsrfFilter (Sprint 6): double-submit cookie CSRF protection.
+    Validates X-XSRF-TOKEN header against the session csrfToken attribute
+    for all non-safe, non-public HTTP requests.
+    Placed AFTER AuthFilter so unauthenticated requests are already rejected.
+  -->
+  <filter>
+    <filter-name>CsrfFilter</filter-name>
+    <filter-class>common.filter.CsrfFilter</filter-class>
+  </filter>
+
+  <!-- ── Filter mappings (ORDER MATTERS — top to bottom) ─────────────────── -->
+
+  <!-- 1. CORS runs first on every request. -->
   <filter-mapping>
     <filter-name>CorsFilter</filter-name>
     <url-pattern>/*</url-pattern>
     <dispatcher>REQUEST</dispatcher>
   </filter-mapping>
-  <filter>
-    <filter-name>AuthFilter</filter-name>
-    <filter-class>common.filter.AuthFilter</filter-class>
-  </filter>
+
+  <!-- 2. Rate limit runs second, only on auth endpoints. -->
+  <filter-mapping>
+    <filter-name>RateLimitFilter</filter-name>
+    <url-pattern>/api/auth/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+
+  <!-- 3. Auth runs third on all API endpoints. -->
   <filter-mapping>
     <filter-name>AuthFilter</filter-name>
     <url-pattern>/api/*</url-pattern>
     <dispatcher>REQUEST</dispatcher>
   </filter-mapping>
+
+  <!-- 4. CSRF runs last on all API endpoints (after Auth rejects unauth). -->
+  <filter-mapping>
+    <filter-name>CsrfFilter</filter-name>
+    <url-pattern>/api/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+
 </web-app>

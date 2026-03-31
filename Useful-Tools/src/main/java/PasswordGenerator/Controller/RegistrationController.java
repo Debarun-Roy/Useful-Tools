@@ -11,11 +11,19 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import passwordgenerator.dao.PasswordHistoryDAO;
 import passwordgenerator.dao.UserDAO;
+import passwordgenerator.utilities.HashingUtils;
 
 /**
- * CHANGE 6: Path renamed /Registration → /api/auth/register
- * All other content identical to the batch-1 version.
+ * Sprint 6 addition: seeds the password_history table with the user's
+ * initial password hash on successful registration. This prevents the user
+ * from immediately "updating" back to the exact password they registered with,
+ * enforcing consistent reuse protection from the very first login.
+ *
+ * A second BCrypt hash is generated for the history entry. BCrypt uses a
+ * per-call random salt, so the history hash differs from the one stored in
+ * user_table as a string — but both correctly verify via BCrypt.checkpw().
  */
 @WebServlet("/api/auth/register")
 public class RegistrationController extends HttpServlet {
@@ -64,11 +72,20 @@ public class RegistrationController extends HttpServlet {
             if (UserDAO.checkIfUserExists(username.trim())) {
                 response.setStatus(HttpServletResponse.SC_CONFLICT);
                 out.print(gson.toJson(ApiResponse.fail(
-                        "That username is already taken. Please choose another.", "USERNAME_TAKEN")));
+                        "That username is already taken. Please choose another.",
+                        "USERNAME_TAKEN")));
                 return;
             }
 
+            // Register the user (hashes password internally).
             UserDAO.registerUser(username.trim(), password);
+
+            // Seed password history so the registration password cannot be
+            // immediately reused after a "change password" action (Sprint 6).
+            // A fresh BCrypt hash is generated — different salt from user_table
+            // but verifiable by BCrypt.checkpw().
+            String historyHash = HashingUtils.generateHashedPassword(password);
+            PasswordHistoryDAO.addToHistory(username.trim(), historyHash);
 
             LinkedHashMap<String, String> data = new LinkedHashMap<>();
             data.put("message", "Registration successful. Please log in.");
