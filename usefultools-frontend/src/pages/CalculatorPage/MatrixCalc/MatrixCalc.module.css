@@ -1,0 +1,257 @@
+.calculator {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* ── Controls ─────────────────────────────────────────────────────────────── */
+
+.controlRow {
+  display: flex;
+  gap: var(--space-xl);
+  flex-wrap: wrap;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.controlGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.controlLabel {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--clr-text-muted);
+}
+
+.toggle {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--clr-input-bg);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  width: fit-content;
+}
+
+.toggleBtn,
+.toggleActive {
+  padding: 8px 20px;
+  border: none;
+  border-radius: calc(var(--radius-md) - 2px);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+
+.toggleBtn    { background: transparent; color: var(--clr-text-muted); }
+.toggleBtn:hover:not(:disabled) { background: rgba(0,0,0,0.04); color: var(--clr-text); }
+.toggleActive { background: var(--clr-primary); color: #fff; box-shadow: 0 2px 8px rgba(59,111,212,0.25); }
+.toggleBtn:disabled, .toggleActive:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.opGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.opBtn,
+.opBtnActive {
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+
+.opBtn {
+  background: var(--clr-input-bg);
+  border-color: var(--clr-border);
+  color: var(--clr-text-muted);
+}
+.opBtn:hover:not(:disabled) {
+  border-color: var(--clr-accent);
+  color: var(--clr-primary);
+  background: #f0f6ff;
+}
+
+.opBtnActive {
+  background: rgba(59,111,212,0.10);
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+}
+
+.opBtn:disabled, .opBtnActive:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Matrix inputs ────────────────────────────────────────────────────────── */
+
+.matricesRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.matrixBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.matrixLabel {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--clr-text);
+}
+
+.matrixGrid {
+  display: grid;
+  gap: 6px;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.cellInput {
+  width: 72px;
+  padding: 10px 8px;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  background: var(--clr-input-bg);
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  font-weight: 500;
+  color: var(--clr-text);
+  text-align: center;
+  outline: none;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+.cellInput:focus {
+  border-color: var(--clr-accent);
+  box-shadow: 0 0 0 3px rgba(74,144,217,0.15);
+}
+.cellInput::placeholder { color: var(--clr-text-muted); }
+
+.timesSign {
+  font-size: 2rem;
+  color: var(--clr-text-muted);
+  font-weight: 300;
+  align-self: center;
+  padding: 0 var(--space-sm);
+}
+
+/* ── Action row ───────────────────────────────────────────────────────────── */
+
+.actionRow {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.calcBtn,
+.clearBtn {
+  padding: 12px 28px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms, box-shadow 120ms, opacity 120ms;
+}
+
+.calcBtn {
+  background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-light));
+  color: #fff;
+  box-shadow: 0 3px 12px rgba(59,111,212,0.25);
+}
+.calcBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(59,111,212,0.35);
+}
+.calcBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.clearBtn {
+  background: rgba(248,81,73,0.08);
+  color: var(--clr-error);
+  border: 1px solid rgba(248,81,73,0.2);
+}
+.clearBtn:hover:not(:disabled) { background: rgba(248,81,73,0.14); }
+.clearBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Error ────────────────────────────────────────────────────────────────── */
+
+.errorRow {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--clr-error-bg);
+  border: 1px solid var(--clr-error-border);
+  border-radius: var(--radius-sm);
+  color: var(--clr-error);
+  font-size: var(--fs-sm);
+}
+
+/* ── Result ───────────────────────────────────────────────────────────────── */
+
+.resultPanel {
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  animation: fadeIn 150ms ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.resultLabel {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--clr-text-muted);
+}
+
+.scalarResult {
+  font-family: var(--font-mono);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--clr-primary);
+  line-height: 1;
+}
+
+.resultGrid {
+  display: grid;
+  gap: 6px;
+  width: fit-content;
+}
+
+.resultCell {
+  display: grid;
+  place-items: center;
+  width: 88px;
+  padding: 10px 8px;
+  background: rgba(59,111,212,0.05);
+  border: 1px solid rgba(59,111,212,0.15);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--clr-primary);
+}

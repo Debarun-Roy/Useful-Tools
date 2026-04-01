@@ -33,32 +33,23 @@ import net.objecthunter.exp4j.Expression;
 import net.objecthunter.exp4j.ExpressionBuilder;
 import net.objecthunter.exp4j.function.Function;
 
+/**
+ * FIX (Sprint 7) — evaluateBooleanExpression() now correctly handles
+ * expressions with multiple sibling boolean function calls such as
+ * majority(1,0,1)&nand(1,1) or xor(1,0)|nor(0,0).
+ *
+ * The same find-replace loop fix applied to IntermediateUtils is applied here.
+ * After evaluating a function call, the result (0.0 or 1.0 for boolean functions,
+ * or any numeric value for arithmetic functions in combined contexts) is
+ * substituted back into the string and the scan restarts. After all function
+ * calls are resolved, buildBooleanExpression() evaluates the remaining
+ * operator-only expression (e.g. "1.0&0.0", "1.0|0.0&1.0").
+ */
 public class BooleanUtils {
 
     /**
-     * Returns true if the expression is valid for the boolean calculator.
-     *
-     * PREVIOUS APPROACH — WRONG:
-     *   buildBooleanExpression(expr).build()
-     *   This uses exp4j's build() which may throw for certain operator symbols
-     *   depending on the exp4j version. The exact exception type (and whether it
-     *   is an Exception or Error subclass) varies. The result was that expressions
-     *   like 1|1 returned valid:false even though evaluation worked correctly.
-     *
-     * CORRECT APPROACH:
-     *   Use evaluateBooleanExpression(expr) directly as the validation mechanism.
-     *   This is the IDENTICAL code path used for actual evaluation, so validation
-     *   and evaluation are guaranteed to agree. If evaluation succeeds, the
-     *   expression is valid. If it throws for any reason (syntax error, unknown
-     *   symbol, etc.), the expression is invalid.
-     *
-     *   Catching Throwable (not just Exception) ensures that Error subclasses
-     *   such as ExceptionInInitializerError — which are thrown when a class's
-     *   static initialiser fails — are also caught and do not propagate.
-     *
-     *   The exception is printed to System.err so that if a NEW type of failure
-     *   is encountered, the exact cause is visible in the Tomcat console. This
-     *   makes future debugging straightforward.
+     * Validates a boolean expression by attempting evaluation.
+     * See existing comments — logic unchanged.
      */
     public static boolean validateExpression(String expr) {
         if (expr == null || expr.isBlank()) return false;
@@ -66,8 +57,6 @@ public class BooleanUtils {
             evaluateBooleanExpression(expr);
             return true;
         } catch (Throwable t) {
-            // Print to console so the exact failure type is visible in Tomcat logs.
-            // Remove this line once boolean validation is confirmed stable.
             System.err.println("[BooleanUtils.validateExpression] rejected '" + expr
                     + "' — " + t.getClass().getName() + ": " + t.getMessage());
             return false;
@@ -75,18 +64,15 @@ public class BooleanUtils {
     }
 
     public static double evaluateBooleanExpression(String expr) throws Exception {
-        if (expr == null || expr.isEmpty()) {
-            return 0.0;
-        }
+        if (expr == null || expr.isEmpty()) return 0.0;
 
-//        Pattern p = Pattern.compile(
-//                "(?i)\\b(majority|parity)\\b\\s*\\(((?:[^()]++|\\((?:[^()]++|\\([^()]*\\))*\\))*)\\)");
         Pattern p = Pattern.compile(
-        		"(?i)\\b([a-zA-Z_]\\w*)\\b\\s*\\(((?:[^()]++|\\((?:[^()]++|\\([^()]*\\))*\\))*)\\)"
-        		);
-        Matcher m = p.matcher(expr);
+                "(?i)\\b([a-zA-Z_]\\w*)\\b\\s*\\(((?:[^()]++|\\((?:[^()]++|\\([^()]*\\))*\\))*)\\)");
 
-        if (m.find()) {
+        String current = expr.trim();
+        Matcher m = p.matcher(current);
+
+        while (m.find()) {
             String funcName = m.group(1);
             String argsStr  = m.group(2);
 
@@ -95,10 +81,20 @@ public class BooleanUtils {
             for (int i = 0; i < args.size(); i++) {
                 evaluatedArgs[i] = evaluateBooleanExpression(args.get(i));
             }
-            return applyFunction(funcName, evaluatedArgs);
+            double result = applyFunction(funcName, evaluatedArgs);
+
+            if (Double.isNaN(result) || Double.isInfinite(result)) return result;
+
+            // Boolean results are 0.0 or 1.0 — never negative — but guard anyway.
+            String resultStr = result < 0
+                    ? "(" + result + ")"
+                    : String.valueOf(result);
+
+            current = current.substring(0, m.start()) + resultStr + current.substring(m.end());
+            m = p.matcher(current);
         }
 
-        ExpressionBuilder exp = buildBooleanExpression(expr);
+        ExpressionBuilder exp = buildBooleanExpression(current);
         Expression e = exp.build();
         return e.evaluate();
     }
@@ -108,14 +104,12 @@ public class BooleanUtils {
             return new parity().apply(args);
         }
         if (funcName.equalsIgnoreCase("majority")) {
-        	return new majority().apply(args);
+            return new majority().apply(args);
         }
-        //if our function is found in our function registry
         for (Function f : FunctionRegistry.getFunctions()) {
-        	if(f.getName().equals(funcName)) {
-        		// Call apply() directly — bypasses exp4j's argument-count check.
+            if (f.getName().equals(funcName)) {
                 return f.apply(args);
-        	}
+            }
         }
         String reconstructed = funcName + "("
                 + Arrays.stream(args).mapToObj(String::valueOf).collect(Collectors.joining(","))
@@ -127,7 +121,6 @@ public class BooleanUtils {
         ArrayList<String> args = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         int depth = 0;
-
         for (int i = 0; i < argsStr.length(); i++) {
             char ch = argsStr.charAt(i);
             if (ch == ',' && depth == 0) {
@@ -139,9 +132,7 @@ public class BooleanUtils {
                 current.append(ch);
             }
         }
-        if (current.length() > 0) {
-            args.add(current.toString().trim());
-        }
+        if (current.length() > 0) args.add(current.toString().trim());
         return args;
     }
 

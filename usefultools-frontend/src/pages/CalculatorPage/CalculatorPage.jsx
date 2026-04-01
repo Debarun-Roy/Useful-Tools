@@ -15,6 +15,8 @@ import ComplexCalc from './ComplexCalc/ComplexCalc'
 import FinancialCalc from './FinancialCalc/FinancialCalc'
 import styles from './CalculatorPage.module.css'
 import HistoryTab from './HistoryTab/HistoryTab'
+import MatrixCalc from './MatrixCalc/MatrixCalc'
+import StatsCalc  from './StatsCalc/StatsCalc'
 
 const TABS = [
   { id: 'simple',       label: 'Simple',         icon: '1+' },
@@ -24,6 +26,8 @@ const TABS = [
   { id: 'combined',     label: 'Combined',       icon: 'mix' },
   { id: 'complex',      label: 'Complex',        icon: 'z' },
   { id: 'financial',    label: 'Financial',      icon: '💰' },
+  { id: 'matrix',       label: 'Matrix',         icon: 'M' },
+  { id: 'stats',        label: 'Statistics',     icon: 'σ' },
   { id: 'history',      label: 'History',        icon: '⧖' },
 ]
 
@@ -314,6 +318,10 @@ export default function CalculatorPage() {
               ? <ComplexCalc />
               : activeTab === 'financial'
               ? <FinancialCalc />
+              : activeTab === 'matrix'
+              ? <MatrixCalc />
+              : activeTab === 'stats'
+              ? <StatsCalc />
               : activeTab === 'history'
               ? <HistoryTab />
               : (

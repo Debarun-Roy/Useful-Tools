@@ -29,6 +29,14 @@ const FEATURES = [
     desc:   'Generate, save and retrieve passwords securely',
   },
   {
+    label:  'Unit Converter',
+    path:   '/converter',
+    sprint: 7,
+    ready:  true,
+    icon:   '🔄',
+    desc:   'Convert between length, mass, temperature, time, data, speed and area',
+  },
+  {
     label:  'Profile',
     path:   '/profile',
     sprint: 5,

@@ -219,3 +219,21 @@ export const updateVaultEntry = (platform, password) =>
     isJson: true,
     body: { platform, password },
   })
+
+// ── Matrix Calculator ─────────────────────────────────────────────────────────
+
+export const calculateMatrix = (operation, size, matrix1, matrix2 = null) =>
+  request('/calculator/matrix', {
+    method: 'POST',
+    isJson: true,
+    body: { operation, size, matrix1, ...(matrix2 ? { matrix2 } : {}) },
+  })
+
+// ── Statistics Calculator ─────────────────────────────────────────────────────
+
+export const calculateStats = (data) =>
+  request('/calculator/stats', {
+    method: 'POST',
+    isJson: true,
+    body: { data },
+  })

@@ -9,6 +9,7 @@ import CalculatorPage         from './pages/CalculatorPage/CalculatorPage'
 import NumberAnalyserPage     from './pages/NumberAnalyzerPage/NumberAnalyzerPage'
 import PasswordVaultPage      from './pages/PasswordVaultPage/PasswordVaultPage'
 import ProfilePage from './pages/ProfilePage/ProfilePage'
+import UnitConverterPage from './pages/UnitConverterPage/UnitConverterPage'
 
 export default function App() {
   return (
@@ -35,6 +36,9 @@ export default function App() {
           } />
           <Route path="/vault" element={
             <ProtectedRoute><PasswordVaultPage /></ProtectedRoute>
+          } />
+          <Route path="/converter" element={
+            <ProtectedRoute><UnitConverterPage /></ProtectedRoute>
           } />
           <Route path="/profile" element={
             <ProtectedRoute><ProfilePage /></ProtectedRoute>
