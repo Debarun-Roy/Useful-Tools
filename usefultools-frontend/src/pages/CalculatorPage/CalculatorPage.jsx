@@ -303,6 +303,7 @@ export default function CalculatorPage() {
             { value: '50+', label: 'functions' },
             { value: '1', label: 'workspace' },
           ]}
+          fullWidth
         />
 
         <PageTabs

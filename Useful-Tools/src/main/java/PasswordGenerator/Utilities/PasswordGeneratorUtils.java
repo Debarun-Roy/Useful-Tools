@@ -9,13 +9,17 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
- * FIX: Removed the broken generateEncryptedPassword(String) method that was
- *   duplicated here from EncryptionUtils but discarded the private key, making
- *   decryption permanently impossible. Use EncryptionUtils.generateEncryptedPassword()
- *   for all encryption needs.
+ * FIX: getRandomSpecialChars() used range [33, 127) with a fixed count then
+ *   filtered — this discards letter/digit characters from the fixed-size stream,
+ *   producing fewer than `length` special characters. The password total length
+ *   is therefore always less than requested.
+ *
+ *   Corrected to use an infinite stream + filter + limit(length), which
+ *   guarantees exactly `length` special characters are returned regardless of
+ *   how many candidates are rejected by the filter.
  *
  * FIX: getRandomNumbers() used range [48, 57) which excludes '9' (ASCII 57).
- *   Corrected to [48, 58) so all digit characters 0–9 are included.
+ *   Corrected to [48, 58).
  *
  * FIX: getRandomAlphabets() used range ['a','z'] and ['A','Z'] — both exclusive
  *   on the upper bound in Random.ints(), excluding 'z' and 'Z'. Corrected to
@@ -23,11 +27,22 @@ import java.util.stream.Stream;
  */
 public class PasswordGeneratorUtils {
 
+    /**
+     * Returns exactly {@code length} special (non-letter, non-digit) characters
+     * in the printable ASCII range [33, 127).
+     *
+     * Uses an infinite stream filtered to special chars, then limited to the
+     * requested count — this guarantees the exact count regardless of how many
+     * raw candidates the filter rejects.
+     */
     public static Stream<Character> getRandomSpecialChars(int length) {
         Random random = new SecureRandom();
-        IntStream specialChars = random.ints(length, 33, 127)
-                .filter(i -> !Character.isLetterOrDigit(i));
-        return specialChars.mapToObj(data -> (char) data);
+        // FIX: was random.ints(length, 33, 127).filter(...) which produced
+        // FEWER than `length` results because filter discards from a finite stream.
+        return random.ints(33, 127)
+                .filter(i -> !Character.isLetterOrDigit(i))
+                .limit(length)
+                .mapToObj(data -> (char) data);
     }
 
     public static Stream<Character> getRandomNumbers(int length) {
@@ -52,6 +67,10 @@ public class PasswordGeneratorUtils {
     /**
      * Splits a total password length into four random sub-lengths that sum to
      * exactly {@code length}: [numbers, specialChars, lowercase, uppercase].
+     *
+     * Each of the first three buckets is assigned a random value in
+     * [0, length/4], and the fourth bucket absorbs the remainder so the
+     * sum is always exactly length.
      */
     public static int[] getRandomizedValues(int length) {
         Random random = new SecureRandom();
@@ -59,7 +78,7 @@ public class PasswordGeneratorUtils {
         int v2 = random.nextInt(length / 4 + 1);
         int v3 = random.nextInt(length / 4 + 1);
         int v4 = length - v1 - v2 - v3;
-        // Guard: if rounding pushed v4 negative, redistribute.
+        // Guard: if rounding pushed v4 negative, redistribute evenly.
         if (v4 < 0) {
             v1 = length / 4;
             v2 = length / 4;

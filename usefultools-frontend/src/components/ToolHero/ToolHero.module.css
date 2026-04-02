@@ -14,6 +14,18 @@
   box-shadow: 0 28px 80px rgba(15, 27, 61, 0.24);
 }
 
+/**
+ * Full-width variant — overrides the floating card constraints.
+ * Matches the hero style used by NumberAnalyzer, PasswordVault, etc.
+ * Applied when the fullWidth prop is true.
+ */
+.heroFull {
+  width: 100%;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .hero::before {
   content: '';
   position: absolute;
@@ -118,5 +130,11 @@
     width: calc(100% - 24px);
     padding: 40px var(--space-md) 36px;
     border-radius: 22px;
+  }
+
+  /* Full-width variant overrides the mobile border-radius too */
+  .heroFull {
+    width: 100%;
+    border-radius: 0;
   }
 }

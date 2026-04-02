@@ -1,8 +1,8 @@
 import styles from './ToolHero.module.css'
 
-export default function ToolHero({ badge, title, accent, description, stats = [] }) {
+export default function ToolHero({ badge, title, accent, description, stats = [], fullWidth = false }) {
   return (
-    <section className={styles.hero}>
+    <section className={fullWidth ? `${styles.hero} ${styles.heroFull}` : styles.hero}>
       <div className={styles.grid} aria-hidden="true" />
       <div className={styles.content}>
         {badge && <div className={styles.badge}>{badge}</div>}
