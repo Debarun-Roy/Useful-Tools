@@ -10,43 +10,31 @@ import numberanalyzer.categories.PrimeNumbers;
 import numberanalyzer.categories.Recreational;
 
 /**
- * NEW FILE — NumberAnalyzerService
+ * Sprint 8 addition — prime factorization.
  *
- * WHY THIS IS NEEDED:
- * NumberAnalysisDisplayController built every analysis result map inline inside
- * doPost(), making the logic impossible to unit-test without a servlet container.
+ * buildPrimes() now prepends a "Factorization: ..." entry for every n > 1,
+ * using trial division bounded at max(√n, 10⁶) to keep response time
+ * predictable for large inputs. The remaining cofactor (if any) is appended
+ * as a likely-prime large factor.
  *
- * This service class centralises all analysis logic. The controller becomes a
- * thin layer that calls analyzeNumber() and serialises the result.
+ * Examples:
+ *   n = 12   → "Factorization: 2² × 3"
+ *   n = 360  → "Factorization: 2³ × 3² × 5"
+ *   n = 97   → "Factorization: 97"  (97 is prime, shows itself)
+ *   n = 2    → "Factorization: 2"
  *
- * FIXES applied here (carried from controller review):
+ * Unicode superscript digits are used for exponents (e.g. ² ³ ⁴).
  *
- * FIX 1 — Duplicate "Real" and "Rational" checks:
- *   The original checked isInteger() twice, labelling the results "Real" and
- *   "Rational". Every long IS an integer, IS real, and IS rational — these
- *   three checks always passed for every input and added no information.
- *   Removed as misleading noise.
- *
- * FIX 2 — Every number labelled "Sad" and "Composite":
- *   "!rec.isHappy(number)" was always in the response for non-happy numbers,
- *   and "!pn.isPrime(number)" always fired for composites — meaning every
- *   response contained either "Happy" or "Sad" and either "Prime" or "Composite".
- *   These negation checks are redundant; "Composite" and "Sad" are implied by
- *   the absence of "Prime" and "Happy" respectively. Removed.
- *
- * IMPROVEMENT — Reusable analysis:
- *   analyzeNumber() can be called from any controller or test. The
- *   NumberCheck and Factorials categories (unused in the old controller) are
- *   also included here.
+ * All other logic from the previous service is preserved unchanged.
  */
 public class NumberAnalyzerService {
 
-    private final PrimeNumbers     pn  = new PrimeNumbers();
+    private final PrimeNumbers        pn  = new PrimeNumbers();
     private final BaseNRepresentation bnr = new BaseNRepresentation();
-    private final NumberTheory     nt  = new NumberTheory();
-    private final Factors          fac = new Factors();
-    private final Recreational     rec = new Recreational();
-    private final Patterns         pat = new Patterns();
+    private final NumberTheory        nt  = new NumberTheory();
+    private final Factors             fac = new Factors();
+    private final Recreational        rec = new Recreational();
+    private final Patterns            pat = new Patterns();
 
     /**
      * Analyses a number across all categories and returns a nested map:
@@ -69,15 +57,11 @@ public class NumberAnalyzerService {
         return result;
     }
 
-    // -------------------------------------------------------------------------
-    // Private category builders
-    // -------------------------------------------------------------------------
+    // ── Category builders ────────────────────────────────────────────────────
 
     private LinkedHashMap<Integer, String> buildNumberTheory(long n, String fmt) {
         LinkedHashMap<Integer, String> map = new LinkedHashMap<>();
         int i = 0;
-        // FIX: Removed duplicate isInteger() checks for "Real" and "Rational" —
-        // every long is always both, so they conveyed no useful information.
         if (nt.isNatural(n))  map.put(++i, fmt.replace("%s", "Natural"));
         if (nt.isWhole(n))    map.put(++i, fmt.replace("%s", "Whole"));
         if (nt.isNegative(n)) map.put(++i, fmt.replace("%s", "Negative"));
@@ -90,18 +74,22 @@ public class NumberAnalyzerService {
     private LinkedHashMap<Integer, String> buildPrimes(long n, String fmt) {
         LinkedHashMap<Integer, String> map = new LinkedHashMap<>();
         int i = 0;
+
+        // ── Sprint 8: Prime factorization ─────────────────────────────────
+        // Show for all n > 1 regardless of primality.
+        if (n > 1) {
+            map.put(++i, "Factorization: " + formatPrimeFactorization(n));
+        }
+
         boolean prime = pn.isPrime(n);
         boolean happy = rec.isHappy(n);
 
         if (prime)                          map.put(++i, fmt.replace("%s", "Prime"));
-        // FIX: removed "!prime → Composite" — implied by absence of Prime entry
         if (pn.isSemiPrime(n))              map.put(++i, fmt.replace("%s", "Semi Prime"));
         if (pn.isEmirp(n))                  map.put(++i, fmt.replace("%s", "Emirp"));
         if (pn.isPrimePalindrome(n))        map.put(++i, fmt.replace("%s", "Prime Palindrome"));
         if (fac.isPerfect(n) && prime)      map.put(++i, fmt.replace("%s", "Perfect Prime"));
         if (happy && prime)                 map.put(++i, fmt.replace("%s", "Happy Prime"));
-        // FIX: removed "!happy && prime → Sad Prime" — "Sad Prime" = prime that
-        // is not happy; already derivable from the absence of "Happy Prime".
         if (pn.isAdditivePrime(n))          map.put(++i, fmt.replace("a %s", "an Additive Prime"));
         if (pn.isAnagrammaticPrime(n))      map.put(++i, fmt.replace("a %s", "an Anagrammatic Prime"));
         if (pn.isCircularPrime(n))          map.put(++i, fmt.replace("%s", "Circular Prime"));
@@ -135,7 +123,6 @@ public class NumberAnalyzerService {
     private LinkedHashMap<Integer, String> buildRecreational(long n, String fmt) {
         LinkedHashMap<Integer, String> map = new LinkedHashMap<>();
         int i = 0;
-        // FIX: removed "!rec.isHappy(n) → Sad" — implied by absence of Happy
         if (rec.isArmstrong(n))   map.put(++i, fmt.replace("a %s", "an Armstrong"));
         if (rec.isHarshad(n))     map.put(++i, fmt.replace("%s", "Harshad"));
         if (rec.isDisarium(n))    map.put(++i, fmt.replace("%s", "Disarium"));
@@ -193,5 +180,70 @@ public class NumberAnalyzerService {
         map.put(2, bnr.getOctalRepresentation(n));
         map.put(3, bnr.getHexRepresentation(n));
         return map;
+    }
+
+    // ── Prime factorization helpers ──────────────────────────────────────────
+
+    /**
+     * Returns a formatted prime factorization string for n > 1.
+     *
+     * Uses trial division up to min(√n, 10⁶) so the method is always fast
+     * even for large inputs. If n still has a factor remaining after the
+     * trial-division bound, it is appended as a single (likely prime) factor.
+     *
+     * Examples:
+     *   360  → "2³ × 3² × 5"
+     *   97   → "97"
+     *   1000 → "2³ × 5³"
+     */
+    private String formatPrimeFactorization(long n) {
+        if (n <= 1) return String.valueOf(n);
+
+        StringBuilder sb = new StringBuilder();
+        long temp = Math.abs(n);
+        boolean first = true;
+
+        // Trial division up to min(sqrt(n), 10^6)
+        long limit = (long) Math.sqrt((double) temp) + 1L;
+        if (limit > 1_000_000L) limit = 1_000_000L;
+
+        for (long f = 2L; f <= limit && f * f <= temp; f++) {
+            if (temp % f == 0L) {
+                int exp = 0;
+                while (temp % f == 0L) { exp++; temp /= f; }
+                if (!first) sb.append(" \u00d7 "); // ×
+                sb.append(f);
+                if (exp > 1) sb.append(toSuperscript(exp));
+                first = false;
+                // Recalculate limit after dividing out the factor
+                limit = (long) Math.sqrt((double) temp) + 1L;
+                if (limit > 1_000_000L) limit = 1_000_000L;
+            }
+        }
+
+        // Any remaining factor > 1 is either prime or a large composite
+        // (the latter only if original n > 10^12; acceptable approximation).
+        if (temp > 1L) {
+            if (!first) sb.append(" \u00d7 "); // ×
+            sb.append(temp);
+        }
+
+        // Edge case: n itself is prime (no factors found), result is just n.
+        return first ? String.valueOf(Math.abs(n)) : sb.toString();
+    }
+
+    /**
+     * Converts a positive integer to its Unicode superscript representation.
+     * Supports multi-digit exponents (e.g. 12 → "¹²").
+     */
+    private static String toSuperscript(int n) {
+        // Unicode superscript: ⁰¹²³⁴⁵⁶⁷⁸⁹
+        final char[] SUPS = { '\u2070','\u00b9','\u00b2','\u00b3',
+                              '\u2074','\u2075','\u2076','\u2077','\u2078','\u2079' };
+        StringBuilder sb = new StringBuilder();
+        for (char c : String.valueOf(n).toCharArray()) {
+            sb.append(SUPS[c - '0']);
+        }
+        return sb.toString();
     }
 }

@@ -1,0 +1,266 @@
+package numberanalyzer.controller;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.LinkedHashMap;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
+import common.ApiResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+/**
+ * Performs arithmetic on numbers expressed in any base from 2 to 62.
+ *
+ * Digit encoding (consistent with BaseNRepresentation):
+ *   '0'–'9' → digits 0–9
+ *   'A'–'Z' → digits 10–35
+ *   'a'–'z' → digits 36–61
+ *
+ * For bases ≤ 36 the input is uppercased automatically so that users can type
+ * standard lowercase hex (e.g. "ff") without an error. For bases > 36 the
+ * case is preserved because lowercase letters carry distinct digit values.
+ *
+ * POST /api/analyzer/base-arithmetic
+ * Content-Type: application/json
+ *
+ * Request:
+ *   {
+ *     "number1":  "FF",
+ *     "number2":  "1A",
+ *     "base":     16,
+ *     "operation": "add"   // add | subtract | multiply | divide
+ *   }
+ *
+ * Response 200:
+ *   { "success": true, "data": {
+ *       "number1": "FF", "number2": "1A", "base": 16, "operation": "add",
+ *       "result": "119",
+ *       "decimal1": 255, "decimal2": 26, "decimalResult": 281
+ *   }}
+ *
+ * Response 400: { "success": false, "errorCode": "...", "error": "..." }
+ */
+@WebServlet("/api/analyzer/base-arithmetic")
+public class BaseArithmeticController extends HttpServlet {
+
+    private static final long serialVersionUID = 1L;
+    private final Gson gson = new Gson();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        PrintWriter out = response.getWriter();
+        try {
+            // ── 1. Parse JSON body ──────────────────────────────────────────
+            JsonObject body;
+            try {
+                body = gson.fromJson(request.getReader(), JsonObject.class);
+            } catch (JsonSyntaxException jse) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Request body must be valid JSON.", "INVALID_JSON")));
+                return;
+            }
+
+            if (body == null) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Request body is required.", "MISSING_BODY")));
+                return;
+            }
+
+            // ── 2. Validate required fields ─────────────────────────────────
+            if (!body.has("number1") || body.get("number1").isJsonNull() ||
+                !body.has("number2") || body.get("number2").isJsonNull() ||
+                !body.has("base")    || body.get("base").isJsonNull()    ||
+                !body.has("operation") || body.get("operation").isJsonNull()) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Fields 'number1', 'number2', 'base', and 'operation' are all required.",
+                        "MISSING_FIELDS")));
+                return;
+            }
+
+            // ── 3. Parse and validate base ──────────────────────────────────
+            int base;
+            try {
+                base = body.get("base").getAsInt();
+            } catch (Exception e) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "'base' must be a valid integer.", "INVALID_BASE")));
+                return;
+            }
+
+            if (base < 2 || base > 62) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Base must be between 2 and 62 inclusive.", "INVALID_BASE")));
+                return;
+            }
+
+            // ── 4. Normalise input strings ──────────────────────────────────
+            // For bases ≤ 36, uppercase so 'ff' is accepted as valid hex.
+            // For bases > 36, preserve case because 'a' and 'A' are different digits.
+            String raw1 = body.get("number1").getAsString().trim();
+            String raw2 = body.get("number2").getAsString().trim();
+            String num1Str = base <= 36 ? raw1.toUpperCase() : raw1;
+            String num2Str = base <= 36 ? raw2.toUpperCase() : raw2;
+
+            if (num1Str.isEmpty()) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "'number1' must not be empty.", "INVALID_NUMBER1")));
+                return;
+            }
+            if (num2Str.isEmpty()) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "'number2' must not be empty.", "INVALID_NUMBER2")));
+                return;
+            }
+
+            // ── 5. Parse numbers from their base ────────────────────────────
+            long decimal1, decimal2;
+            try {
+                decimal1 = parseInBase(num1Str, base);
+            } catch (IllegalArgumentException e) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "'" + num1Str + "' is not a valid base-" + base + " number: " + e.getMessage(),
+                        "INVALID_NUMBER1")));
+                return;
+            }
+            try {
+                decimal2 = parseInBase(num2Str, base);
+            } catch (IllegalArgumentException e) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "'" + num2Str + "' is not a valid base-" + base + " number: " + e.getMessage(),
+                        "INVALID_NUMBER2")));
+                return;
+            }
+
+            // ── 6. Perform the requested operation ──────────────────────────
+            String operation = body.get("operation").getAsString().trim().toLowerCase();
+            long decimalResult;
+
+            switch (operation) {
+                case "add":
+                    decimalResult = decimal1 + decimal2;
+                    break;
+                case "subtract":
+                    decimalResult = decimal1 - decimal2;
+                    break;
+                case "multiply":
+                    decimalResult = decimal1 * decimal2;
+                    break;
+                case "divide":
+                    if (decimal2 == 0L) {
+                        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                        out.print(gson.toJson(ApiResponse.fail(
+                                "Division by zero.", "DIVISION_BY_ZERO")));
+                        return;
+                    }
+                    decimalResult = decimal1 / decimal2;
+                    break;
+                default:
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.print(gson.toJson(ApiResponse.fail(
+                            "Unknown operation '" + operation
+                            + "'. Valid values: add, subtract, multiply, divide.",
+                            "UNKNOWN_OPERATION")));
+                    return;
+            }
+
+            // ── 7. Convert result back to the requested base ────────────────
+            boolean negative = decimalResult < 0;
+            String resultStr = toBase(Math.abs(decimalResult), base);
+            if (negative) resultStr = "-" + resultStr;
+
+            LinkedHashMap<String, Object> data = new LinkedHashMap<>();
+            data.put("number1",       num1Str);
+            data.put("number2",       num2Str);
+            data.put("base",          base);
+            data.put("operation",     operation);
+            data.put("result",        resultStr);
+            data.put("decimal1",      decimal1);
+            data.put("decimal2",      decimal2);
+            data.put("decimalResult", decimalResult);
+
+            response.setStatus(HttpServletResponse.SC_OK);
+            out.print(gson.toJson(ApiResponse.ok(data)));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            out.print(gson.toJson(ApiResponse.fail(
+                    "Arithmetic calculation failed. Please check your inputs.",
+                    "INTERNAL_ERROR")));
+        }
+    }
+
+    // ── Private helpers ─────────────────────────────────────────────────────
+
+    /**
+     * Parses a string representing a non-negative integer in the given base.
+     *
+     * Digit encoding:
+     *   '0'–'9' → 0–9
+     *   'A'–'Z' → 10–35
+     *   'a'–'z' → 36–61
+     *
+     * @throws IllegalArgumentException if any character is invalid or exceeds the base.
+     */
+    private static long parseInBase(String str, int base) {
+        long result = 0L;
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            int digit;
+            if      (c >= '0' && c <= '9') digit = c - '0';
+            else if (c >= 'A' && c <= 'Z') digit = c - 'A' + 10;
+            else if (c >= 'a' && c <= 'z') digit = c - 'a' + 36;
+            else throw new IllegalArgumentException("Unrecognised character: '" + c + "'");
+
+            if (digit >= base) {
+                throw new IllegalArgumentException(
+                        "Digit '" + c + "' (value " + digit + ") is out of range for base " + base);
+            }
+            result = result * base + digit;
+        }
+        return result;
+    }
+
+    /**
+     * Converts a non-negative long to its string representation in the given base.
+     *
+     * Digit encoding:
+     *   0–9  → '0'–'9'
+     *   10–35 → 'A'–'Z'
+     *   36–61 → 'a'–'z'
+     */
+    private static String toBase(long num, int base) {
+        if (num == 0L) return "0";
+        StringBuilder sb = new StringBuilder();
+        while (num > 0L) {
+            int rem = (int)(num % base);
+            char c;
+            if      (rem < 10) c = (char)('0' + rem);
+            else if (rem < 36) c = (char)('A' + rem - 10);
+            else               c = (char)('a' + rem - 36);
+            sb.append(c);
+            num /= base;
+        }
+        return sb.reverse().toString();
+    }
+}

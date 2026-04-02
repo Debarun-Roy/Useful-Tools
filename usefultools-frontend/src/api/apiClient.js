@@ -5,6 +5,9 @@
  *   getCsrfToken() reads the XSRF-TOKEN cookie set by LoginController.
  *   The token is sent as the X-XSRF-TOKEN header on every POST/PUT/DELETE
  *   request. CsrfFilter on the server validates header === session token.
+ *
+ * Sprint 8 addition:
+ *   performBaseArithmetic() — POST /api/analyzer/base-arithmetic
  */
 
 const BASE = 'http://localhost:8080/UsefulTools/api'
@@ -146,6 +149,21 @@ export const fetchAllSeries = (terms) =>
 
 export const fetchSelectedSeries = (terms, choiceMap) =>
   request('/analyzer/series/selected', { method: 'POST', isJson: true, body: { terms, choiceMap } })
+
+/**
+ * Performs arithmetic on two numbers expressed in an arbitrary base.
+ *
+ * @param {string} number1   First operand as a string in the given base.
+ * @param {string} number2   Second operand as a string in the given base.
+ * @param {number} base      The base (2–62).
+ * @param {string} operation One of: add | subtract | multiply | divide
+ */
+export const performBaseArithmetic = (number1, number2, base, operation) =>
+  request('/analyzer/base-arithmetic', {
+    method: 'POST',
+    isJson: true,
+    body: { number1, number2, base, operation },
+  })
 
 // ── Password Vault ────────────────────────────────────────────────────────────
 

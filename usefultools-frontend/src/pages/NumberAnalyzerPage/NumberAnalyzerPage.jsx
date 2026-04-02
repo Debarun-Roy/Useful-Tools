@@ -6,8 +6,10 @@ import {
   fetchBaseRepresentation,
   fetchSelectedSeries,
   logoutUser,
+  performBaseArithmetic,
 } from '../../api/apiClient'
 import { useAuth } from '../../auth/AuthContext'
+import SeriesChart from './SeriesChart'
 import styles from './NumberAnalyzerPage.module.css'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -81,6 +83,13 @@ const DEFAULT_SERIES_SELECTION = {
   Recreational:    ['Happy','Armstrong'],
 }
 
+const ARITH_OPS = [
+  { id: 'add',      symbol: '+',  label: 'Add' },
+  { id: 'subtract', symbol: '−',  label: 'Subtract' },
+  { id: 'multiply', symbol: '×',  label: 'Multiply' },
+  { id: 'divide',   symbol: '÷',  label: 'Divide' },
+]
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getIntegerError(value, label = 'Number') {
@@ -118,6 +127,13 @@ function displayPairs(value) {
   return Object.entries(value || {}).map(([k, v]) => ({ key: k, value: String(v) }))
 }
 
+/**
+ * Normalises the series API response to a consistent shape:
+ *   { mode, categories: { categoryName: { seriesName: { strategy, values, ... } } } }
+ *
+ * The /all endpoint already returns this shape. The /selected endpoint
+ * returns a flat { category → { name → { key → value } } } map.
+ */
 function normalizeSeriesResult(result) {
   if (!result) return null
   if (result.categories) return result
@@ -274,21 +290,31 @@ export default function NumberAnalyserPage() {
 
   const [activeTab, setActiveTab] = useState('classify')
 
-  // Classify state
+  // ── Classify state ─────────────────────────────────────────────────────────
   const [classifyInput,   setClassifyInput]   = useState('153')
   const [classifyLoading, setClassifyLoading] = useState(false)
   const [classifyError,   setClassifyError]   = useState('')
   const [classifyResult,  setClassifyResult]  = useState(null)
   const [classifyTime,    setClassifyTime]    = useState(null)
 
-  // Base state
-  const [baseInput,   setBaseInput]   = useState('42')
-  const [baseChoice,  setBaseChoice]  = useState('all')
-  const [baseLoading, setBaseLoading] = useState(false)
-  const [baseError,   setBaseError]   = useState('')
-  const [baseResult,  setBaseResult]  = useState(null)
+  // ── Base Lab state ─────────────────────────────────────────────────────────
+  const [baseTabMode,  setBaseTabMode]  = useState('convert')  // 'convert' | 'arithmetic'
+  const [baseInput,    setBaseInput]    = useState('42')
+  const [baseChoice,   setBaseChoice]   = useState('all')
+  const [baseLoading,  setBaseLoading]  = useState(false)
+  const [baseError,    setBaseError]    = useState('')
+  const [baseResult,   setBaseResult]   = useState(null)
 
-  // Series state
+  // Base Arithmetic sub-state
+  const [arithNum1,    setArithNum1]    = useState('')
+  const [arithNum2,    setArithNum2]    = useState('')
+  const [arithBase,    setArithBase]    = useState(16)
+  const [arithOp,      setArithOp]      = useState('add')
+  const [arithResult,  setArithResult]  = useState(null)
+  const [arithLoading, setArithLoading] = useState(false)
+  const [arithError,   setArithError]   = useState('')
+
+  // ── Series state ───────────────────────────────────────────────────────────
   const [seriesTerms,     setSeriesTerms]     = useState('12')
   const [seriesMode,      setSeriesMode]      = useState('selected')
   const [seriesSelection, setSeriesSelection] = useState(DEFAULT_SERIES_SELECTION)
@@ -296,14 +322,14 @@ export default function NumberAnalyserPage() {
   const [seriesError,     setSeriesError]     = useState('')
   const [seriesResult,    setSeriesResult]    = useState(null)
 
+  // ── Logout ─────────────────────────────────────────────────────────────────
   async function handleLogout() {
     try { await logoutUser() } catch { /* ignore */ }
     logout()
     navigate('/login')
   }
 
-  // ── Classify ──────────────────────────────────────────────────────────────
-
+  // ── Classify ───────────────────────────────────────────────────────────────
   async function handleClassifySubmit(e) {
     e.preventDefault()
     const err = getIntegerError(classifyInput)
@@ -330,8 +356,7 @@ export default function NumberAnalyserPage() {
     }
   }
 
-  // ── Base ──────────────────────────────────────────────────────────────────
-
+  // ── Base conversion ────────────────────────────────────────────────────────
   async function handleBaseSubmit(e) {
     e.preventDefault()
     const err = getIntegerError(baseInput)
@@ -352,8 +377,33 @@ export default function NumberAnalyserPage() {
     }
   }
 
-  // ── Series ────────────────────────────────────────────────────────────────
+  // ── Base arithmetic ────────────────────────────────────────────────────────
+  async function handleArithSubmit(e) {
+    e.preventDefault()
+    const n1 = arithNum1.trim()
+    const n2 = arithNum2.trim()
+    if (!n1) { setArithError('First number is required.'); return }
+    if (!n2) { setArithError('Second number is required.'); return }
+    if (isNaN(arithBase) || arithBase < 2 || arithBase > 62) {
+      setArithError('Base must be between 2 and 62.'); return
+    }
 
+    setArithLoading(true)
+    setArithError('')
+    setArithResult(null)
+
+    try {
+      const { data } = await performBaseArithmetic(n1, n2, arithBase, arithOp)
+      if (data.success) startTransition(() => setArithResult(data.data))
+      else setArithError(data.error || 'Calculation failed. Check your inputs.')
+    } catch {
+      setArithError('Could not reach the server. Please check that Tomcat is running.')
+    } finally {
+      setArithLoading(false)
+    }
+  }
+
+  // ── Series ─────────────────────────────────────────────────────────────────
   function toggleSeriesOption(category, value) {
     setSeriesResult(null)
     setSeriesSelection(cur => {
@@ -401,13 +451,15 @@ export default function NumberAnalyserPage() {
     }
   }
 
-  // ── Derived ───────────────────────────────────────────────────────────────
-
+  // ── Derived ────────────────────────────────────────────────────────────────
   const analysis       = classifyResult?.analysis || {}
   const totalFindings  = countFindings(analysis)
   const activeCats     = countActiveCategories(analysis)
 
-  // ─────────────────────────────────────────────────────────────────────────
+  const normalizedSeries     = normalizeSeriesResult(seriesResult)
+  const arithOpSymbol        = ARITH_OPS.find(o => o.id === arithOp)?.symbol ?? '?'
+
+  // ──────────────────────────────────────────────────────────────────────────
 
   return (
     <div className={styles.page}>
@@ -440,7 +492,7 @@ export default function NumberAnalyserPage() {
           </h1>
           <p className={styles.heroSub}>
             Classify integers across 60+ mathematical categories, explore base representations,
-            and generate number sequences — all powered by the Java analysis engine.
+            perform base arithmetic, and generate charted number sequences.
           </p>
         </div>
         <div className={styles.heroStats}>
@@ -486,8 +538,8 @@ export default function NumberAnalyserPage() {
                 <div>
                   <h2 className={styles.cardTitle}>Classify a number</h2>
                   <p className={styles.cardHint}>
-                    Enter any integer. The engine checks it against every known
-                    mathematical category and returns all matches.
+                    Enter any integer. The engine checks it against every known mathematical
+                    category — including a prime factorization — and returns all matches.
                   </p>
                 </div>
               </div>
@@ -505,7 +557,7 @@ export default function NumberAnalyserPage() {
                       setClassifyError('')
                       setClassifyResult(null)
                     }}
-                    placeholder="e.g. 153"
+                    placeholder="e.g. 360"
                     disabled={classifyLoading}
                     autoFocus
                   />
@@ -595,67 +647,238 @@ export default function NumberAnalyserPage() {
         {activeTab === 'base' && (
           <div className={styles.panel}>
 
-            <form className={styles.inputCard} onSubmit={handleBaseSubmit}>
-              <div className={styles.inputCardHeader}>
+            {/* ── Mode toggle: Convert | Arithmetic ────────────────────── */}
+            <div className={styles.modeToggle}>
+              <button
+                type="button"
+                className={baseTabMode === 'convert' ? styles.modeActive : styles.modeBtn}
+                onClick={() => { setBaseTabMode('convert'); setArithResult(null); setArithError('') }}
+              >
+                Convert
+              </button>
+              <button
+                type="button"
+                className={baseTabMode === 'arithmetic' ? styles.modeActive : styles.modeBtn}
+                onClick={() => { setBaseTabMode('arithmetic'); setBaseResult(null); setBaseError('') }}
+              >
+                Arithmetic
+              </button>
+            </div>
+
+            {/* ── Convert sub-panel ─────────────────────────────────────── */}
+            {baseTabMode === 'convert' && (
+              <>
+                <form className={styles.inputCard} onSubmit={handleBaseSubmit}>
+                  <div className={styles.inputCardHeader}>
+                    <div>
+                      <h2 className={styles.cardTitle}>Base representations</h2>
+                      <p className={styles.cardHint}>
+                        See any integer in binary, octal, hexadecimal, or all 62 bases at once.
+                        Range mode covers every integer from 0 to N.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={styles.numberInputRow}>
+                    <div className={styles.numberInputWrap}>
+                      <span className={styles.numberInputPrefix}>ℕ</span>
+                      <input
+                        className={styles.numberInput}
+                        type="text"
+                        inputMode="numeric"
+                        value={baseInput}
+                        onChange={e => {
+                          setBaseInput(e.target.value)
+                          setBaseError('')
+                          setBaseResult(null)
+                        }}
+                        placeholder="e.g. 42"
+                        disabled={baseLoading}
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.baseOptionGrid}>
+                    {BASE_OPTIONS.map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={baseChoice === opt.value
+                          ? styles.baseOptionActive
+                          : styles.baseOption}
+                        onClick={() => { setBaseChoice(opt.value); setBaseResult(null) }}
+                        disabled={baseLoading}
+                      >
+                        <span className={styles.baseOptionLabel}>{opt.label}</span>
+                        <span className={styles.baseOptionHint}>{opt.hint}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className={styles.actionRow}>
+                    <button className={styles.analyseBtn} type="submit" disabled={baseLoading}>
+                      {baseLoading
+                        ? <><Pulse /><span>Loading…</span></>
+                        : 'Fetch →'}
+                    </button>
+                  </div>
+
+                  {baseError && (
+                    <div className={styles.errorBanner} role="alert">{baseError}</div>
+                  )}
+                </form>
+
+                <BaseResultPanel choice={baseChoice} result={baseResult} />
+              </>
+            )}
+
+            {/* ── Arithmetic sub-panel ──────────────────────────────────── */}
+            {baseTabMode === 'arithmetic' && (
+              <form className={styles.inputCard} onSubmit={handleArithSubmit}>
                 <div>
-                  <h2 className={styles.cardTitle}>Base representations</h2>
+                  <h2 className={styles.cardTitle}>Base arithmetic</h2>
                   <p className={styles.cardHint}>
-                    See any integer in binary, octal, hexadecimal, or all 62 bases at once.
-                    Range mode covers every integer from 0 to N.
+                    Add, subtract, multiply or divide two numbers expressed in any base from 2 to 62.
+                    For bases ≤ 36, letters are case-insensitive (A = a = digit 10 in hex).
+                    For bases 37–62, uppercase A–Z represent digits 10–35 and
+                    lowercase a–z represent digits 36–61.
                   </p>
                 </div>
-              </div>
 
-              <div className={styles.numberInputRow}>
-                <div className={styles.numberInputWrap}>
-                  <span className={styles.numberInputPrefix}>ℕ</span>
-                  <input
-                    className={styles.numberInput}
-                    type="text"
-                    inputMode="numeric"
-                    value={baseInput}
-                    onChange={e => {
-                      setBaseInput(e.target.value)
-                      setBaseError('')
-                      setBaseResult(null)
-                    }}
-                    placeholder="e.g. 42"
-                    disabled={baseLoading}
-                  />
+                {/* Base input + operation toggle on the same row */}
+                <div className={styles.seriesControls}>
+                  {/* Base selector */}
+                  <div className={styles.numberInputWrap} style={{ maxWidth: 200 }}>
+                    <span className={styles.numberInputPrefix}>Base</span>
+                    <input
+                      className={styles.numberInput}
+                      type="number"
+                      min="2"
+                      max="62"
+                      value={arithBase}
+                      onChange={e => {
+                        setArithBase(Number(e.target.value))
+                        setArithResult(null)
+                        setArithError('')
+                      }}
+                      disabled={arithLoading}
+                    />
+                  </div>
+
+                  {/* Operation buttons */}
+                  <div className={styles.modeToggle}>
+                    {ARITH_OPS.map(op => (
+                      <button
+                        key={op.id}
+                        type="button"
+                        className={arithOp === op.id ? styles.modeActive : styles.modeBtn}
+                        onClick={() => { setArithOp(op.id); setArithResult(null) }}
+                        disabled={arithLoading}
+                        title={op.label}
+                        style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', minWidth: 40 }}
+                      >
+                        {op.symbol}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div className={styles.baseOptionGrid}>
-                {BASE_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    className={baseChoice === opt.value
-                      ? styles.baseOptionActive
-                      : styles.baseOption}
-                    onClick={() => { setBaseChoice(opt.value); setBaseResult(null) }}
-                    disabled={baseLoading}
-                  >
-                    <span className={styles.baseOptionLabel}>{opt.label}</span>
-                    <span className={styles.baseOptionHint}>{opt.hint}</span>
+                {/* Number inputs */}
+                <div className={styles.numberInputRow}>
+                  <div className={styles.numberInputWrap}>
+                    <span className={styles.numberInputPrefix}>{arithBase}</span>
+                    <input
+                      className={styles.numberInput}
+                      type="text"
+                      value={arithNum1}
+                      onChange={e => {
+                        // Auto-uppercase for bases ≤ 36 (standard hex/octal/etc.)
+                        const val = arithBase <= 36 ? e.target.value.toUpperCase() : e.target.value
+                        setArithNum1(val)
+                        setArithResult(null)
+                        setArithError('')
+                      }}
+                      placeholder={arithBase <= 16 ? 'e.g. FF' : 'First number'}
+                      disabled={arithLoading}
+                      style={{ fontFamily: 'var(--font-mono)' }}
+                    />
+                  </div>
+
+                  <span style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '1.5rem',
+                    color: 'var(--clr-text-muted)',
+                    alignSelf: 'flex-end',
+                    paddingBottom: 12,
+                    flexShrink: 0,
+                  }}>
+                    {arithOpSymbol}
+                  </span>
+
+                  <div className={styles.numberInputWrap}>
+                    <span className={styles.numberInputPrefix}>{arithBase}</span>
+                    <input
+                      className={styles.numberInput}
+                      type="text"
+                      value={arithNum2}
+                      onChange={e => {
+                        const val = arithBase <= 36 ? e.target.value.toUpperCase() : e.target.value
+                        setArithNum2(val)
+                        setArithResult(null)
+                        setArithError('')
+                      }}
+                      placeholder={arithBase <= 16 ? 'e.g. 1A' : 'Second number'}
+                      disabled={arithLoading}
+                      style={{ fontFamily: 'var(--font-mono)' }}
+                    />
+                  </div>
+                </div>
+
+                {arithError && (
+                  <div className={styles.errorBanner} role="alert">{arithError}</div>
+                )}
+
+                {/* Result strip */}
+                {arithResult && (
+                  <div className={styles.summaryStrip}>
+                    <div className={styles.summaryNum}>
+                      <span className={styles.summaryNumLabel}>
+                        Result (base {arithResult.base})
+                      </span>
+                      <code className={styles.summaryNumValue}>{arithResult.result}</code>
+                    </div>
+                    <div className={styles.summaryMetrics}>
+                      <div className={styles.metricBadge}>
+                        <span className={styles.metricN} style={{ fontSize: '1rem' }}>
+                          {arithResult.number1}
+                        </span>
+                        <span className={styles.metricLabel}>operand 1</span>
+                      </div>
+                      <div className={styles.metricBadge}>
+                        <span className={styles.metricN} style={{ fontSize: '1rem' }}>
+                          {arithResult.number2}
+                        </span>
+                        <span className={styles.metricLabel}>operand 2</span>
+                      </div>
+                      <div className={styles.metricBadge}>
+                        <span className={styles.metricN} style={{ fontSize: '1rem' }}>
+                          {arithResult.decimalResult}
+                        </span>
+                        <span className={styles.metricLabel}>decimal</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className={styles.actionRow}>
+                  <button className={styles.analyseBtn} type="submit" disabled={arithLoading}>
+                    {arithLoading
+                      ? <><Pulse /><span>Calculating…</span></>
+                      : 'Calculate →'}
                   </button>
-                ))}
-              </div>
-
-              <div className={styles.actionRow}>
-                <button className={styles.analyseBtn} type="submit" disabled={baseLoading}>
-                  {baseLoading
-                    ? <><Pulse /><span>Loading…</span></>
-                    : 'Fetch →'}
-                </button>
-              </div>
-
-              {baseError && (
-                <div className={styles.errorBanner} role="alert">{baseError}</div>
-              )}
-            </form>
-
-            <BaseResultPanel choice={baseChoice} result={baseResult} />
+                </div>
+              </form>
+            )}
           </div>
         )}
 
@@ -671,7 +894,8 @@ export default function NumberAnalyserPage() {
                   <h2 className={styles.cardTitle}>Series Studio</h2>
                   <p className={styles.cardHint}>
                     Generate the first N terms of any number sequence — from Fibonacci
-                    to Sophie Germain primes to Munchausen numbers.
+                    to Sophie Germain primes to Munchausen numbers. Numeric sequences
+                    are automatically charted below.
                   </p>
                 </div>
               </div>
@@ -791,7 +1015,13 @@ export default function NumberAnalyserPage() {
               )}
             </form>
 
+            {/* ── Results table ──────────────────────────────────────── */}
             <SeriesResults result={seriesResult} />
+
+            {/* ── SVG charts (Sprint 8) — shown only once results exist ── */}
+            {seriesResult && (
+              <SeriesChart categories={normalizedSeries?.categories} />
+            )}
           </div>
         )}
 

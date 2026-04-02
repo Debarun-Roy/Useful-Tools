@@ -1,0 +1,129 @@
+/* ─── Outer section container ────────────────────────────────────────────── */
+
+.section {
+  background: #fff;
+  border: 1px solid var(--clr-border);
+  border-radius: 20px;
+  padding: var(--space-xl);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  animation: panelIn 200ms ease both;
+}
+
+@keyframes panelIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.sectionHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  letter-spacing: -0.02em;
+}
+
+.sectionHint {
+  font-size: var(--fs-sm);
+  color: var(--clr-text-muted);
+  line-height: 1.5;
+}
+
+/* ─── Individual category chart block ────────────────────────────────────── */
+
+.chartBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--clr-input-bg);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+}
+
+.chartHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.chartCatName {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--clr-text);
+  letter-spacing: -0.01em;
+}
+
+/* Small scale-toggle button */
+.scaleToggle {
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  transition: color 120ms, border-color 120ms, background 120ms;
+  white-space: nowrap;
+}
+.scaleToggle:hover {
+  color: var(--clr-primary);
+  border-color: var(--clr-primary);
+  background: rgba(59,111,212,0.05);
+}
+
+/* ─── SVG element ────────────────────────────────────────────────────────── */
+
+.svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+/* ─── Legend ─────────────────────────────────────────────────────────────── */
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Rendered as a short line swatch (not a circle) matching the polyline weight */
+.legendSwatch {
+  display: inline-block;
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legendName {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--fs-xs);
+  color: var(--clr-text-muted);
+  white-space: nowrap;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .section { padding: var(--space-md); }
+  .chartBlock { padding: var(--space-sm); }
+}
