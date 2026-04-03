@@ -19,13 +19,18 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import passwordgenerator.dao.UserPasswordDAO;
 import passwordgenerator.models.PasswordModel;
 import passwordgenerator.utilities.PasswordGeneratorUtils;
 
 /**
  * CHANGE 6: Path renamed /ProcessForm1 → /api/passwords/generate
- * All other content identical to the batch-1 version.
+ *
+ * Sprint 9 hardening:
+ *   The authenticated username is now read from the HTTP session instead of
+ *   trusting a request parameter. This prevents one logged-in user from
+ *   writing generated-password history rows into another user's account.
  */
 @WebServlet("/api/passwords/generate")
 public class PasswordGenerationController extends HttpServlet {
@@ -45,16 +50,25 @@ public class PasswordGenerationController extends HttpServlet {
 
         try (PrintWriter out = response.getWriter()) {
 
-            String username    = request.getParameter("username");
+        	HttpSession session = request.getSession(false);
+            String username = (session != null)
+                    ? (String) session.getAttribute("username")
+                    : null;
             String platform    = request.getParameter("platform");
             String lengthParam = request.getParameter("length");
 
-            if (username == null || username.isBlank()
-                    || platform == null || platform.isBlank()
+            if (username == null || username.isBlank()) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "You must be logged in to generate passwords.", "UNAUTHENTICATED")));
+                return;
+            }
+
+            if (platform == null || platform.isBlank()
                     || lengthParam == null || lengthParam.isBlank()) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 out.print(gson.toJson(ApiResponse.fail(
-                        "username, platform, and length are required.", "INVALID_PARAMETERS")));
+                		"platform and length are required.", "INVALID_PARAMETERS")));
                 return;
             }
 
@@ -127,6 +141,10 @@ public class PasswordGenerationController extends HttpServlet {
                 }
             } else {
                 int[] split = PasswordGeneratorUtils.getRandomizedValues(length);
+                pass.setNumberCount(split[0]);
+                pass.setSpecialCharacterCount(split[1]);
+                pass.setLowercaseCount(split[2]);
+                pass.setUppercaseCount(split[3]);
                 generatedPassword = Stream.concat(
                         PasswordGeneratorUtils.getRandomNumbers(split[0]),
                         Stream.concat(

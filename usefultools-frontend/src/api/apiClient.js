@@ -211,6 +211,12 @@ export const fetchAllPasswords = () =>
 export const fetchPlatformPassword = (platform) =>
   request(`/passwords/fetch?choice=Single&platform=${encodeURIComponent(platform)}`)
 
+export const exportVaultEntries = () =>
+  request('/passwords/export')
+
+export const fetchGeneratedPasswordHistory = (page = 0, size = 12) =>
+  request(`/passwords/generated-history?page=${page}&size=${size}`)
+
 // ── Calculation History ───────────────────────────────────────────────────────
 
 export const fetchCalculationHistory = (page = 0, size = 20) =>

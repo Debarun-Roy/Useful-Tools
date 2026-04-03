@@ -299,8 +299,8 @@ export default function CalculatorPage() {
           accent="Flight Deck"
           description="Switch between arithmetic, boolean, trigonometric, combined, complex, and financial modes inside the same futuristic tool shell."
           stats={[
-            { value: '7', label: 'modes' },
-            { value: '50+', label: 'functions' },
+            { value: '9', label: 'modes' },
+            { value: '100+', label: 'functions' },
             { value: '1', label: 'workspace' },
           ]}
           fullWidth

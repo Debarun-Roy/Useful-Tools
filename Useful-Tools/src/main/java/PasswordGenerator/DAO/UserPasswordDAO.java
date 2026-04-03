@@ -4,8 +4,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import common.DatabaseUtils;
@@ -60,13 +64,74 @@ import passwordgenerator.utilities.DecryptionUtils;
 public class UserPasswordDAO {
 
     private static final Logger logger = new UnifiedLogger().writeLogs("dao");
+    private static final String CREATE_GENERATOR_TABLE_SQL =
+            "CREATE TABLE IF NOT EXISTS generator_table ("
+            + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            + "username TEXT NOT NULL, "
+            + "password TEXT NOT NULL, "
+            + "number_count INTEGER, "
+            + "special_character_count INTEGER, "
+            + "lowercase_count INTEGER, "
+            + "uppercase_count INTEGER, "
+            + "generated_timestamp TEXT NOT NULL"
+            + ");";
 
+    /**
+     * Sprint 9 introduced per-user generator history with the schema:
+     *   id, username, password, ..., generated_timestamp
+     *
+     * Older deployed databases still have the legacy table created before this
+     * sprint:
+     *   password_id, password, ..., generate_date
+     * and no username column.
+     *
+     * That mismatch causes INSERT/SELECT statements against the new column names
+     * to fail, which is why generated-password history appears empty in upgraded
+     * environments. This method upgrades the existing table in place before any
+     * history read/write occurs.
+     */
+    private static void ensureGeneratorHistorySchema(Connection conn) throws SQLException {
+        Set<String> columns = new HashSet<>();
+
+        try (Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery("PRAGMA table_info(generator_table)")) {
+            while (rs.next()) {
+                columns.add(rs.getString("name").toLowerCase());
+            }
+        }
+
+        if (columns.isEmpty()) {
+            try (Statement st = conn.createStatement()) {
+                st.executeUpdate(CREATE_GENERATOR_TABLE_SQL);
+            }
+            logger.info("Created generator_table using Sprint 9 schema");
+            return;
+        }
+
+        try (Statement st = conn.createStatement()) {
+            if (columns.contains("password_id") && !columns.contains("id")) {
+                st.executeUpdate("ALTER TABLE generator_table RENAME COLUMN password_id TO id;");
+                logger.info("Migrated generator_table column password_id -> id");
+            }
+            if (columns.contains("generate_date") && !columns.contains("generated_timestamp")) {
+                st.executeUpdate("ALTER TABLE generator_table RENAME COLUMN generate_date TO generated_timestamp;");
+                logger.info("Migrated generator_table column generate_date -> generated_timestamp");
+            }
+            if (!columns.contains("username")) {
+                st.executeUpdate("ALTER TABLE generator_table "
+                        + "ADD COLUMN username TEXT NOT NULL DEFAULT '';");
+                logger.info("Added username column to generator_table for per-user history");
+            }
+        }
+    }
+    
     public static void saveGeneratedPasswordDetails(PasswordModel pass) {
         Connection conn = null;
         PreparedStatement pst = null;
         try {
             conn = DatabaseUtils.getSQLite3Connection();
             logger.info("SQLite3 connection successful");
+            ensureGeneratorHistorySchema(conn);
             // FIX: Was 6 placeholders for 7 columns — added the 7th '?'
             String sql = "INSERT INTO generator_table "
                     + "(username, password, number_count, special_character_count, "
@@ -229,6 +294,117 @@ public class UserPasswordDAO {
             DatabaseUtils.closeSQLConnection(conn, pst, null);
         }
     }
+    
+
+    /**
+     * Returns paginated generated-password history from generator_table.
+     *
+     * Expected schema (already used by saveGeneratedPasswordDetails):
+     *   CREATE TABLE IF NOT EXISTS generator_table (
+     *     id                       INTEGER PRIMARY KEY AUTOINCREMENT,
+     *     username                 TEXT NOT NULL,
+     *     password                 TEXT NOT NULL,
+     *     number_count             INTEGER,
+     *     special_character_count  INTEGER,
+     *     lowercase_count          INTEGER,
+     *     uppercase_count          INTEGER,
+     *     generated_timestamp      TEXT NOT NULL
+     *   );
+     */
+    public static LinkedHashMap<String, Object> fetchGeneratedPasswordHistory(
+            String username, int page, int size) {
+
+        LinkedHashMap<String, Object> result = new LinkedHashMap<>();
+        int offset = page * size;
+
+        try (Connection conn = DatabaseUtils.getSQLite3Connection()) {
+        	ensureGeneratorHistorySchema(conn);
+
+            try (PreparedStatement pst = conn.prepareStatement(
+                    "SELECT COUNT(*) FROM generator_table WHERE username = ?")) {
+                pst.setString(1, username);
+                try (ResultSet rs = pst.executeQuery()) {
+                    result.put("total", rs.next() ? rs.getLong(1) : 0L);
+                }
+            }
+
+            ArrayList<LinkedHashMap<String, Object>> entries = new ArrayList<>();
+            try (PreparedStatement pst = conn.prepareStatement(
+                    "SELECT id, password, number_count, special_character_count, "
+                    + "lowercase_count, uppercase_count, generated_timestamp "
+                    + "FROM generator_table WHERE username = ? "
+                    + "ORDER BY generated_timestamp DESC, id DESC LIMIT ? OFFSET ?")) {
+                pst.setString(1, username);
+                pst.setInt(2, size);
+                pst.setInt(3, offset);
+                try (ResultSet rs = pst.executeQuery()) {
+                    while (rs.next()) {
+                        LinkedHashMap<String, Object> entry = new LinkedHashMap<>();
+                        entry.put("id",                    rs.getLong("id"));
+                        entry.put("password",              rs.getString("password"));
+                        entry.put("numberCount",           rs.getInt("number_count"));
+                        entry.put("specialCharacterCount", rs.getInt("special_character_count"));
+                        entry.put("lowercaseCount",        rs.getInt("lowercase_count"));
+                        entry.put("uppercaseCount",        rs.getInt("uppercase_count"));
+                        entry.put("generatedAt",           rs.getString("generated_timestamp"));
+                        entries.add(entry);
+                    }
+                }
+            }
+
+            result.put("entries", entries);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            result.put("total", 0L);
+            result.put("entries", new ArrayList<>());
+        }
+
+        result.put("page", page);
+        result.put("size", size);
+        return result;
+    }
+
+    /**
+     * Returns decrypted vault entries for export.
+     *
+     * The export payload contains the user's platform names and plaintext
+     * passwords before the controller encrypts the JSON document for download.
+     */
+    public static ArrayList<LinkedHashMap<String, String>> fetchVaultEntriesForExport(String username) {
+        ArrayList<LinkedHashMap<String, String>> entries = new ArrayList<>();
+
+        try (Connection conn = DatabaseUtils.getSQLite3Connection();
+             PreparedStatement pst = conn.prepareStatement(
+                     "SELECT pt.platform, pt.encrypted_password, et.private_key "
+                     + "FROM password_table pt "
+                     + "INNER JOIN encryption_table et "
+                     + "    ON et.username = pt.username AND et.platform = pt.platform "
+                     + "WHERE pt.username = ? "
+                     + "ORDER BY pt.platform COLLATE NOCASE ASC")) {
+
+            pst.setString(1, username);
+
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    LinkedHashMap<String, String> entry = new LinkedHashMap<>();
+                    entry.put("platform", rs.getString("platform"));
+                    entry.put(
+                            "password",
+                            DecryptionUtils.decryptEncryptedPassword(
+                                    rs.getString("encrypted_password"),
+                                    rs.getString("private_key")));
+                    entries.add(entry);
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return entries;
+    }
+
     /**
      * Deletes the vault entry for the given (username, platform) pair from both
      * encryption_table and password_table.
