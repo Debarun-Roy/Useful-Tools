@@ -3,6 +3,7 @@ package passwordgenerator.controller;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.LinkedHashMap;
+import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
 import common.ApiResponse;
@@ -31,6 +32,9 @@ public class RegistrationController extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final int MIN_PASSWORD_LENGTH = 8;
     private static final int MIN_USERNAME_LENGTH = 3;
+    private static final Pattern UPPERCASE_PATTERN = Pattern.compile(".*[A-Z].*");
+    private static final Pattern DIGIT_PATTERN = Pattern.compile(".*\\d.*");
+    private static final Pattern SPECIAL_PATTERN = Pattern.compile(".*[^A-Za-z0-9].*");
     private final Gson gson = new Gson();
 
     @Override
@@ -69,6 +73,14 @@ public class RegistrationController extends HttpServlet {
                 return;
             }
 
+            if (!meetsPasswordStrengthPolicy(password)) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Password must include at least 1 uppercase letter, 1 digit, and 1 special character.",
+                        "PASSWORD_WEAK")));
+                return;
+            }
+
             if (UserDAO.checkIfUserExists(username.trim())) {
                 response.setStatus(HttpServletResponse.SC_CONFLICT);
                 out.print(gson.toJson(ApiResponse.fail(
@@ -102,5 +114,11 @@ public class RegistrationController extends HttpServlet {
                         "INTERNAL_ERROR")));
             }
         }
+    }
+
+    private boolean meetsPasswordStrengthPolicy(String password) {
+        return UPPERCASE_PATTERN.matcher(password).matches()
+                && DIGIT_PATTERN.matcher(password).matches()
+                && SPECIAL_PATTERN.matcher(password).matches();
     }
 }

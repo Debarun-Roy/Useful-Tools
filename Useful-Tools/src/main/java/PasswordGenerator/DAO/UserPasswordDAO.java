@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.logging.Logger;
 
@@ -229,6 +230,115 @@ public class UserPasswordDAO {
             DatabaseUtils.closeSQLConnection(conn, pst, null);
         }
     }
+
+    /**
+     * Returns paginated generated-password history from generator_table.
+     *
+     * Expected schema (already used by saveGeneratedPasswordDetails):
+     *   CREATE TABLE IF NOT EXISTS generator_table (
+     *     id                       INTEGER PRIMARY KEY AUTOINCREMENT,
+     *     username                 TEXT NOT NULL,
+     *     password                 TEXT NOT NULL,
+     *     number_count             INTEGER,
+     *     special_character_count  INTEGER,
+     *     lowercase_count          INTEGER,
+     *     uppercase_count          INTEGER,
+     *     generated_timestamp      TEXT NOT NULL
+     *   );
+     */
+    public static LinkedHashMap<String, Object> fetchGeneratedPasswordHistory(
+            String username, int page, int size) {
+
+        LinkedHashMap<String, Object> result = new LinkedHashMap<>();
+        int offset = page * size;
+
+        try (Connection conn = DatabaseUtils.getSQLite3Connection()) {
+
+            try (PreparedStatement pst = conn.prepareStatement(
+                    "SELECT COUNT(*) FROM generator_table WHERE username = ?")) {
+                pst.setString(1, username);
+                try (ResultSet rs = pst.executeQuery()) {
+                    result.put("total", rs.next() ? rs.getLong(1) : 0L);
+                }
+            }
+
+            ArrayList<LinkedHashMap<String, Object>> entries = new ArrayList<>();
+            try (PreparedStatement pst = conn.prepareStatement(
+                    "SELECT id, password, number_count, special_character_count, "
+                    + "lowercase_count, uppercase_count, generated_timestamp "
+                    + "FROM generator_table WHERE username = ? "
+                    + "ORDER BY generated_timestamp DESC, id DESC LIMIT ? OFFSET ?")) {
+                pst.setString(1, username);
+                pst.setInt(2, size);
+                pst.setInt(3, offset);
+                try (ResultSet rs = pst.executeQuery()) {
+                    while (rs.next()) {
+                        LinkedHashMap<String, Object> entry = new LinkedHashMap<>();
+                        entry.put("id",                    rs.getLong("id"));
+                        entry.put("password",              rs.getString("password"));
+                        entry.put("numberCount",           rs.getInt("number_count"));
+                        entry.put("specialCharacterCount", rs.getInt("special_character_count"));
+                        entry.put("lowercaseCount",        rs.getInt("lowercase_count"));
+                        entry.put("uppercaseCount",        rs.getInt("uppercase_count"));
+                        entry.put("generatedAt",           rs.getString("generated_timestamp"));
+                        entries.add(entry);
+                    }
+                }
+            }
+
+            result.put("entries", entries);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            result.put("total", 0L);
+            result.put("entries", new ArrayList<>());
+        }
+
+        result.put("page", page);
+        result.put("size", size);
+        return result;
+    }
+
+    /**
+     * Returns decrypted vault entries for export.
+     *
+     * The export payload contains the user's platform names and plaintext
+     * passwords before the controller encrypts the JSON document for download.
+     */
+    public static ArrayList<LinkedHashMap<String, String>> fetchVaultEntriesForExport(String username) {
+        ArrayList<LinkedHashMap<String, String>> entries = new ArrayList<>();
+
+        try (Connection conn = DatabaseUtils.getSQLite3Connection();
+             PreparedStatement pst = conn.prepareStatement(
+                     "SELECT pt.platform, pt.encrypted_password, et.private_key "
+                     + "FROM password_table pt "
+                     + "INNER JOIN encryption_table et "
+                     + "    ON et.username = pt.username AND et.platform = pt.platform "
+                     + "WHERE pt.username = ? "
+                     + "ORDER BY pt.platform COLLATE NOCASE ASC")) {
+
+            pst.setString(1, username);
+
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    LinkedHashMap<String, String> entry = new LinkedHashMap<>();
+                    entry.put("platform", rs.getString("platform"));
+                    entry.put(
+                            "password",
+                            DecryptionUtils.decryptEncryptedPassword(
+                                    rs.getString("encrypted_password"),
+                                    rs.getString("private_key")));
+                    entries.add(entry);
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return entries;
+    }
+
     /**
      * Deletes the vault entry for the given (username, platform) pair from both
      * encryption_table and password_table.

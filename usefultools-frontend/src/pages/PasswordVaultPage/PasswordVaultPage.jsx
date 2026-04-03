@@ -1,11 +1,12 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import {
   generatePassword,
   savePassword,
   fetchAllPasswords,
-  fetchPlatformPassword,
+  exportVaultEntries,
+  fetchGeneratedPasswordHistory,
   logoutUser,
 } from '../../api/apiClient'
 import styles from './PasswordVaultPage.module.css'
@@ -17,6 +18,7 @@ const TABS = [
   { id: 'generate', label: 'Generate',  icon: '⚡' },
   { id: 'save',     label: 'Save',      icon: '🔒' },
   { id: 'vault',    label: 'My Vault',  icon: '🗄' },
+  { id: 'history',  label: 'Generated History', icon: 'â—·' },
 ]
 
 const CHAR_TYPES = [
@@ -503,6 +505,8 @@ function VaultTab() {
   const [rowAction, setRowAction] = useState({})
   const [editPass,  setEditPass]  = useState({}) // { [platform]: string }
   const [actionMsg, setActionMsg] = useState({}) // { [platform]: { text, isError } }
+  const [exporting, setExporting] = useState(false)
+  const [exportMsg, setExportMsg] = useState(null)
 
   const loadVault = useCallback(async () => {
     setLoading(true); setError('')
@@ -581,6 +585,42 @@ function VaultTab() {
     }
   }
 
+  async function handleExport() {
+    setExporting(true)
+    setExportMsg(null)
+
+    try {
+      const { data } = await exportVaultEntries()
+      if (!data.success) {
+        setExportMsg({ text: data.error || 'Export failed.', isError: true })
+        return
+      }
+
+      const fileName = data.data?.fileName || 'usefultools-vault-export.json'
+      const payload = data.data?.payload || {}
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: 'application/json',
+      })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+
+      setExportMsg({
+        text: 'Encrypted vault export downloaded successfully.',
+        isError: false,
+      })
+    } catch {
+      setExportMsg({ text: 'Could not reach the server.', isError: true })
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const filtered = (entries || []).filter(e =>
     e.platform.toLowerCase().includes(search.toLowerCase())
   )
@@ -593,6 +633,15 @@ function VaultTab() {
             <h2 className={styles.cardTitle}>My Vault</h2>
             <p className={styles.cardHint}>All your stored passwords, decrypted on demand.</p>
           </div>
+          <div className={styles.vaultActions}>
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              onClick={handleExport}
+              disabled={exporting}
+            >
+              {exporting ? 'Exporting...' : 'Export Encrypted JSON'}
+            </button>
           <button
             type="button"
             className={styles.refreshBtn}
@@ -602,8 +651,17 @@ function VaultTab() {
             {loading ? <><Pulse /><span>Loading…</span></> : entries === null ? '🔓 Open Vault' : '↺ Refresh'}
           </button>
         </div>
+        </div>
 
         {error && <div className={styles.errorBanner} role="alert">{error}</div>}
+        {exportMsg && (
+          <div
+            className={exportMsg.isError ? styles.errorBanner : styles.successBanner}
+            role={exportMsg.isError ? 'alert' : 'status'}
+          >
+            {exportMsg.text}
+          </div>
+        )}
 
         {entries !== null && (
           <>
@@ -731,6 +789,163 @@ function VaultTab() {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
+function GeneratedHistoryTab() {
+  const [entries, setEntries] = useState([])
+  const [page, setPage] = useState(0)
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [revealed, setRevealed] = useState({})
+
+  const pageSize = 12
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+
+  const loadHistory = useCallback(async (targetPage = 0) => {
+    setLoading(true)
+    setError('')
+
+    try {
+      const { data } = await fetchGeneratedPasswordHistory(targetPage, pageSize)
+      if (data.success) {
+        setEntries(data.data.entries || [])
+        setTotal(data.data.total || 0)
+        setPage(targetPage)
+      } else {
+        setError(data.error || 'Could not load generated-password history.')
+      }
+    } catch {
+      setError('Could not reach the server.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadHistory(0)
+  }, [loadHistory])
+
+  function toggleReveal(id) {
+    setRevealed((current) => ({ ...current, [id]: !current[id] }))
+  }
+
+  function formatTimestamp(value) {
+    try {
+      return new Date(value).toLocaleString()
+    } catch {
+      return value
+    }
+  }
+
+  return (
+    <div className={styles.panel}>
+      <div className={styles.inputCard}>
+        <div className={styles.vaultHeader}>
+          <div>
+            <h2 className={styles.cardTitle}>Generated password history</h2>
+            <p className={styles.cardHint}>
+              Review the passwords created by the generator, along with their
+              character mix and timestamps.
+            </p>
+          </div>
+          <button
+            type="button"
+            className={styles.refreshBtn}
+            onClick={() => loadHistory(page)}
+            disabled={loading}
+          >
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
+
+        {error && <div className={styles.errorBanner} role="alert">{error}</div>}
+
+        {!loading && entries.length === 0 && !error && (
+          <p className={styles.emptyVault}>
+            No generated passwords found yet. Use the Generate tab to create one.
+          </p>
+        )}
+
+        {entries.length > 0 && (
+          <>
+            <div className={styles.historyGrid}>
+              {entries.map((entry) => {
+                const isRevealed = !!revealed[entry.id]
+                const totalChars =
+                  (entry.numberCount || 0)
+                  + (entry.specialCharacterCount || 0)
+                  + (entry.lowercaseCount || 0)
+                  + (entry.uppercaseCount || 0)
+
+                return (
+                  <div key={entry.id} className={styles.historyCard}>
+                    <div className={styles.historyCardHeader}>
+                      <div>
+                        <div className={styles.historyCardTitle}>
+                          Generated password #{entry.id}
+                        </div>
+                        <div className={styles.historyTimestamp}>
+                          {formatTimestamp(entry.generatedAt)}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.revealBtn}
+                        onClick={() => toggleReveal(entry.id)}
+                      >
+                        {isRevealed ? 'Hide' : 'Reveal'}
+                      </button>
+                    </div>
+
+                    <code className={styles.historyPassword}>
+                      {isRevealed ? entry.password : '............'}
+                    </code>
+
+                    <div className={styles.historyMeta}>
+                      <span className={styles.historyBadge}>Length {totalChars}</span>
+                      <span className={styles.historyBadge}>Num {entry.numberCount}</span>
+                      <span className={styles.historyBadge}>Spec {entry.specialCharacterCount}</span>
+                      <span className={styles.historyBadge}>Upper {entry.uppercaseCount}</span>
+                      <span className={styles.historyBadge}>Lower {entry.lowercaseCount}</span>
+                    </div>
+
+                    {isRevealed && (
+                      <div className={styles.historyActions}>
+                        <CopyButton text={entry.password} />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className={styles.paginationRow}>
+              <button
+                type="button"
+                className={styles.revealBtn}
+                onClick={() => loadHistory(page - 1)}
+                disabled={page === 0 || loading}
+              >
+                Previous
+              </button>
+              <span className={styles.paginationInfo}>
+                Page {page + 1} of {totalPages} · {total} total
+              </span>
+              <button
+                type="button"
+                className={styles.revealBtn}
+                onClick={() => loadHistory(page + 1)}
+                disabled={page >= totalPages - 1 || loading}
+              >
+                Next
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function PasswordVaultPage() {
   const { username, logout } = useAuth()
   const navigate = useNavigate()
@@ -766,7 +981,7 @@ export default function PasswordVaultPage() {
       <section className={styles.hero}>
         <div className={styles.heroGrid} aria-hidden="true" />
         <div className={styles.heroContent}>
-          <div className={styles.heroBadge}>Sprint 4 · Password Vault</div>
+          <div className={styles.heroBadge}>Sprint 9 · Password Vault</div>
           <h1 className={styles.heroTitle}>
             Password<br />
             <span className={styles.heroTitleAccent}>Vault</span>
@@ -787,7 +1002,7 @@ export default function PasswordVaultPage() {
           </div>
           <div className={styles.statCard}>
             <span className={styles.statValue}>4</span>
-            <span className={styles.statLabel}>char classes</span>
+            <span className={styles.statLabel}>vault sections</span>
           </div>
         </div>
       </section>
@@ -811,6 +1026,7 @@ export default function PasswordVaultPage() {
         {activeTab === 'generate' && <GenerateTab username={username} />}
         {activeTab === 'save'     && <SaveTab     username={username} />}
         {activeTab === 'vault'    && <VaultTab />}
+        {activeTab === 'history'  && <GeneratedHistoryTab />}
 
       </main>
     </div>
