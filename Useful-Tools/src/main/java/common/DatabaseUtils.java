@@ -1,14 +1,10 @@
 package common;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Properties;
 
 public class DatabaseUtils {
 
@@ -20,24 +16,8 @@ public class DatabaseUtils {
     public static Connection getSQLite3Connection() {
         Connection conn = null;
         try {
-        	Properties properties = new Properties();
-
-        	try (InputStream is = DatabaseUtils.class
-        	        .getClassLoader()
-        	        .getResourceAsStream("passwordgenerator/properties/config.properties")) {
-
-        	    if (is == null) {
-        	        throw new RuntimeException("config.properties not found in classpath");
-        	    }
-
-        	    properties.load(is);
-        	}
-            Class.forName(properties.getProperty("sqlite3_driver"));
-            String url = properties.getProperty("sqlite3_url");
-
-            if (url == null || url.isBlank()) {
-                throw new RuntimeException("sqlite3_url not found in config.properties");
-            }
+            Class.forName(AppConfig.getRequired("sqlite3_driver"));
+            String url = AppConfig.getRequired("sqlite3_url");
 
             conn = DriverManager.getConnection(url);
 
@@ -47,14 +27,10 @@ public class DatabaseUtils {
             System.out.println("Connection to SQLite3 database successful");
         } catch (SQLException sqle) {
             sqle.printStackTrace();
-        } catch (FileNotFoundException fnfe) {
-            fnfe.printStackTrace();
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
         } catch (ClassNotFoundException cnfe) {
             cnfe.printStackTrace();
         } catch (RuntimeException re) {
-        	re.printStackTrace();
+            re.printStackTrace();
         }
         return conn;
     }

@@ -1,7 +1,7 @@
 import { useState }        from 'react'
 import { useNavigate }     from 'react-router-dom'
 import { updatePassword, logoutUser } from '../../api/apiClient'
-import { useAuth }         from '../../auth/AuthContext'
+import { useAuth }         from '../../auth/useAuth'
 import AuthLayout          from '../../components/AuthLayout/AuthLayout'
 import styles              from './UpdatePasswordPage.module.css'
 

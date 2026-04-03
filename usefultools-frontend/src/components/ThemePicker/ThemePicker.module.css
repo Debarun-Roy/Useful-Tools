@@ -1,0 +1,33 @@
+.shell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--theme-picker-border);
+  background: var(--theme-picker-bg);
+}
+
+.label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--theme-picker-label);
+}
+
+.select {
+  min-width: 128px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--theme-picker-text);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.select option {
+  color: var(--clr-text);
+  background: var(--clr-surface);
+}

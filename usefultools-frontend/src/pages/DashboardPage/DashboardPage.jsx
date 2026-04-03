@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { logoutUser }  from '../../api/apiClient'
-import { useAuth }     from '../../auth/AuthContext'
+import { useAuth }     from '../../auth/useAuth'
+import ThemePicker     from '../../components/ThemePicker/ThemePicker'
 import styles          from './DashboardPage.module.css'
 
 const FEATURES = [
@@ -73,6 +74,7 @@ export default function DashboardPage() {
           <span className={styles.brandName}>UsefulTools</span>
         </div>
         <div className={styles.userArea}>
+          <ThemePicker />
           <span className={styles.usernameLabel}>
             Signed in as <strong style={{ color: 'var(--clr-dark-text)' }}>{username}</strong>
           </span>

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider }       from './auth/AuthContext'
 import ProtectedRoute         from './components/ProtectedRoute'
+import { ThemeProvider }      from './theme/ThemeContext'
 import LoginPage              from './pages/LoginPage/LoginPage'
 import RegisterPage           from './pages/RegisterPage/RegisterPage'
 import UpdatePasswordPage     from './pages/UpdatePasswordPage/UpdatePasswordPage'
@@ -15,7 +16,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
+        <ThemeProvider>
+          <Routes>
 
           {/* ── Public routes ─────────────────────────────────────────── */}
           <Route path="/login"    element={<LoginPage />} />
@@ -47,7 +49,8 @@ export default function App() {
           {/* ── Fallback ──────────────────────────────────────────────── */}
           <Route path="*" element={<Navigate to="/login" replace />} />
 
-        </Routes>
+          </Routes>
+        </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
   )

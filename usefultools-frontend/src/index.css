@@ -1,6 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-/* ─── Global Reset ───────────────────────────────────────────────────────── */
 *,
 *::before,
 *::after {
@@ -9,105 +8,289 @@
   padding: 0;
 }
 
-/* ─── Observatory Design Tokens ─────────────────────────────────────────── */
-:root {
-  /* Brand — deep space navy + electric blue */
-  --clr-primary:        #3b6fd4;
-  --clr-primary-dark:   #2d55a8;
-  --clr-primary-light:  #5a8fe8;
-  --clr-accent:         #4a90d9;
-  --clr-accent-bright:  #7ec8e3;
+:root,
+:root[data-theme='observatory'] {
+  --clr-primary: #3b6fd4;
+  --clr-primary-dark: #2d55a8;
+  --clr-primary-light: #5a8fe8;
+  --clr-accent: #4a90d9;
+  --clr-accent-bright: #7ec8e3;
 
-  /* Semantic */
-  --clr-error:          #f85149;
-  --clr-error-bg:       rgba(248,81,73,0.1);
-  --clr-error-border:   rgba(248,81,73,0.3);
-  --clr-success:        #3fb950;
-  --clr-success-bg:     rgba(63,185,80,0.1);
-  --clr-success-border: rgba(63,185,80,0.3);
+  --clr-error: #f85149;
+  --clr-error-bg: rgba(248, 81, 73, 0.1);
+  --clr-error-border: rgba(248, 81, 73, 0.3);
+  --clr-success: #3fb950;
+  --clr-success-bg: rgba(63, 185, 80, 0.1);
+  --clr-success-border: rgba(63, 185, 80, 0.3);
 
-  /* Light surface — used for content areas below heroes */
-  --clr-bg:             #f0f2f8;
-  --clr-surface:        #ffffff;
-  --clr-input-bg:       #f7f9fc;
-  --clr-text:           #0d1117;
-  --clr-text-muted:     #57606a;
-  --clr-border:         #d8dee4;
+  --clr-bg: #f0f2f8;
+  --clr-surface: #ffffff;
+  --clr-input-bg: #f7f9fc;
+  --clr-text: #0d1117;
+  --clr-text-muted: #57606a;
+  --clr-border: #d8dee4;
 
-  /* Dark surface — used for hero sections and dark cards */
-  --clr-dark-bg:        #0d1117;
-  --clr-dark-surface:   #161b22;
-  --clr-dark-surface2:  #1c2128;
-  --clr-dark-text:      #e6edf3;
-  --clr-dark-muted:     #8b949e;
-  --clr-dark-border:    #30363d;
+  --clr-dark-bg: #0d1117;
+  --clr-dark-surface: #161b22;
+  --clr-dark-surface2: #1c2128;
+  --clr-dark-text: #e6edf3;
+  --clr-dark-muted: #8b949e;
+  --clr-dark-border: #30363d;
 
-  /* Spacing */
-  --space-xs:    4px;
-  --space-sm:    8px;
-  --space-md:   16px;
-  --space-lg:   24px;
-  --space-xl:   32px;
-  --space-2xl:  48px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
 
-  /* Typography */
-  --font:         'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',
-                  sans-serif;
-  --font-mono:    'JetBrains Mono', 'Consolas', 'Monaco', monospace;
-  --fs-xs:        0.75rem;    /* 12px */
-  --fs-sm:        0.875rem;   /* 14px */
-  --fs-md:        1rem;       /* 16px */
-  --fs-lg:        1.125rem;   /* 18px */
-  --fs-xl:        1.5rem;     /* 24px */
-  --fs-2xl:       2rem;       /* 32px */
+  --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.125rem;
+  --fs-xl: 1.5rem;
+  --fs-2xl: 2rem;
 
-  /* Borders & elevation */
-  --radius-sm:    6px;
-  --radius-md:    10px;
-  --radius-lg:    16px;
-  --radius-xl:    24px;
-  --shadow-sm:    0 1px 3px rgba(0,0,0,0.08);
-  --shadow-card:  0 4px 20px rgba(0,0,0,0.07);
-  --shadow-lg:    0 12px 40px rgba(0,0,0,0.12);
-  --shadow-glow:  0 0 24px rgba(74,144,217,0.2);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+  --shadow-glow: 0 0 24px rgba(74, 144, 217, 0.2);
 
-  /* Transition */
-  --transition:   150ms ease;
+  --transition: 150ms ease;
   --transition-md: 250ms ease;
+
+  --app-header-bg: rgba(13, 17, 23, 0.96);
+  --app-header-border: var(--clr-dark-border);
+  --hero-gradient: linear-gradient(135deg, #0d1117 0%, #0f1b3d 55%, #0d1117 100%);
+  --hero-grid-dot: rgba(74, 144, 217, 0.2);
+  --hero-grid-dot-soft: rgba(74, 144, 217, 0.18);
+  --hero-glow-color: rgba(74, 144, 217, 0.12);
+  --hero-subtext: rgba(255, 255, 255, 0.45);
+  --auth-bg-gradient: linear-gradient(135deg, #080d1a 0%, #0f1b3d 45%, #0a1628 100%);
+  --auth-glow-primary: rgba(74, 144, 217, 0.14);
+  --auth-glow-secondary: rgba(126, 200, 227, 0.08);
+  --auth-card-bg: rgba(22, 27, 34, 0.85);
+  --auth-card-border: rgba(74, 144, 217, 0.2);
+  --auth-divider: rgba(74, 144, 217, 0.25);
+  --session-notice-bg: rgba(126, 200, 227, 0.14);
+  --session-notice-border: rgba(126, 200, 227, 0.28);
+  --session-notice-text: #d9f1ff;
+  --theme-picker-bg: rgba(255, 255, 255, 0.04);
+  --theme-picker-border: rgba(126, 200, 227, 0.24);
+  --theme-picker-label: rgba(230, 237, 243, 0.56);
+  --theme-picker-text: var(--clr-dark-text);
+  --tool-hero-gradient: linear-gradient(135deg, #0f1b3d 0%, #17376a 55%, #162847 100%);
+  --tool-hero-shadow: rgba(15, 27, 61, 0.24);
+  --tool-hero-glow: rgba(126, 200, 227, 0.28);
+  --tool-hero-grid-dot: rgba(126, 200, 227, 0.22);
+  --tool-hero-badge-border: rgba(126, 200, 227, 0.3);
+  --tool-hero-badge-bg: rgba(126, 200, 227, 0.11);
+  --tool-hero-accent-gradient: linear-gradient(90deg, #82d2ff, #b9f4ff);
 }
 
-/* ─── Base ───────────────────────────────────────────────────────────────── */
+:root[data-theme='starry-night'] {
+  --clr-primary: #38bdf8;
+  --clr-primary-dark: #0f3f61;
+  --clr-primary-light: #67e8f9;
+  --clr-accent: #67e8f9;
+  --clr-accent-bright: #d7f5ff;
+  --clr-bg: #020817;
+  --clr-surface: #0b1224;
+  --clr-input-bg: #09101f;
+  --clr-text: #e5edf8;
+  --clr-text-muted: #94a3b8;
+  --clr-border: #1e293b;
+  --clr-dark-bg: #020817;
+  --clr-dark-surface: #081120;
+  --clr-dark-surface2: #0e1729;
+  --clr-dark-text: #f8fafc;
+  --clr-dark-muted: #9fb3c8;
+  --clr-dark-border: #1f2b46;
+  --shadow-glow: 0 0 28px rgba(103, 232, 249, 0.2);
+  --app-header-bg: rgba(2, 8, 23, 0.92);
+  --app-header-border: rgba(103, 232, 249, 0.16);
+  --hero-gradient: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.16), transparent 28%), linear-gradient(135deg, #020817 0%, #08142c 52%, #020817 100%);
+  --hero-grid-dot: rgba(216, 244, 255, 0.18);
+  --hero-grid-dot-soft: rgba(216, 244, 255, 0.14);
+  --hero-glow-color: rgba(103, 232, 249, 0.16);
+  --hero-subtext: rgba(226, 232, 240, 0.66);
+  --auth-bg-gradient: radial-gradient(circle at top right, rgba(56, 189, 248, 0.18), transparent 30%), linear-gradient(135deg, #020817 0%, #08142c 48%, #031225 100%);
+  --auth-glow-primary: rgba(56, 189, 248, 0.18);
+  --auth-glow-secondary: rgba(125, 211, 252, 0.09);
+  --auth-card-bg: rgba(8, 17, 32, 0.88);
+  --auth-card-border: rgba(103, 232, 249, 0.18);
+  --auth-divider: rgba(103, 232, 249, 0.22);
+  --session-notice-bg: rgba(56, 189, 248, 0.14);
+  --session-notice-border: rgba(103, 232, 249, 0.28);
+  --session-notice-text: #d9f7ff;
+  --theme-picker-bg: rgba(103, 232, 249, 0.06);
+  --theme-picker-border: rgba(103, 232, 249, 0.22);
+  --theme-picker-label: rgba(216, 244, 255, 0.64);
+  --theme-picker-text: #f8fafc;
+  --tool-hero-gradient: radial-gradient(circle at 85% 15%, rgba(103, 232, 249, 0.14), transparent 24%), linear-gradient(135deg, #031122 0%, #09203b 56%, #04111f 100%);
+  --tool-hero-shadow: rgba(2, 8, 23, 0.42);
+  --tool-hero-glow: rgba(103, 232, 249, 0.24);
+  --tool-hero-grid-dot: rgba(216, 244, 255, 0.18);
+  --tool-hero-badge-border: rgba(103, 232, 249, 0.28);
+  --tool-hero-badge-bg: rgba(103, 232, 249, 0.1);
+  --tool-hero-accent-gradient: linear-gradient(90deg, #7dd3fc, #d8fbff);
+}
+
+:root[data-theme='solar-flare'] {
+  --clr-primary: #f97316;
+  --clr-primary-dark: #9a3412;
+  --clr-primary-light: #fb923c;
+  --clr-accent: #fbbf24;
+  --clr-accent-bright: #fde68a;
+  --clr-bg: #fff7ed;
+  --clr-surface: #ffffff;
+  --clr-input-bg: #fffaf5;
+  --clr-text: #431407;
+  --clr-text-muted: #9a3412;
+  --clr-border: #fed7aa;
+  --clr-dark-bg: #2b1208;
+  --clr-dark-surface: #3a1708;
+  --clr-dark-surface2: #4a1d0a;
+  --clr-dark-text: #fff7ed;
+  --clr-dark-muted: #fdba74;
+  --clr-dark-border: #7c2d12;
+  --shadow-glow: 0 0 28px rgba(251, 191, 36, 0.22);
+  --app-header-bg: rgba(43, 18, 8, 0.94);
+  --app-header-border: rgba(251, 191, 36, 0.18);
+  --hero-gradient: radial-gradient(circle at 18% 22%, rgba(251, 191, 36, 0.24), transparent 22%), linear-gradient(135deg, #2b1208 0%, #5b210d 52%, #2b1208 100%);
+  --hero-grid-dot: rgba(255, 234, 191, 0.18);
+  --hero-grid-dot-soft: rgba(255, 234, 191, 0.14);
+  --hero-glow-color: rgba(251, 191, 36, 0.18);
+  --hero-subtext: rgba(255, 237, 213, 0.72);
+  --auth-bg-gradient: radial-gradient(circle at top right, rgba(251, 191, 36, 0.2), transparent 28%), linear-gradient(135deg, #2b1208 0%, #5b210d 52%, #2a1308 100%);
+  --auth-glow-primary: rgba(251, 191, 36, 0.18);
+  --auth-glow-secondary: rgba(249, 115, 22, 0.12);
+  --auth-card-bg: rgba(58, 23, 8, 0.88);
+  --auth-card-border: rgba(251, 191, 36, 0.2);
+  --auth-divider: rgba(251, 191, 36, 0.24);
+  --session-notice-bg: rgba(251, 191, 36, 0.14);
+  --session-notice-border: rgba(251, 191, 36, 0.28);
+  --session-notice-text: #fff4d8;
+  --theme-picker-bg: rgba(251, 191, 36, 0.08);
+  --theme-picker-border: rgba(251, 191, 36, 0.24);
+  --theme-picker-label: rgba(255, 237, 213, 0.68);
+  --theme-picker-text: #fff7ed;
+  --tool-hero-gradient: radial-gradient(circle at 88% 12%, rgba(251, 191, 36, 0.16), transparent 24%), linear-gradient(135deg, #351307 0%, #6c250c 56%, #351307 100%);
+  --tool-hero-shadow: rgba(124, 45, 18, 0.28);
+  --tool-hero-glow: rgba(251, 191, 36, 0.24);
+  --tool-hero-grid-dot: rgba(255, 234, 191, 0.18);
+  --tool-hero-badge-border: rgba(251, 191, 36, 0.28);
+  --tool-hero-badge-bg: rgba(251, 191, 36, 0.1);
+  --tool-hero-accent-gradient: linear-gradient(90deg, #fbbf24, #fde68a);
+}
+
+:root[data-theme='aurora'] {
+  --clr-primary: #10b981;
+  --clr-primary-dark: #065f46;
+  --clr-primary-light: #34d399;
+  --clr-accent: #2dd4bf;
+  --clr-accent-bright: #99f6e4;
+  --clr-bg: #ecfeff;
+  --clr-surface: #ffffff;
+  --clr-input-bg: #f4fffe;
+  --clr-text: #083344;
+  --clr-text-muted: #0f766e;
+  --clr-border: #bae6fd;
+  --clr-dark-bg: #052e2b;
+  --clr-dark-surface: #083b37;
+  --clr-dark-surface2: #0b4a45;
+  --clr-dark-text: #ecfeff;
+  --clr-dark-muted: #99f6e4;
+  --clr-dark-border: #115e59;
+  --shadow-glow: 0 0 28px rgba(45, 212, 191, 0.18);
+  --app-header-bg: rgba(5, 46, 43, 0.94);
+  --app-header-border: rgba(45, 212, 191, 0.16);
+  --hero-gradient: radial-gradient(circle at 20% 16%, rgba(45, 212, 191, 0.18), transparent 24%), linear-gradient(135deg, #052e2b 0%, #0b4a45 52%, #063533 100%);
+  --hero-grid-dot: rgba(217, 255, 249, 0.16);
+  --hero-grid-dot-soft: rgba(217, 255, 249, 0.13);
+  --hero-glow-color: rgba(45, 212, 191, 0.18);
+  --hero-subtext: rgba(204, 251, 241, 0.72);
+  --auth-bg-gradient: radial-gradient(circle at top right, rgba(45, 212, 191, 0.16), transparent 28%), linear-gradient(135deg, #052e2b 0%, #0b4a45 52%, #063533 100%);
+  --auth-glow-primary: rgba(45, 212, 191, 0.17);
+  --auth-glow-secondary: rgba(52, 211, 153, 0.12);
+  --auth-card-bg: rgba(8, 59, 55, 0.88);
+  --auth-card-border: rgba(45, 212, 191, 0.18);
+  --auth-divider: rgba(45, 212, 191, 0.24);
+  --session-notice-bg: rgba(45, 212, 191, 0.14);
+  --session-notice-border: rgba(45, 212, 191, 0.28);
+  --session-notice-text: #defcf7;
+  --theme-picker-bg: rgba(45, 212, 191, 0.08);
+  --theme-picker-border: rgba(45, 212, 191, 0.24);
+  --theme-picker-label: rgba(217, 255, 249, 0.68);
+  --theme-picker-text: #ecfeff;
+  --tool-hero-gradient: radial-gradient(circle at 86% 16%, rgba(45, 212, 191, 0.16), transparent 22%), linear-gradient(135deg, #063533 0%, #0c544e 56%, #073c39 100%);
+  --tool-hero-shadow: rgba(6, 95, 70, 0.28);
+  --tool-hero-glow: rgba(45, 212, 191, 0.24);
+  --tool-hero-grid-dot: rgba(217, 255, 249, 0.18);
+  --tool-hero-badge-border: rgba(45, 212, 191, 0.28);
+  --tool-hero-badge-bg: rgba(45, 212, 191, 0.1);
+  --tool-hero-accent-gradient: linear-gradient(90deg, #5eead4, #ccfbf1);
+}
+
+html {
+  background: var(--clr-bg);
+}
+
 body {
-  font-family:              var(--font);
-  font-size:                var(--fs-md);
-  color:                    var(--clr-text);
-  background-color:         var(--clr-bg);
-  line-height:              1.6;
-  -webkit-font-smoothing:   antialiased;
-  -moz-osx-font-smoothing:  grayscale;
+  font-family: var(--font);
+  font-size: var(--fs-md);
+  color: var(--clr-text);
+  background-color: var(--clr-bg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--transition-md), color var(--transition-md);
 }
 
 a {
-  color:           var(--clr-accent);
+  color: var(--clr-accent);
   text-decoration: none;
 }
-a:hover { text-decoration: underline; }
 
-button, input, textarea, select {
+a:hover {
+  text-decoration: underline;
+}
+
+button,
+input,
+textarea,
+select {
   font-family: var(--font);
 }
 
-/* ─── Observatory dot-grid utility (reusable across pages) ──────────────── */
 .obs-grid {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle, rgba(74,144,217,0.22) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(74, 144, 217, 0.22) 1px, transparent 1px);
   background-size: 28px 28px;
   pointer-events: none;
 }
 
-/* ─── Scrollbar — dark, slim ─────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--clr-dark-border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--clr-accent); }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--clr-dark-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--clr-accent);
+}
