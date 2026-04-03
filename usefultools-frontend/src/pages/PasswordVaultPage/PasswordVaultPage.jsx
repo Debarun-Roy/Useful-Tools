@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../auth/AuthContext'
+import { useAuth } from '../../auth/useAuth'
 import {
   generatePassword,
   savePassword,
@@ -48,16 +48,17 @@ function StrengthBar({ password }) {
   if (/[0-9]/.test(password)) score++
   if (/[^A-Za-z0-9]/.test(password)) score++
 
-  const pct   = Math.round((score / 6) * 100)
+  const pct = Math.round((score / 6) * 100)
   const label = score <= 2 ? 'Weak' : score <= 4 ? 'Fair' : score <= 5 ? 'Strong' : 'Very strong'
-  const cls   = score <= 2 ? styles.barWeak : score <= 4 ? styles.barFair : styles.barStrong
+  const fillCls = score <= 2 ? styles.barWeak : score <= 4 ? styles.barFair : styles.barStrong
+  const labelCls = score <= 2 ? styles.labelWeak : score <= 4 ? styles.labelFair : styles.labelStrong
 
   return (
     <div className={styles.strengthWrap}>
       <div className={styles.strengthTrack}>
-        <div className={`${styles.strengthFill} ${cls}`} style={{ width: `${pct}%` }} />
+        <div className={`${styles.strengthFill} ${fillCls}`} style={{ width: `${pct}%` }} />
       </div>
-      <span className={`${styles.strengthLabel} ${cls}`}>{label}</span>
+      <span className={`${styles.strengthLabel} ${labelCls}`}>{label}</span>
     </div>
   )
 }

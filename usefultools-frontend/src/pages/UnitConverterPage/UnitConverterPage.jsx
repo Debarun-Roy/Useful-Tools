@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../auth/AuthContext'
+import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
 import styles from './UnitConverterPage.module.css'
 

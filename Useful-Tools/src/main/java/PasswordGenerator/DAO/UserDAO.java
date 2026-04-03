@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.Instant;
 import java.util.logging.Logger;
 
@@ -32,7 +33,31 @@ import passwordgenerator.utilities.HashingUtils;
 public class UserDAO {
 
     private static final Logger logger = new UnifiedLogger().writeLogs("dao");
+    private static final String USER_CREATED_DATE_FALLBACK = "Unknown";
 
+    private static void ensureUserProfileSchema(Connection conn) throws SQLException {
+        boolean hasCreatedDate = false;
+
+        try (Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery("PRAGMA table_info(user_table)")) {
+            while (rs.next()) {
+                if ("created_date".equalsIgnoreCase(rs.getString("name"))) {
+                    hasCreatedDate = true;
+                    break;
+                }
+            }
+        }
+
+        if (!hasCreatedDate) {
+            try (Statement st = conn.createStatement()) {
+                st.executeUpdate("ALTER TABLE user_table ADD COLUMN created_date TEXT;");
+                st.executeUpdate("UPDATE user_table SET created_date = CURRENT_TIMESTAMP "
+                        + "WHERE created_date IS NULL OR TRIM(created_date) = '';");
+            }
+            logger.info("Added created_date column to user_table for profile support");
+        }
+    }
+    
     // ── Lock status value object ──────────────────────────────────────────────
 
     /**
@@ -63,13 +88,15 @@ public class UserDAO {
         PreparedStatement pst = null;
         try {
             conn = DatabaseUtils.getSQLite3Connection();
+            ensureUserProfileSchema(conn);
             logger.info("SQLite3 connection successful");
-            String sql = "INSERT INTO user_table (username, hashed_password) VALUES (?, ?) "
+            String sql = "INSERT INTO user_table (username, hashed_password, created_date) VALUES (?, ?, ?) "
                     + "ON CONFLICT DO NOTHING;";
             pst = conn.prepareStatement(sql);
             pst.setString(1, username);
             String hashedPassword = HashingUtils.generateHashedPassword(password);
             pst.setString(2, hashedPassword);
+            pst.setString(3, Instant.now().toString());
             pst.executeUpdate();
             logger.info("User details stored into database");
         } catch (SQLException sqle) {
@@ -163,6 +190,7 @@ public class UserDAO {
         ResultSet rs = null;
         try {
             conn = DatabaseUtils.getSQLite3Connection();
+            ensureUserProfileSchema(conn);
             pst = conn.prepareStatement(
                     "SELECT COALESCE(failed_attempts, 0), locked_until "
                     + "FROM user_table WHERE username = ?;");
@@ -206,7 +234,8 @@ public class UserDAO {
         ResultSet rs = null;
         try {
             conn = DatabaseUtils.getSQLite3Connection();
-
+            ensureUserProfileSchema(conn);
+            
             // Read current count.
             pst = conn.prepareStatement(
                     "SELECT COALESCE(failed_attempts, 0) FROM user_table WHERE username = ?;");
@@ -250,6 +279,8 @@ public class UserDAO {
         PreparedStatement pst = null;
         try {
             conn = DatabaseUtils.getSQLite3Connection();
+            ensureUserProfileSchema(conn);
+            
             pst = conn.prepareStatement(
                     "UPDATE user_table SET failed_attempts = 0, locked_until = NULL "
                     + "WHERE username = ?;");
@@ -261,5 +292,30 @@ public class UserDAO {
         } finally {
             DatabaseUtils.closeSQLConnection(conn, pst, null);
         }
+    }
+    
+    public static String getAccountCreatedDate(String username) {
+        Connection conn = null;
+        PreparedStatement pst = null;
+        ResultSet rs = null;
+        try {
+            conn = DatabaseUtils.getSQLite3Connection();
+            ensureUserProfileSchema(conn);
+            pst = conn.prepareStatement(
+                    "SELECT created_date FROM user_table WHERE username = ?;");
+            pst.setString(1, username);
+            rs = pst.executeQuery();
+            if (rs.next()) {
+                String createdDate = rs.getString("created_date");
+                return (createdDate == null || createdDate.isBlank())
+                        ? USER_CREATED_DATE_FALLBACK
+                        : createdDate;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DatabaseUtils.closeSQLConnection(conn, pst, rs);
+        }
+        return USER_CREATED_DATE_FALLBACK;
     }
 }

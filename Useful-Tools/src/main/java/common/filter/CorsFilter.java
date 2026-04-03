@@ -1,8 +1,10 @@
 package common.filter;
 
 import java.io.IOException;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
+import common.AppConfig;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
@@ -24,10 +26,17 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class CorsFilter implements Filter {
 
-    private static final Set<String> ALLOWED_ORIGINS = Set.of(
+	private static final Set<String> DEFAULT_ALLOWED_ORIGINS = Set.of(
             "http://localhost:3000",
             "http://localhost:5173"
     );
+
+	private Set<String> allowedOrigins = new LinkedHashSet<>(DEFAULT_ALLOWED_ORIGINS);
+
+    @Override
+    public void init(FilterConfig fc) throws ServletException {
+        allowedOrigins = AppConfig.getCsvSet("cors_allowed_origins", DEFAULT_ALLOWED_ORIGINS);
+    }
 
     @Override
     public void doFilter(ServletRequest servletRequest,
@@ -40,7 +49,7 @@ public class CorsFilter implements Filter {
 
         String origin = request.getHeader("Origin");
 
-        if (origin != null && ALLOWED_ORIGINS.contains(origin)) {
+        if (origin != null && allowedOrigins.contains(origin)) {
             response.setHeader("Access-Control-Allow-Origin",      origin);
             response.setHeader("Access-Control-Allow-Credentials", "true");
             response.setHeader("Access-Control-Allow-Methods",     "GET, POST, PUT, DELETE, OPTIONS");
@@ -58,6 +67,5 @@ public class CorsFilter implements Filter {
         chain.doFilter(servletRequest, servletResponse);
     }
 
-    @Override public void init(FilterConfig fc) throws ServletException { }
     @Override public void destroy() { }
 }

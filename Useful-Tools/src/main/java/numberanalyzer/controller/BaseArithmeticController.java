@@ -2,6 +2,7 @@ package numberanalyzer.controller;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.math.BigInteger;
 import java.util.LinkedHashMap;
 
 import com.google.gson.Gson;
@@ -41,7 +42,7 @@ import jakarta.servlet.http.HttpServletResponse;
  *   { "success": true, "data": {
  *       "number1": "FF", "number2": "1A", "base": 16, "operation": "add",
  *       "result": "119",
- *       "decimal1": 255, "decimal2": 26, "decimalResult": 281
+ *       "decimal1": "255", "decimal2": "26", "decimalResult": "281"
  *   }}
  *
  * Response 400: { "success": false, "errorCode": "...", "error": "..." }
@@ -131,7 +132,7 @@ public class BaseArithmeticController extends HttpServlet {
             }
 
             // ── 5. Parse numbers from their base ────────────────────────────
-            long decimal1, decimal2;
+            BigInteger decimal1, decimal2;
             try {
                 decimal1 = parseInBase(num1Str, base);
             } catch (IllegalArgumentException e) {
@@ -153,26 +154,26 @@ public class BaseArithmeticController extends HttpServlet {
 
             // ── 6. Perform the requested operation ──────────────────────────
             String operation = body.get("operation").getAsString().trim().toLowerCase();
-            long decimalResult;
+            BigInteger decimalResult;
 
             switch (operation) {
                 case "add":
-                    decimalResult = decimal1 + decimal2;
+                	decimalResult = decimal1.add(decimal2);
                     break;
                 case "subtract":
-                    decimalResult = decimal1 - decimal2;
+                	decimalResult = decimal1.subtract(decimal2);
                     break;
                 case "multiply":
-                    decimalResult = decimal1 * decimal2;
+                	decimalResult = decimal1.multiply(decimal2);
                     break;
                 case "divide":
-                    if (decimal2 == 0L) {
+                	if (decimal2.equals(BigInteger.ZERO)) {
                         response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                         out.print(gson.toJson(ApiResponse.fail(
                                 "Division by zero.", "DIVISION_BY_ZERO")));
                         return;
                     }
-                    decimalResult = decimal1 / decimal2;
+                	decimalResult = decimal1.divide(decimal2);
                     break;
                 default:
                     response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -184,8 +185,8 @@ public class BaseArithmeticController extends HttpServlet {
             }
 
             // ── 7. Convert result back to the requested base ────────────────
-            boolean negative = decimalResult < 0;
-            String resultStr = toBase(Math.abs(decimalResult), base);
+            boolean negative = decimalResult.signum() < 0;
+            String resultStr = toBase(decimalResult.abs(), base);
             if (negative) resultStr = "-" + resultStr;
 
             LinkedHashMap<String, Object> data = new LinkedHashMap<>();
@@ -194,9 +195,9 @@ public class BaseArithmeticController extends HttpServlet {
             data.put("base",          base);
             data.put("operation",     operation);
             data.put("result",        resultStr);
-            data.put("decimal1",      decimal1);
-            data.put("decimal2",      decimal2);
-            data.put("decimalResult", decimalResult);
+            data.put("decimal1",      decimal1.toString());
+            data.put("decimal2",      decimal2.toString());
+            data.put("decimalResult", decimalResult.toString());
 
             response.setStatus(HttpServletResponse.SC_OK);
             out.print(gson.toJson(ApiResponse.ok(data)));
@@ -222,8 +223,9 @@ public class BaseArithmeticController extends HttpServlet {
      *
      * @throws IllegalArgumentException if any character is invalid or exceeds the base.
      */
-    private static long parseInBase(String str, int base) {
-        long result = 0L;
+    private static BigInteger parseInBase(String str, int base) {
+        BigInteger result = BigInteger.ZERO;
+        BigInteger bigBase = BigInteger.valueOf(base);
         for (int i = 0; i < str.length(); i++) {
             char c = str.charAt(i);
             int digit;
@@ -236,7 +238,7 @@ public class BaseArithmeticController extends HttpServlet {
                 throw new IllegalArgumentException(
                         "Digit '" + c + "' (value " + digit + ") is out of range for base " + base);
             }
-            result = result * base + digit;
+            result = result.multiply(bigBase).add(BigInteger.valueOf(digit));
         }
         return result;
     }
@@ -249,17 +251,19 @@ public class BaseArithmeticController extends HttpServlet {
      *   10–35 → 'A'–'Z'
      *   36–61 → 'a'–'z'
      */
-    private static String toBase(long num, int base) {
-        if (num == 0L) return "0";
+    private static String toBase(BigInteger num, int base) {
+        if (num.equals(BigInteger.ZERO)) return "0";
+        BigInteger bigBase = BigInteger.valueOf(base);
         StringBuilder sb = new StringBuilder();
-        while (num > 0L) {
-            int rem = (int)(num % base);
+        while (num.compareTo(BigInteger.ZERO) > 0) {
+            BigInteger[] divRem = num.divideAndRemainder(bigBase);
+            int rem = divRem[1].intValue();
             char c;
             if      (rem < 10) c = (char)('0' + rem);
             else if (rem < 36) c = (char)('A' + rem - 10);
             else               c = (char)('a' + rem - 36);
             sb.append(c);
-            num /= base;
+            num = divRem[0];
         }
         return sb.reverse().toString();
     }

@@ -10,7 +10,33 @@
  *   performBaseArithmetic() — POST /api/analyzer/base-arithmetic
  */
 
-const BASE = 'http://localhost:8080/UsefulTools/api'
+const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/UsefulTools/api'
+let unauthorizedHandler = null
+let unauthorizedHandled = false
+
+export function registerUnauthorizedHandler(handler) {
+  unauthorizedHandler = handler
+  return () => {
+    if (unauthorizedHandler === handler) {
+      unauthorizedHandler = null
+      unauthorizedHandled = false
+    }
+  }
+}
+
+async function parseResponseBody(response) {
+  const raw = await response.text()
+  if (!raw) return {}
+
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return {
+      success: false,
+      error: raw,
+    }
+  }
+}
 
 /**
  * Reads the XSRF-TOKEN cookie value set by the server on login.
@@ -42,7 +68,9 @@ async function request(path, { method = 'GET', body, isForm = false, isJson = fa
 
   if (isForm && body) {
     headers['Content-Type'] = 'application/x-www-form-urlencoded'
-    encodedBody = new URLSearchParams(body).toString()
+    encodedBody = body instanceof URLSearchParams
+      ? body.toString()
+      : new URLSearchParams(body).toString()
   } else if (isJson && body) {
     headers['Content-Type'] = 'application/json'
     encodedBody = JSON.stringify(body)
@@ -55,7 +83,25 @@ async function request(path, { method = 'GET', body, isForm = false, isJson = fa
     body: encodedBody,
   })
 
-  const data = await response.json()
+  const data = await parseResponseBody(response)
+
+  if (
+    response.status === 401 &&
+    unauthorizedHandler &&
+    !unauthorizedHandled &&
+    path !== '/auth/login' &&
+    path !== '/auth/register'
+  ) {
+    unauthorizedHandled = true
+    unauthorizedHandler({
+      path,
+      status: response.status,
+      data,
+    })
+  } else if (response.status !== 401) {
+    unauthorizedHandled = false
+  }
+
   return { status: response.status, data }
 }
 
@@ -167,14 +213,9 @@ export const performBaseArithmetic = (number1, number2, base, operation) =>
 
 // ── Password Vault ────────────────────────────────────────────────────────────
 
-/**
- * generatePassword uses a manual fetch because URLSearchParams with repeated
- * keys (customization_checkboxes) cannot be expressed through the generic
- * request() helper. The CSRF token is injected explicitly here.
- */
-export const generatePassword = (username, platform, length, customize = 'auto', customFields = {}) => {
+export const generatePassword = (_username, platform, length, customize = 'auto', customFields = {}) => {
   const params = new URLSearchParams()
-  params.append('username', username)
+
   params.append('platform', platform)
   params.append('length', String(length))
   params.append('customize_password', customize)
@@ -186,23 +227,18 @@ export const generatePassword = (username, platform, length, customize = 'auto',
     })
   }
 
-  const csrfToken = getCsrfToken()
-  const headers = { 'Content-Type': 'application/x-www-form-urlencoded' }
-  if (csrfToken) headers['X-XSRF-TOKEN'] = csrfToken
-
-  return fetch(`${BASE}/passwords/generate`, {
+  return request('/passwords/generate', {
     method: 'POST',
-    credentials: 'include',
-    headers,
-    body: params.toString(),
-  }).then(r => r.json().then(data => ({ status: r.status, data })))
+    isForm: true,
+    body: params,
+  })
 }
 
-export const savePassword = (username, platform, password) =>
+export const savePassword = (_username, platform, password) =>
   request('/passwords/save', {
     method: 'POST',
     isForm: true,
-    body: { username, platform, password },
+    body: { platform, password },
   })
 
 export const fetchAllPasswords = () =>

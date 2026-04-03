@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate }         from 'react-router-dom'
 import { fetchUserProfile, logoutUser } from '../../api/apiClient'
-import { useAuth }             from '../../auth/AuthContext'
+import { useAuth }             from '../../auth/useAuth'
 import styles                  from './ProfilePage.module.css'
 
 export default function ProfilePage() {
@@ -107,6 +107,9 @@ export default function ProfilePage() {
                 <div className={styles.identityUsername}>{profile.username}</div>
                 <div className={styles.identityMeta}>
                   {profile.totalCalculations} calculations · {profile.totalPasswordsStored} vault entries
+                </div>
+                <div className={styles.identityMeta}>
+                  Member since {profile.accountCreatedDate}
                 </div>
               </div>
               <button

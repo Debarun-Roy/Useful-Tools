@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import passwordgenerator.dao.UserDAO;
 
 /**
  * Returns the profile summary for the currently logged-in user.
@@ -85,6 +86,7 @@ public class UserProfileController extends HttpServlet {
 
         LinkedHashMap<String, Object> data = new LinkedHashMap<>();
         data.put("username",                    username);
+        data.put("accountCreatedDate",          UserDAO.getAccountCreatedDate(username));
         data.put("totalStandardCalculations",   std);
         data.put("totalEMICalculations",        emi);
         data.put("totalTaxCalculations",        tax);

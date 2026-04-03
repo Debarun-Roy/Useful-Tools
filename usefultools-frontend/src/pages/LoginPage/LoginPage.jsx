@@ -1,7 +1,7 @@
 import { useState }            from 'react'
 import { useNavigate, Link }   from 'react-router-dom'
 import { loginUser }           from '../../api/apiClient'
-import { useAuth }             from '../../auth/AuthContext'
+import { useAuth }             from '../../auth/useAuth'
 import AuthLayout              from '../../components/AuthLayout/AuthLayout'
 import styles                  from './LoginPage.module.css'
 
@@ -30,7 +30,7 @@ export default function LoginPage() {
   const [error,    setError]    = useState('')
   const [loading,  setLoading]  = useState(false)
 
-  const { login } = useAuth()
+  const { login, authNotice, clearAuthNotice } = useAuth()
   const navigate  = useNavigate()
 
   async function handleSubmit(e) {
@@ -71,6 +71,12 @@ export default function LoginPage() {
           </div>
         )}
 
+        {authNotice && (
+          <div className={styles.notice} role="status">
+            {authNotice}
+          </div>
+        )}
+
         <div className={styles.field}>
           <label htmlFor="username" className={styles.label}>Username</label>
           <input
@@ -78,7 +84,10 @@ export default function LoginPage() {
             type="text"
             className={styles.input}
             value={username}
-            onChange={e => setUsername(e.target.value)}
+            onChange={e => {
+              clearAuthNotice()
+              setUsername(e.target.value)
+            }}
             autoComplete="username"
             autoFocus
             disabled={loading}
@@ -93,7 +102,10 @@ export default function LoginPage() {
             type="password"
             className={styles.input}
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={e => {
+              clearAuthNotice()
+              setPassword(e.target.value)
+            }}
             autoComplete="current-password"
             disabled={loading}
             placeholder="Enter your password"

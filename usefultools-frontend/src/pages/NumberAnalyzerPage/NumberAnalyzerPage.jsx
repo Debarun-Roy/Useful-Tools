@@ -8,7 +8,7 @@ import {
   logoutUser,
   performBaseArithmetic,
 } from '../../api/apiClient'
-import { useAuth } from '../../auth/AuthContext'
+import { useAuth } from '../../auth/useAuth'
 import SeriesChart from './SeriesChart'
 import styles from './NumberAnalyzerPage.module.css'
 

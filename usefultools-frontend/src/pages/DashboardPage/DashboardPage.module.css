@@ -18,11 +18,12 @@
   justify-content: space-between;
   padding: 0 var(--space-xl);
   height: 60px;
-  background: var(--clr-dark-bg);
-  border-bottom: 1px solid var(--clr-dark-border);
+  background: var(--app-header-bg);
+  border-bottom: 1px solid var(--app-header-border);
   position: sticky;
   top: 0;
   z-index: 20;
+  backdrop-filter: blur(18px);
 }
 
 .brand {
@@ -56,6 +57,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-md);
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .usernameLabel {
@@ -85,7 +88,7 @@
 .hero {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #0d1117 0%, #0f1b3d 55%, #0d1117 100%);
+  background: var(--hero-gradient);
   padding: 48px var(--space-xl) 44px;
 }
 
@@ -94,7 +97,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle, rgba(74,144,217,0.2) 1px, transparent 1px);
+  background-image: radial-gradient(circle, var(--hero-grid-dot) 1px, transparent 1px);
   background-size: 28px 28px;
   pointer-events: none;
 }
@@ -108,7 +111,7 @@
   width: 500px;
   height: 500px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(74,144,217,0.12) 0%, transparent 65%);
+  background: radial-gradient(circle, var(--hero-glow-color) 0%, transparent 65%);
   pointer-events: none;
 }
 
@@ -165,8 +168,18 @@
 
 .subtitle {
   font-size: var(--fs-md);
-  color: rgba(255,255,255,0.45);
+  color: var(--hero-subtext);
   line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .header {
+    height: auto;
+    min-height: 60px;
+    padding: 10px var(--space-md);
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+  }
 }
 
 /* ─── Main content ───────────────────────────────────────────────────────── */

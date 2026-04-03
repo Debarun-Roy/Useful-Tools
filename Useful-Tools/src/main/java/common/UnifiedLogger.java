@@ -1,9 +1,5 @@
 package common;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
@@ -37,21 +33,10 @@ public class UnifiedLogger {
         }
 
         try {
-            Properties properties = new Properties();
-            try (InputStream is = DatabaseUtils.class
-                    .getClassLoader()
-                    .getResourceAsStream("passwordgenerator/properties/config.properties")) {
-
-                if (is == null) {
-                    throw new RuntimeException("config.properties not found in classpath");
-                }
-
-                properties.load(is);
-            }
-
+            
             System.setProperty(
-                    properties.getProperty("simple_formatter"),
-                    properties.getProperty("format"));
+            		AppConfig.getRequired("simple_formatter"),
+                    AppConfig.getRequired("format"));
 
             FileHandler fh = new FileHandler(dir + "_logs.log");
             fh.setFormatter(new SimpleFormatter());
@@ -64,9 +49,7 @@ public class UnifiedLogger {
             logger.addHandler(fh);
             logger.addHandler(ch);
 
-        } catch (FileNotFoundException fnfe) {
-            fnfe.printStackTrace();
-        } catch (IOException ioe) {
+        } catch (Exception ioe) {
             ioe.printStackTrace();
         }
 
