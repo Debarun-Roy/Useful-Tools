@@ -4,9 +4,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import common.DatabaseUtils;
@@ -61,6 +64,66 @@ import passwordgenerator.utilities.DecryptionUtils;
 public class UserPasswordDAO {
 
     private static final Logger logger = new UnifiedLogger().writeLogs("dao");
+    private static final String CREATE_GENERATOR_TABLE_SQL =
+            "CREATE TABLE IF NOT EXISTS generator_table ("
+            + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            + "username TEXT NOT NULL, "
+            + "password TEXT NOT NULL, "
+            + "number_count INTEGER, "
+            + "special_character_count INTEGER, "
+            + "lowercase_count INTEGER, "
+            + "uppercase_count INTEGER, "
+            + "generated_timestamp TEXT NOT NULL"
+            + ");";
+
+    /**
+     * Sprint 9 introduced per-user generator history with the schema:
+     *   id, username, password, ..., generated_timestamp
+     *
+     * Older deployed databases still have the legacy table created before this
+     * sprint:
+     *   password_id, password, ..., generate_date
+     * and no username column.
+     *
+     * That mismatch causes INSERT/SELECT statements against the new column names
+     * to fail, which is why generated-password history appears empty in upgraded
+     * environments. This method upgrades the existing table in place before any
+     * history read/write occurs.
+     */
+    private static void ensureGeneratorHistorySchema(Connection conn) throws SQLException {
+        Set<String> columns = new HashSet<>();
+
+        try (Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery("PRAGMA table_info(generator_table)")) {
+            while (rs.next()) {
+                columns.add(rs.getString("name").toLowerCase());
+            }
+        }
+
+        if (columns.isEmpty()) {
+            try (Statement st = conn.createStatement()) {
+                st.executeUpdate(CREATE_GENERATOR_TABLE_SQL);
+            }
+            logger.info("Created generator_table using Sprint 9 schema");
+            return;
+        }
+
+        try (Statement st = conn.createStatement()) {
+            if (columns.contains("password_id") && !columns.contains("id")) {
+                st.executeUpdate("ALTER TABLE generator_table RENAME COLUMN password_id TO id;");
+                logger.info("Migrated generator_table column password_id -> id");
+            }
+            if (columns.contains("generate_date") && !columns.contains("generated_timestamp")) {
+                st.executeUpdate("ALTER TABLE generator_table RENAME COLUMN generate_date TO generated_timestamp;");
+                logger.info("Migrated generator_table column generate_date -> generated_timestamp");
+            }
+            if (!columns.contains("username")) {
+                st.executeUpdate("ALTER TABLE generator_table "
+                        + "ADD COLUMN username TEXT NOT NULL DEFAULT '';");
+                logger.info("Added username column to generator_table for per-user history");
+            }
+        }
+    }
 
     public static void saveGeneratedPasswordDetails(PasswordModel pass) {
         Connection conn = null;
@@ -68,6 +131,7 @@ public class UserPasswordDAO {
         try {
             conn = DatabaseUtils.getSQLite3Connection();
             logger.info("SQLite3 connection successful");
+            ensureGeneratorHistorySchema(conn);
             // FIX: Was 6 placeholders for 7 columns — added the 7th '?'
             String sql = "INSERT INTO generator_table "
                     + "(username, password, number_count, special_character_count, "
@@ -253,6 +317,7 @@ public class UserPasswordDAO {
         int offset = page * size;
 
         try (Connection conn = DatabaseUtils.getSQLite3Connection()) {
+            ensureGeneratorHistorySchema(conn);
 
             try (PreparedStatement pst = conn.prepareStatement(
                     "SELECT COUNT(*) FROM generator_table WHERE username = ?")) {

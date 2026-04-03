@@ -141,6 +141,10 @@ public class PasswordGenerationController extends HttpServlet {
                 }
             } else {
                 int[] split = PasswordGeneratorUtils.getRandomizedValues(length);
+                pass.setNumberCount(split[0]);
+                pass.setSpecialCharacterCount(split[1]);
+                pass.setLowercaseCount(split[2]);
+                pass.setUppercaseCount(split[3]);
                 generatedPassword = Stream.concat(
                         PasswordGeneratorUtils.getRandomNumbers(split[0]),
                         Stream.concat(
