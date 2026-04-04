@@ -9,8 +9,9 @@ import DashboardPage          from './pages/DashboardPage/DashboardPage'
 import CalculatorPage         from './pages/CalculatorPage/CalculatorPage'
 import NumberAnalyserPage     from './pages/NumberAnalyzerPage/NumberAnalyzerPage'
 import PasswordVaultPage      from './pages/PasswordVaultPage/PasswordVaultPage'
-import ProfilePage from './pages/ProfilePage/ProfilePage'
-import UnitConverterPage from './pages/UnitConverterPage/UnitConverterPage'
+import ProfilePage            from './pages/ProfilePage/ProfilePage'
+import UnitConverterPage      from './pages/UnitConverterPage/UnitConverterPage'
+import TextUtilitiesPage      from './pages/TextUtilitiesPage/TextUtilitiesPage'
 
 export default function App() {
   return (
@@ -19,37 +20,40 @@ export default function App() {
         <ThemeProvider>
           <Routes>
 
-          {/* ── Public routes ─────────────────────────────────────────── */}
-          <Route path="/login"    element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+            {/* ── Public routes ─────────────────────────────────────────── */}
+            <Route path="/login"    element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
-          {/* ── Protected routes ──────────────────────────────────────── */}
-          <Route path="/update-password" element={
-            <ProtectedRoute><UpdatePasswordPage /></ProtectedRoute>
-          } />
-          <Route path="/dashboard" element={
-            <ProtectedRoute><DashboardPage /></ProtectedRoute>
-          } />
-          <Route path="/calculator" element={
-            <ProtectedRoute><CalculatorPage /></ProtectedRoute>
-          } />
-          <Route path="/analyser" element={
-            <ProtectedRoute><NumberAnalyserPage /></ProtectedRoute>
-          } />
-          <Route path="/vault" element={
-            <ProtectedRoute><PasswordVaultPage /></ProtectedRoute>
-          } />
-          <Route path="/converter" element={
-            <ProtectedRoute><UnitConverterPage /></ProtectedRoute>
-          } />
-          <Route path="/profile" element={
-            <ProtectedRoute><ProfilePage /></ProtectedRoute>
-          } />
+            {/* ── Protected routes ──────────────────────────────────────── */}
+            <Route path="/update-password" element={
+              <ProtectedRoute><UpdatePasswordPage /></ProtectedRoute>
+            } />
+            <Route path="/dashboard" element={
+              <ProtectedRoute><DashboardPage /></ProtectedRoute>
+            } />
+            <Route path="/calculator" element={
+              <ProtectedRoute><CalculatorPage /></ProtectedRoute>
+            } />
+            <Route path="/analyser" element={
+              <ProtectedRoute><NumberAnalyserPage /></ProtectedRoute>
+            } />
+            <Route path="/vault" element={
+              <ProtectedRoute><PasswordVaultPage /></ProtectedRoute>
+            } />
+            <Route path="/converter" element={
+              <ProtectedRoute><UnitConverterPage /></ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute><ProfilePage /></ProtectedRoute>
+            } />
+            <Route path="/text-utils" element={
+              <ProtectedRoute><TextUtilitiesPage /></ProtectedRoute>
+            } />
 
-          {/* ── Fallback ──────────────────────────────────────────────── */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
+            {/* ── Fallback ──────────────────────────────────────────────── */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
 
-        </Routes>
+          </Routes>
         </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>

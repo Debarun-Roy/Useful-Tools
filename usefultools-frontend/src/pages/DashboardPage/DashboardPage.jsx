@@ -11,7 +11,7 @@ const FEATURES = [
     sprint: 2,
     ready:  true,
     icon:   '🧮',
-    desc:   'Arithmetic, boolean, trig, complex and more',
+    desc:   'Arithmetic, boolean, trig, complex, matrix, statistics and more',
   },
   {
     label:  'Number Analyser',
@@ -19,7 +19,7 @@ const FEATURES = [
     sprint: 3,
     ready:  true,
     icon:   '🔢',
-    desc:   'Classify numbers and generate sequences',
+    desc:   'Classify numbers, explore base representations, and generate sequences',
   },
   {
     label:  'Password Vault',
@@ -27,7 +27,7 @@ const FEATURES = [
     sprint: 4,
     ready:  true,
     icon:   '🔐',
-    desc:   'Generate, save and retrieve passwords securely',
+    desc:   'Generate, save and retrieve passwords securely with RSA-2048 encryption',
   },
   {
     label:  'Unit Converter',
@@ -36,6 +36,14 @@ const FEATURES = [
     ready:  true,
     icon:   '🔄',
     desc:   'Convert between length, mass, temperature, time, data, speed and area',
+  },
+  {
+    label:  'Text Utilities',
+    path:   '/text-utils',
+    sprint: 10,
+    ready:  true,
+    icon:   '📝',
+    desc:   'Word counter, case converter, diff checker, regex tester, slug generator and more',
   },
   {
     label:  'Profile',
@@ -51,7 +59,7 @@ const FEATURES = [
     sprint: 1,
     ready:  true,
     icon:   '🔑',
-    desc:   'Change your account password',
+    desc:   'Change your account password securely',
   },
 ]
 
@@ -88,7 +96,7 @@ export default function DashboardPage() {
         <div className={styles.heroInner}>
           <div className={styles.heroBadge}>
             <span className={styles.statusDot} aria-hidden="true" />
-            Mission Control · {new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' })}
+            Mission Control · {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
           </div>
           <h1 className={styles.greeting}>
             Welcome back,{' '}
