@@ -1,11 +1,11 @@
 /* ─── Outer section container ────────────────────────────────────────────── */
 
 .section {
-  background: #fff;
+  background: var(--clr-surface);
   border: 1px solid var(--clr-border);
   border-radius: 20px;
   padding: var(--space-xl);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
@@ -78,7 +78,7 @@
 .scaleToggle:hover {
   color: var(--clr-primary);
   border-color: var(--clr-primary);
-  background: rgba(59,111,212,0.05);
+  background: var(--clr-bg);
 }
 
 /* ─── SVG element ────────────────────────────────────────────────────────── */
