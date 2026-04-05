@@ -17,6 +17,9 @@ import styles from './CalculatorPage.module.css'
 import HistoryTab from './HistoryTab/HistoryTab'
 import MatrixCalc from './MatrixCalc/MatrixCalc'
 import StatsCalc  from './StatsCalc/StatsCalc'
+import SolverCalc from './SolverCalc/SolverCalc'
+import ProbabilityCalc from './ProbabilityCalc/ProbabilityCalc'
+import PolynomialCalc from './PolynomialCalc/PolynomialCalc'
 
 const TABS = [
   { id: 'simple',       label: 'Simple',         icon: '1+' },
@@ -28,6 +31,9 @@ const TABS = [
   { id: 'financial',    label: 'Financial',      icon: '💰' },
   { id: 'matrix',       label: 'Matrix',         icon: 'M' },
   { id: 'stats',        label: 'Statistics',     icon: 'σ' },
+  { id: 'solver',       label: 'Equation Solver', icon: 'x=' },
+  { id: 'probability',  label: 'Probability',    icon: '🎲' },
+  { id: 'polynomial',   label: 'Polynomial',     icon: 'x²' },
   { id: 'history',      label: 'History',        icon: '⧖' },
 ]
 
@@ -299,7 +305,7 @@ export default function CalculatorPage() {
           accent="Flight Deck"
           description="Switch between arithmetic, boolean, trigonometric, combined, complex, and financial modes inside the same futuristic tool shell."
           stats={[
-            { value: '9', label: 'modes' },
+            { value: '12', label: 'modes' },
             { value: '100+', label: 'functions' },
             { value: '1', label: 'workspace' },
           ]}
@@ -323,6 +329,12 @@ export default function CalculatorPage() {
               ? <MatrixCalc />
               : activeTab === 'stats'
               ? <StatsCalc />
+              : activeTab === 'solver'
+              ? <SolverCalc />
+              : activeTab === 'probability'
+              ? <ProbabilityCalc />
+              : activeTab === 'polynomial'
+              ? <PolynomialCalc />
               : activeTab === 'history'
               ? <HistoryTab />
               : (

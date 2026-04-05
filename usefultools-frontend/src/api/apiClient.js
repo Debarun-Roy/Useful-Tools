@@ -297,3 +297,30 @@ export const calculateStats = (data) =>
     isJson: true,
     body: { data },
   })
+
+// ── Equation Solver ───────────────────────────────────────────────────────────
+
+export const solveEquation = (equation) =>
+  request('/calculator/solve', {
+    method: 'POST',
+    isJson: true,
+    body: { equation },
+  })
+
+// ── Probability Calculator ────────────────────────────────────────────────────
+
+export const calculateProbability = (distribution, params) =>
+  request('/calculator/probability', {
+    method: 'POST',
+    isJson: true,
+    body: { distribution, params },
+  })
+
+// ── Polynomial Calculator ─────────────────────────────────────────────────────
+
+export const calculatePolynomial = (operation, coefficients, x = null) =>
+  request('/calculator/polynomial', {
+    method: 'POST',
+    isJson: true,
+    body: { operation, coefficients, ...(x !== null ? { x } : {}) },
+  })

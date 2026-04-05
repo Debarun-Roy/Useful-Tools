@@ -5,8 +5,8 @@
   gap: var(--space-md);
   min-height: 68px;
   padding: 0 var(--space-xl);
-  background: rgba(255, 255, 255, 0.82);
-  border-bottom: 1px solid rgba(74, 111, 165, 0.16);
+  background: var(--clr-surface);
+  border-bottom: 1px solid var(--clr-border);
   backdrop-filter: blur(18px);
   position: sticky;
   top: 0;
@@ -31,14 +31,14 @@
 }
 
 .backBtn {
-  background: rgba(15, 27, 61, 0.03);
-  border: 1px solid rgba(74, 111, 165, 0.18);
+  background: var(--clr-bg);
+  border: 1px solid var(--clr-border);
   color: var(--clr-text-muted);
 }
 
 .logoutBtn {
   background: transparent;
-  border: 1px solid rgba(23, 58, 114, 0.24);
+  border: 1px solid var(--clr-primary);
   color: var(--clr-primary);
 }
 

@@ -13,6 +13,8 @@ import ProfilePage            from './pages/ProfilePage/ProfilePage'
 import UnitConverterPage      from './pages/UnitConverterPage/UnitConverterPage'
 import TextUtilitiesPage      from './pages/TextUtilitiesPage/TextUtilitiesPage'
 import EncodingDecodingPage    from './pages/EncodingDecodingPage/EncodingDecodingPage'
+import CodeUtilitiesPage       from './pages/CodeUtilitiesPage/CodeUtilitiesPage'
+import WebDevHelpersPage       from './pages/WebDevHelpersPage/WebDevHelpersPage'
 
 export default function App() {
   return (
@@ -52,6 +54,12 @@ export default function App() {
             } />
             <Route path="/encoding" element={
               <ProtectedRoute><EncodingDecodingPage /></ProtectedRoute>
+            } />
+            <Route path="/code-utils" element={
+              <ProtectedRoute><CodeUtilitiesPage /></ProtectedRoute>
+            } />
+            <Route path="/web-dev" element={
+              <ProtectedRoute><WebDevHelpersPage /></ProtectedRoute>
             } />
 
             {/* ── Fallback ──────────────────────────────────────────────── */}

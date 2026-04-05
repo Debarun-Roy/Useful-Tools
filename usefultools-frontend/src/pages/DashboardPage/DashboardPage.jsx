@@ -54,6 +54,22 @@ const FEATURES = [
     desc:   'Base64, URL, HTML entities, JWT decoder, binary/hex converter, ROT cipher',
   },
   {
+    label:  'Code Utilities',
+    path:   '/code-utils',
+    sprint: 12,
+    ready:  true,
+    icon:   '💻',
+    desc:   'JSON formatter, YAML↔JSON, CSV↔JSON, Markdown renderer',
+  },
+  {
+    label:  'Web Dev Helpers',
+    path:   '/web-dev',
+    sprint: 13,
+    ready:  true,
+    icon:   '🛠️',
+    desc:   'CSS gradients, box-shadows, Flexbox, robots.txt, favicons',
+  },
+  {
     label:  'Profile',
     path:   '/profile',
     sprint: 5,
