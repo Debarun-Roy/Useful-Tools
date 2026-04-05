@@ -46,6 +46,14 @@ const FEATURES = [
     desc:   'Word counter, case converter, diff checker, regex tester, slug generator and more',
   },
   {
+    label:  'Encoding & Decoding',
+    path:   '/encoding',
+    sprint: 11,
+    ready:  true,
+    icon:   '🔧',
+    desc:   'Base64, URL, HTML entities, JWT decoder, binary/hex converter, ROT cipher',
+  },
+  {
     label:  'Profile',
     path:   '/profile',
     sprint: 5,

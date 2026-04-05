@@ -12,6 +12,7 @@ import PasswordVaultPage      from './pages/PasswordVaultPage/PasswordVaultPage'
 import ProfilePage            from './pages/ProfilePage/ProfilePage'
 import UnitConverterPage      from './pages/UnitConverterPage/UnitConverterPage'
 import TextUtilitiesPage      from './pages/TextUtilitiesPage/TextUtilitiesPage'
+import EncodingDecodingPage    from './pages/EncodingDecodingPage/EncodingDecodingPage'
 
 export default function App() {
   return (
@@ -48,6 +49,9 @@ export default function App() {
             } />
             <Route path="/text-utils" element={
               <ProtectedRoute><TextUtilitiesPage /></ProtectedRoute>
+            } />
+            <Route path="/encoding" element={
+              <ProtectedRoute><EncodingDecodingPage /></ProtectedRoute>
             } />
 
             {/* ── Fallback ──────────────────────────────────────────────── */}

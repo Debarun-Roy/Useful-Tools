@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
@@ -350,25 +350,34 @@ function RegexTester() {
   const result = useMemo(() => {
     if (!pattern) return null
     try {
-      // Validate pattern compiles
-      new RegExp(pattern, flagStr)
-
-      const globalFlags = flagStr.includes('g') ? flagStr : flagStr + 'g'
-      const re = new RegExp(pattern, globalFlags)
+      const re = new RegExp(pattern, flagStr)
       const matches = []
       let m
-
-      // Safety: cap at 500 matches
-      while ((m = re.exec(testStr)) !== null && matches.length < 500) {
-        matches.push({
-          match:       m[0],
-          index:       m.index,
-          end:         m.index + m[0].length,
-          groups:      m.slice(1),
-          namedGroups: m.groups || {},
-        })
-        // Prevent infinite loop on zero-length matches
-        if (m[0].length === 0) { re.lastIndex++ }
+      if (flagStr.includes('g')) {
+        // Global: find all matches
+        while ((m = re.exec(testStr)) !== null && matches.length < 500) {
+          matches.push({
+            match:       m[0],
+            index:       m.index,
+            end:         m.index + m[0].length,
+            groups:      m.slice(1),
+            namedGroups: m.groups || {},
+          })
+          // Prevent infinite loop on zero-length matches
+          if (m[0].length === 0) { re.lastIndex++ }
+        }
+      } else {
+        // Non-global: find first match only
+        m = re.exec(testStr)
+        if (m) {
+          matches.push({
+            match:       m[0],
+            index:       m.index,
+            end:         m.index + m[0].length,
+            groups:      m.slice(1),
+            namedGroups: m.groups || {},
+          })
+        }
       }
       return { matches, error: null }
     } catch (e) {
