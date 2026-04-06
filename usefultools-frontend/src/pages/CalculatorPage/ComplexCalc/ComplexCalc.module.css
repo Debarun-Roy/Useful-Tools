@@ -7,12 +7,11 @@
 .inputSection,
 .operationsSection,
 .resultPanel {
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(74, 111, 165, 0.14);
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
   border-radius: 20px;
   padding: var(--space-lg);
-  box-shadow: 0 16px 40px rgba(15, 27, 61, 0.08);
-  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-card);
 }
 
 .inputSection,
@@ -64,8 +63,8 @@
   width: 120px;
   padding: 11px var(--space-md);
   border-radius: 14px;
-  border: 1px solid rgba(74, 111, 165, 0.16);
-  background: rgba(245, 249, 255, 0.92);
+  border: 1px solid var(--clr-border);
+  background: var(--clr-input-bg);
   color: var(--clr-text);
   font-family: var(--font-mono);
   outline: none;
@@ -73,8 +72,8 @@
 }
 
 .numberInput:focus {
-  border-color: rgba(130, 210, 255, 0.42);
-  box-shadow: 0 0 0 4px rgba(130, 210, 255, 0.14);
+  border-color: var(--clr-primary);
+  box-shadow: var(--shadow-glow);
 }
 
 .numberInput:disabled {
@@ -107,8 +106,8 @@
 .hint {
   padding: var(--space-sm) var(--space-md);
   border-radius: 14px;
-  background: rgba(255, 214, 92, 0.14);
-  border: 1px solid rgba(255, 214, 92, 0.18);
+  background: var(--clr-input-bg);
+  border: 1px solid var(--clr-border);
   font-size: var(--fs-sm);
   line-height: 1.6;
 }
@@ -144,8 +143,8 @@
 
 .opBtn {
   padding: 10px var(--space-md);
-  background: rgba(245, 249, 255, 0.92);
-  border: 1px solid rgba(74, 111, 165, 0.16);
+  background: var(--clr-input-bg);
+  border: 1px solid var(--clr-border);
   color: var(--clr-text);
 }
 
@@ -155,7 +154,7 @@
 }
 
 .opBtnActive {
-  background: linear-gradient(135deg, rgba(130, 210, 255, 0.92), rgba(74, 111, 165, 0.94)) !important;
+  background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-light)) !important;
   border-color: transparent !important;
   color: #fff !important;
 }
@@ -163,8 +162,8 @@
 .clearBtn {
   align-self: flex-start;
   padding: 9px var(--space-md);
-  background: rgba(255, 120, 140, 0.14);
-  border: 1px solid rgba(255, 173, 189, 0.22);
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
   color: var(--clr-error);
 }
 
@@ -175,7 +174,7 @@
 }
 
 .resultPanel {
-  border: 1px solid rgba(130, 210, 255, 0.24);
+  border: 1px solid var(--clr-border);
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);

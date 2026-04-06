@@ -14,11 +14,8 @@ public class PolynomialCalculatorService {
                 }
                 return evaluatePolynomial(coefficients, x);
             case "derivative":
-                if (x == null) {
-                    throw new IllegalArgumentException("x parameter required for derivative evaluation");
-                }
-                double[] derivativeCoeffs = differentiatePolynomial(coefficients);
-                return evaluatePolynomial(derivativeCoeffs, x);
+                // Return coefficients of the derivative polynomial
+                return differentiatePolynomial(coefficients);
             case "integral":
                 // Return coefficients of antiderivative (without constant)
                 return integratePolynomial(coefficients);
@@ -31,9 +28,9 @@ public class PolynomialCalculatorService {
     }
 
     private double evaluatePolynomial(double[] coeffs, double x) {
-        double result = 0;
+        double result = 0.0;
         for (int i = 0; i < coeffs.length; i++) {
-            result += coeffs[i] * Math.pow(x, coeffs.length - 1 - i);
+            result += coeffs[i] * Math.pow(x, i);
         }
         return result;
     }

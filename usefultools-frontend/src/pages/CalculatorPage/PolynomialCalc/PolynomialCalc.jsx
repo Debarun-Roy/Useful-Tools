@@ -14,7 +14,14 @@ export default function PolynomialCalc() {
       if (coeffs.length === 0) throw new Error('Invalid coefficients')
 
       const res = await calculatePolynomial(operation, coeffs, x)
-      setResult(res.result)
+      if (res.status !== 200 || !res.data?.success) {
+        throw new Error(res.data?.error || 'Error calculating polynomial')
+      }
+      const polynomialResult = res.data.data?.result
+      if (polynomialResult === undefined || polynomialResult === null) {
+        throw new Error('No polynomial result returned from the server.')
+      }
+      setResult(typeof polynomialResult === 'object' ? JSON.stringify(polynomialResult) : String(polynomialResult))
       setError('')
     } catch (err) {
       setResult('')
@@ -72,6 +79,7 @@ export default function PolynomialCalc() {
           </label>
           <input
             type="number"
+            step="any"
             value={x}
             onChange={e => setX(parseFloat(e.target.value) || 0)}
             style={{
@@ -101,7 +109,7 @@ export default function PolynomialCalc() {
         Calculate
       </button>
 
-      {result && (
+      {result !== '' && result !== null && (
         <div>
           <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
             Result:

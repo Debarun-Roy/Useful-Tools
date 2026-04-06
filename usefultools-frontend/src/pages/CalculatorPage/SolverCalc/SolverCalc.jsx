@@ -10,7 +10,14 @@ export default function SolverCalc() {
     if (!equation.trim()) return
     try {
       const res = await solveEquation(equation)
-      setResult(res.result)
+      if (res.status !== 200 || !res.data?.success) {
+        throw new Error(res.data?.error || 'Error solving equation')
+      }
+      const solverResult = res.data.data?.result
+      if (solverResult === undefined || solverResult === null) {
+        throw new Error('No solution returned from the server.')
+      }
+      setResult(Array.isArray(solverResult) ? solverResult.join(', ') : String(solverResult))
       setError('')
     } catch (err) {
       setResult('')
@@ -56,7 +63,7 @@ export default function SolverCalc() {
         Solve
       </button>
 
-      {result && (
+      {result !== '' && result !== null && (
         <div>
           <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
             Solution:

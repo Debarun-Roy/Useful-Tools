@@ -63,7 +63,7 @@ public class ProbabilityCalculatorService {
         }
 
         // Calculate P(X = k) for binomial distribution
-        return binomialCoefficient((int)n, (int)k) * Math.pow(p, k) * Math.pow(1 - p, n - k);
+        return binomialCoefficient(n.intValue(), k.intValue()) * Math.pow(p, k) * Math.pow(1 - p, n - k);
     }
 
     private double calculatePoissonProbability(Map<String, Double> params) throws Exception {
@@ -83,7 +83,7 @@ public class ProbabilityCalculatorService {
         }
 
         // Calculate P(X = k) for Poisson distribution
-        return Math.exp(-lambda) * Math.pow(lambda, k) / factorial((int)k);
+        return Math.exp(-lambda) * Math.pow(lambda, k) / factorial(k.intValue());
     }
 
     // Approximation of error function (erf) for normal CDF
