@@ -1,0 +1,64 @@
+######################################
+# OS FILES
+######################################
+.DS_Store
+Thumbs.db
+desktop.ini
+
+######################################
+# IDE FILES (Eclipse / VSCode / IntelliJ)
+######################################
+.settings/
+.metadata/
+.project
+.classpath
+
+.vscode/
+.idea/
+*.iml
+
+######################################
+# JAVA / MAVEN BUILD OUTPUTS
+######################################
+Useful-Tools/target/
+Useful-Tools/build/
+*.log
+*.class
+*.jar
+*.war
+*.ear
+
+######################################
+# NODE MODULES (FRONTEND)
+######################################
+usefultools-frontend/node_modules/
+
+######################################
+# FRONTEND BUILD OUTPUT (VITE)
+######################################
+usefultools-frontend/dist/
+
+######################################
+# ENVIRONMENT FILES (SECRETS)
+######################################
+.env
+.env.*
+!.env.example
+
+######################################
+# DOCKER TEMP FILES
+######################################
+docker-compose.override.yml
+
+######################################
+# TEST OUTPUT
+######################################
+coverage/
+test-output/
+
+######################################
+# CACHE FILES
+######################################
+.cache/
+*.tmp
+*.temp
