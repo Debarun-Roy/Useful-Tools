@@ -1,5 +1,6 @@
 package common;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -18,6 +19,21 @@ public class DatabaseUtils {
         try {
         	Class.forName(AppConfig.getRequired("sqlite3_driver"));
             String url = AppConfig.getRequired("sqlite3_url");
+            
+            File dbFile = new File("/databases/UsefulTools.db");
+
+            if (!dbFile.exists()) {
+            
+                File parentDir = dbFile.getParentFile();
+            
+                if (parentDir != null && !parentDir.exists()) {
+                    parentDir.mkdirs();
+                }
+            
+                System.out.println("Database file not found. Creating new database...");
+            } else {
+                System.out.println("Database file already exists. Skipping creation.");
+            }
 
             conn = DriverManager.getConnection(url);
 
