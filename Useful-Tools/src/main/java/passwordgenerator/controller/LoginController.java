@@ -1,11 +1,5 @@
 package passwordgenerator.controller;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.UUID;
-
 import com.google.gson.Gson;
 import common.ApiResponse;
 import jakarta.servlet.ServletException;
@@ -15,6 +9,11 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.UUID;
 import passwordgenerator.dao.UserDAO;
 import passwordgenerator.dao.UserDAO.LockStatus;
 import passwordgenerator.utilities.LoginUtils;
@@ -121,6 +120,7 @@ public class LoginController extends HttpServlet {
             // SameSite=Strict prevents cross-site cookie submission.
             // NOTE: setSecure(true) should be enabled when serving over HTTPS.
             Cookie csrfCookie = new Cookie("XSRF-TOKEN", csrfToken);
+            csrfCookie.setSecure(true);
             csrfCookie.setPath("/");
             csrfCookie.setHttpOnly(false);
             csrfCookie.setAttribute("SameSite", "Strict");
