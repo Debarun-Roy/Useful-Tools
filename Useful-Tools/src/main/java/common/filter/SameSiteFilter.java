@@ -61,7 +61,20 @@ public class SameSiteFilter implements Filter {
             // Wrap the response to intercept cookie operations
             HttpServletResponse wrappedResponse = new SameSiteCookieWrapper(httpResponse);
 
-            chain.doFilter(request, wrappedResponse);
+            try {
+                chain.doFilter(request, wrappedResponse);
+            } finally {
+                // After chain completes, check what headers were set via the wrapper
+                java.util.Collection<String> headers = wrappedResponse.getHeaders("Set-Cookie");
+                if (headers != null && !headers.isEmpty()) {
+                    System.out.println("[SameSiteFilter] Final Set-Cookie headers in response:");
+                    for (String header : headers) {
+                        System.out.println("  └─ " + header);
+                    }
+                } else {
+                    System.out.println("[SameSiteFilter] No Set-Cookie headers found (session might be set at Tomcat level)");
+                }
+            }
         } else {
             chain.doFilter(request, response);
         }
@@ -79,6 +92,7 @@ public class SameSiteFilter implements Filter {
     private static class SameSiteCookieWrapper extends HttpServletResponseWrapper {
         
         private static final String SAMESITE_NONE = "; SameSite=None";
+        private java.util.List<String> allSetCookieHeaders = new java.util.ArrayList<>();
 
         public SameSiteCookieWrapper(HttpServletResponse response) {
             super(response);
@@ -91,7 +105,7 @@ public class SameSiteFilter implements Filter {
          */
         @Override
         public void addCookie(Cookie cookie) {
-            System.out.println("SameSiteFilter.addCookie() intercepted: " + cookie.getName() 
+            System.out.println("[SameSiteFilter] addCookie() intercepted: " + cookie.getName() 
                 + " = " + cookie.getValue());
             // Set the cookie to be sent on cross-origin requests
             cookie.setAttribute("SameSite", "None");
@@ -110,8 +124,9 @@ public class SameSiteFilter implements Filter {
             if ("Set-Cookie".equalsIgnoreCase(name)) {
                 String original = value;
                 value = enhanceSetCookieHeader(value);
+                allSetCookieHeaders.add(value);
                 if (!original.equals(value)) {
-                    System.out.println("SameSiteFilter.addHeader(Set-Cookie): Enhanced header");
+                    System.out.println("[SameSiteFilter] addHeader(Set-Cookie): Enhanced header");
                     System.out.println("  ├─ Before: " + original);
                     System.out.println("  └─ After:  " + value);
                 }
@@ -129,12 +144,20 @@ public class SameSiteFilter implements Filter {
                 String original = value;
                 value = enhanceSetCookieHeader(value);
                 if (!original.equals(value)) {
-                    System.out.println("SameSiteFilter.setHeader(Set-Cookie): Enhanced header");
+                    System.out.println("[SameSiteFilter] setHeader(Set-Cookie): Enhanced header");
                     System.out.println("  ├─ Before: " + original);
                     System.out.println("  └─ After:  " + value);
                 }
             }
             super.setHeader(name, value);
+        }
+
+        /**
+         * Override containsHeader() for Set-Cookie to ensure our interception works
+         */
+        @Override
+        public boolean containsHeader(String name) {
+            return super.containsHeader(name);
         }
 
         /**
