@@ -114,6 +114,7 @@ public class SameSiteFilter implements Filter {
         private static final String SAMESITE_NONE = "; SameSite=None";
         private java.util.List<String> allSetCookieHeaders = new java.util.ArrayList<>();
         private boolean debugLogging = true; // Enable verbose logging
+        private boolean jsessionidWithSameSiteAdded = false; // Track if we added JSESSIONID with SameSite
 
         public SameSiteCookieWrapper(HttpServletResponse response) {
             super(response);
@@ -159,7 +160,38 @@ public class SameSiteFilter implements Filter {
                 }
                 
                 String original = value;
-                value = enhanceSetCookieHeader(value);
+                
+                // CRITICAL: Check if this is a JSESSIONID cookie
+                if (value.contains("JSESSIONID=")) {
+                    // Track if we're adding one with SameSite=None
+                    if (value.toLowerCase().contains("samesite")) {
+                        jsessionidWithSameSiteAdded = true;
+                        if (debugLogging) {
+                            System.out.println("[SameSiteCookieWrapper]   → JSESSIONID with SameSite detected, marking as added");
+                        }
+                    } else {
+                        // This is JSESSIONID WITHOUT SameSite - check if we already have one with SameSite
+                        if (jsessionidWithSameSiteAdded) {
+                            // Skip this duplicate - don't add Tomcat's automatic one
+                            if (debugLogging) {
+                                System.out.println("[SameSiteCookieWrapper]   ⚠ SKIPPING: Tomcat's automatic JSESSIONID (no SameSite)");
+                                System.out.println("[SameSiteCookieWrapper]        Reason: Already added JSESSIONID with SameSite=None");
+                            }
+                            return; // Don't add this header!
+                        } else {
+                            // First JSESSIONID we see - enhance it with SameSite
+                            value = enhanceSetCookieHeader(value);
+                            jsessionidWithSameSiteAdded = true;
+                            if (debugLogging) {
+                                System.out.println("[SameSiteCookieWrapper]   → Enhanced with SameSite=None");
+                            }
+                        }
+                    }
+                } else {
+                    // Not JSESSIONID, enhance normally
+                    value = enhanceSetCookieHeader(value);
+                }
+                
                 allSetCookieHeaders.add(value);
                 
                 if (!original.equals(value) && debugLogging) {
@@ -186,6 +218,11 @@ public class SameSiteFilter implements Filter {
                 
                 if (!original.equals(value) && debugLogging) {
                     System.out.println("[SameSiteCookieWrapper]   Modified to: " + value);
+                }
+                
+                // Track JSESSIONID with SameSite for setHeader too
+                if (value.contains("JSESSIONID=") && value.toLowerCase().contains("samesite")) {
+                    jsessionidWithSameSiteAdded = true;
                 }
             }
             super.setHeader(name, value);
