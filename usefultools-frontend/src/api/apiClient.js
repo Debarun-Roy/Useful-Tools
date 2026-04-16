@@ -324,3 +324,21 @@ export const calculatePolynomial = (operation, coefficients, x = null) =>
     isJson: true,
     body: { operation, coefficients, ...(x !== null ? { x } : {}) },
   })
+
+// ── Feedback ──────────────────────────────────────────────────────────────────
+
+/**
+ * Submits user feedback.
+ *
+ * @param {object} feedbackData
+ * @param {number}  feedbackData.overallRating     - Required, 1–5
+ * @param {string}  feedbackData.generalComment    - Optional
+ * @param {Array}   feedbackData.featureFeedback   - Optional array of
+ *   { featureName: string, rating: number|null, comment: string|null }
+ */
+export const submitFeedback = (feedbackData) =>
+  request('/feedback/submit', {
+    method: 'POST',
+    isJson: true,
+    body: feedbackData,
+  })

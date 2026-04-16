@@ -12,9 +12,10 @@ import PasswordVaultPage      from './pages/PasswordVaultPage/PasswordVaultPage'
 import ProfilePage            from './pages/ProfilePage/ProfilePage'
 import UnitConverterPage      from './pages/UnitConverterPage/UnitConverterPage'
 import TextUtilitiesPage      from './pages/TextUtilitiesPage/TextUtilitiesPage'
-import EncodingDecodingPage    from './pages/EncodingDecodingPage/EncodingDecodingPage'
-import CodeUtilitiesPage       from './pages/CodeUtilitiesPage/CodeUtilitiesPage'
-import WebDevHelpersPage       from './pages/WebDevHelpersPage/WebDevHelpersPage'
+import EncodingDecodingPage   from './pages/EncodingDecodingPage/EncodingDecodingPage'
+import CodeUtilitiesPage      from './pages/CodeUtilitiesPage/CodeUtilitiesPage'
+import WebDevHelpersPage      from './pages/WebDevHelpersPage/WebDevHelpersPage'
+import FeedbackModal          from './components/FeedbackModal/FeedbackModal'
 
 export default function App() {
   return (
@@ -66,6 +67,16 @@ export default function App() {
             <Route path="*" element={<Navigate to="/login" replace />} />
 
           </Routes>
+
+          {/*
+            FeedbackModal renders a floating button that is always present
+            in the DOM for authenticated users. It checks isLoggedIn internally
+            and returns null for unauthenticated sessions, so it is safe to
+            mount it here outside the route tree — it will not appear on the
+            login or register pages.
+          */}
+          <FeedbackModal />
+
         </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
