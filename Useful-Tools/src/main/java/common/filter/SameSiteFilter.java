@@ -106,9 +106,40 @@ public class SameSiteFilter implements Filter {
         
         private static final String SAMESITE_NONE = "; SameSite=None";
         private boolean debugLogging = true;
+        private boolean jsessionidHandled = false; // Track if we've already handled JSESSIONID
 
         public SameSiteCookieWrapper(HttpServletResponse response) {
             super(response);
+        }
+
+        /**
+         * Override sendError to catch JSESSIONID additions
+         */
+        @Override
+        public void sendError(int sc) throws IOException {
+            System.out.println("[SameSiteCookieWrapper] ▶ sendError() called");
+            System.out.flush();
+            super.sendError(sc);
+        }
+
+        /**
+         * Override sendError with message
+         */
+        @Override
+        public void sendError(int sc, String msg) throws IOException {
+            System.out.println("[SameSiteCookieWrapper] ▶ sendError() with message called");
+            System.out.flush();
+            super.sendError(sc, msg);
+        }
+
+        /**
+         * Override sendRedirect to catch potential cookie additions
+         */
+        @Override
+        public void sendRedirect(String location) throws IOException {
+            System.out.println("[SameSiteCookieWrapper] ▶ sendRedirect() called");
+            System.out.flush();
+            super.sendRedirect(location);
         }
 
         /**
@@ -120,6 +151,20 @@ public class SameSiteFilter implements Filter {
             System.out.println("[SameSiteCookieWrapper]   → Name: " + cookie.getName());
             System.out.println("[SameSiteCookieWrapper]   → Value: " + (cookie.getValue() != null ? cookie.getValue().substring(0, Math.min(20, cookie.getValue().length())) + "..." : "null"));
             System.out.flush();
+            
+            // CRITICAL: Detect duplicate JSESSIONID
+            if ("JSESSIONID".equals(cookie.getName())) {
+                if (jsessionidHandled) {
+                    System.out.println("[SameSiteCookieWrapper]   ⚠ SKIPPING: This is Tomcat's duplicate JSESSIONID");
+                    System.out.println("[SameSiteCookieWrapper]      (We already have one with SameSite=None from LoginController)");
+                    System.out.flush();
+                    return; // Don't add this duplicate!
+                } else {
+                    jsessionidHandled = true;
+                    System.out.println("[SameSiteCookieWrapper]   ✓ This is the JSESSIONID from LoginController - marking as handled");
+                    System.out.flush();
+                }
+            }
             
             // Add SameSite=None to all cookies
             cookie.setAttribute("SameSite", "None");
@@ -141,6 +186,16 @@ public class SameSiteFilter implements Filter {
                 System.out.println("[SameSiteCookieWrapper]   Before: " + value.substring(0, Math.min(60, value.length())));
                 System.out.flush();
                 
+                // Check for duplicate JSESSIONID via header
+                if (value.contains("JSESSIONID=")) {
+                    if (jsessionidHandled) {
+                        System.out.println("[SameSiteCookieWrapper]   ⚠ SKIPPING: Duplicate JSESSIONID via addHeader");
+                        System.out.flush();
+                        return; // Don't add this header!
+                    }
+                    jsessionidHandled = true;
+                }
+                
                 String original = value;
                 value = enhanceSetCookieHeader(value);
                 
@@ -159,6 +214,17 @@ public class SameSiteFilter implements Filter {
         public void setHeader(String name, String value) {
             if ("Set-Cookie".equalsIgnoreCase(name)) {
                 System.out.println("[SameSiteCookieWrapper] ▶ setHeader('Set-Cookie')");
+                
+                // Check for duplicate JSESSIONID via header
+                if (value.contains("JSESSIONID=")) {
+                    if (jsessionidHandled) {
+                        System.out.println("[SameSiteCookieWrapper]   ⚠ SKIPPING: Duplicate JSESSIONID via setHeader");
+                        System.out.flush();
+                        return; // Don't set this header!
+                    }
+                    jsessionidHandled = true;
+                }
+                
                 String original = value;
                 value = enhanceSetCookieHeader(value);
                 if (!original.equals(value)) {
@@ -167,6 +233,33 @@ public class SameSiteFilter implements Filter {
                 }
             }
             super.setHeader(name, value);
+        }
+
+        /**
+         * Override flushBuffer to see what's being committed
+         */
+        @Override
+        public void flushBuffer() throws IOException {
+            System.out.println("[SameSiteCookieWrapper] ▶ flushBuffer() called - response committing");
+            System.out.println("[SameSiteCookieWrapper]   Checking final headers before flush...");
+            System.out.flush();
+            
+            try {
+                java.util.Collection<String> allCookies = super.getHeaders("Set-Cookie");
+                if (allCookies != null && !allCookies.isEmpty()) {
+                    System.out.println("[SameSiteCookieWrapper]   Current headers:");
+                    for (String cookie : allCookies) {
+                        System.out.println("[SameSiteCookieWrapper]     - " + cookie);
+                    }
+                } else {
+                    System.out.println("[SameSiteCookieWrapper]   No headers set yet");
+                }
+            } catch (Exception e) {
+                System.out.println("[SameSiteCookieWrapper]   Error reading headers: " + e.getMessage());
+            }
+            System.out.flush();
+            
+            super.flushBuffer();
         }
 
         /**

@@ -112,7 +112,23 @@ public class LoginController extends HttpServlet {
             session.setAttribute("username", username);
             
             System.out.println("[LoginController] Created session with ID: " + sessionId);
-            System.out.println("[LoginController] SameSiteFilter will handle JSESSIONID cookie with SameSite=None");
+
+            // ── 6b. Manually add JSESSIONID with SameSite=None ──────────────
+            // CRITICAL: Tomcat's session manager adds JSESSIONID at connector level,
+            // which bypasses our wrapper. To ensure it has SameSite=None, we manually
+            // create it via response.addCookie() which DOES go through our wrapper.
+            //
+            // Our wrapper will:
+            // 1. Intercept this addCookie() call
+            // 2. Apply SameSite=None attribute
+            // 3. Skip any duplicate JSESSIONID that Tomcat adds later
+            Cookie jsessionidCookie = new Cookie("JSESSIONID", sessionId);
+            jsessionidCookie.setPath("/");
+            jsessionidCookie.setSecure(true);
+            jsessionidCookie.setHttpOnly(true);
+            // Don't set SameSite here - let wrapper do it via setAttribute()
+            response.addCookie(jsessionidCookie);
+            System.out.println("[LoginController] Added JSESSIONID via addCookie() - wrapper will add SameSite=None");
 
             // ── 7. CSRF token ──────────────────────────────────────────────
             String csrfToken = UUID.randomUUID().toString();
