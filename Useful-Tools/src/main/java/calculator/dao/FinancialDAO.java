@@ -60,16 +60,98 @@ import common.DatabaseUtils;
  */
 public class FinancialDAO {
 
+    public static void ensureEMISchema(Connection conn) throws SQLException {
+        try {
+             PreparedStatement pst = conn.prepareStatement(
+                     "CREATE TABLE IF NOT EXISTS emi_calculations ("
+                     + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                     + "username TEXT NOT NULL, "
+                     + "principal REAL NOT NULL, "
+                     + "annual_rate REAL NOT NULL, "
+                     + "tenure_months INTEGER NOT NULL, "
+                     + "emi REAL NOT NULL, "
+                     + "total_amount REAL NOT NULL, "
+                     + "total_interest REAL NOT NULL, "
+                     + "calculated_at TEXT NOT NULL);");
+            pst.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void ensureTaxSchema(Connection conn) throws SQLException {
+        try {
+             PreparedStatement pst = conn.prepareStatement(
+                     "CREATE TABLE IF NOT EXISTS tax_calculations ("
+                     + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                     + "username TEXT NOT NULL, "
+                     + "gross_income REAL NOT NULL, "
+                     + "regime TEXT NOT NULL, "
+                     + "taxable_income REAL NOT NULL, "
+                     + "total_tax REAL NOT NULL, "
+                     + "net_income REAL NOT NULL, "
+                     + "calculated_at TEXT NOT NULL);");
+            pst.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void ensureCISchema(Connection conn) throws SQLException {
+        try {
+             PreparedStatement pst = conn.prepareStatement(
+                     "CREATE TABLE IF NOT EXISTS ci_calculations ("
+                     + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                     + "username TEXT NOT NULL, "
+                     + "principal REAL NOT NULL, "
+                     + "annual_rate REAL NOT NULL, "
+                     + "time_years REAL NOT NULL, "
+                     + "frequency TEXT NOT NULL, "
+                     + "final_amount REAL NOT NULL, "
+                     + "interest_earned REAL NOT NULL, "
+                     + "calculated_at TEXT NOT NULL);");
+            pst.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void ensureSalarySchema(Connection conn) throws SQLException {
+        try {
+             PreparedStatement pst = conn.prepareStatement(
+                     "CREATE TABLE IF NOT EXISTS salary_calculations ("
+                     + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                     + "username TEXT NOT NULL, "
+                     + "basic_salary REAL NOT NULL, "
+                     + "gross_salary REAL NOT NULL, "
+                     + "total_deductions REAL NOT NULL, "
+                     + "net_salary REAL NOT NULL, "
+                     + "calculated_at TEXT NOT NULL);");
+            pst.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void ensureAllSchemas(Connection conn) throws SQLException {
+        ensureEMISchema(conn);
+        ensureTaxSchema(conn);
+        ensureCISchema(conn);
+        ensureSalarySchema(conn);
+    }
+
     public static void saveEMI(
             String username, double principal, double annualRate,
             int tenureMonths, double emi, double totalAmount, double totalInterest) {
-
+        
         String sql = "INSERT INTO emi_calculations "
                 + "(username, principal, annual_rate, tenure_months, emi, total_amount, total_interest, calculated_at) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
 
-        try (Connection conn = DatabaseUtils.getSQLite3Connection();
-             PreparedStatement pst = conn.prepareStatement(sql)) {
+        try {
+            Connection conn = DatabaseUtils.getSQLite3Connection();
+            ensureAllSchemas(conn);
+             PreparedStatement pst = conn.prepareStatement(sql);
 
             pst.setString(1, username);
             pst.setDouble(2, principal);
@@ -94,8 +176,10 @@ public class FinancialDAO {
                 + "(username, gross_income, regime, taxable_income, total_tax, net_income, calculated_at) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?);";
 
-        try (Connection conn = DatabaseUtils.getSQLite3Connection();
-             PreparedStatement pst = conn.prepareStatement(sql)) {
+        try{
+            Connection conn = DatabaseUtils.getSQLite3Connection();
+            ensureAllSchemas(conn);
+             PreparedStatement pst = conn.prepareStatement(sql);
 
             pst.setString(1, username);
             pst.setDouble(2, grossIncome);
@@ -119,8 +203,10 @@ public class FinancialDAO {
                 + "(username, principal, annual_rate, time_years, frequency, final_amount, interest_earned, calculated_at) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
 
-        try (Connection conn = DatabaseUtils.getSQLite3Connection();
-             PreparedStatement pst = conn.prepareStatement(sql)) {
+        try{
+            Connection conn = DatabaseUtils.getSQLite3Connection();
+            ensureAllSchemas(conn);
+             PreparedStatement pst = conn.prepareStatement(sql);
 
             pst.setString(1, username);
             pst.setDouble(2, principal);
@@ -145,8 +231,10 @@ public class FinancialDAO {
                 + "(username, basic_salary, gross_salary, total_deductions, net_salary, calculated_at) "
                 + "VALUES (?, ?, ?, ?, ?, ?);";
 
-        try (Connection conn = DatabaseUtils.getSQLite3Connection();
-             PreparedStatement pst = conn.prepareStatement(sql)) {
+        try {
+            Connection conn = DatabaseUtils.getSQLite3Connection();
+            ensureAllSchemas(conn);
+             PreparedStatement pst = conn.prepareStatement(sql);
 
             pst.setString(1, username);
             pst.setDouble(2, basicSalary);

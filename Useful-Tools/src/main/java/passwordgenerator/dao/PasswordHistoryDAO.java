@@ -35,6 +35,20 @@ import common.DatabaseUtils;
  */
 public class PasswordHistoryDAO {
 
+    public static void ensurePasswordHistorySchema(Connection conn) throws SQLException {
+        try {
+             PreparedStatement pst = conn.prepareStatement(
+                     "CREATE TABLE IF NOT EXISTS password_history ("
+                     + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                     + "username TEXT NOT NULL, "
+                     + "hashed_password TEXT NOT NULL, "
+                     + "created_at TEXT NOT NULL);");
+            pst.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * Returns the most recent {@code limit} hashed passwords for the given
      * user, ordered most-recent-first (highest id first).
@@ -46,10 +60,12 @@ public class PasswordHistoryDAO {
      */
     public static List<String> getRecentHashes(String username, int limit) {
         List<String> hashes = new ArrayList<>();
-        try (Connection conn = DatabaseUtils.getSQLite3Connection();
-             PreparedStatement pst = conn.prepareStatement(
+        try {
+            Connection conn = DatabaseUtils.getSQLite3Connection();
+            ensurePasswordHistorySchema(conn);
+            PreparedStatement pst = conn.prepareStatement(
                      "SELECT hashed_password FROM password_history "
-                     + "WHERE username = ? ORDER BY id DESC LIMIT ?")) {
+                     + "WHERE username = ? ORDER BY id DESC LIMIT ?"); 
             pst.setString(1, username);
             pst.setInt(2, limit);
             try (ResultSet rs = pst.executeQuery()) {
@@ -73,10 +89,12 @@ public class PasswordHistoryDAO {
      * @param hashedPassword A BCrypt hash of the new password.
      */
     public static void addToHistory(String username, String hashedPassword) {
-        try (Connection conn = DatabaseUtils.getSQLite3Connection();
-             PreparedStatement pst = conn.prepareStatement(
-                     "INSERT INTO password_history (username, hashed_password, created_at) "
-                     + "VALUES (?, ?, ?);")) {
+        try {
+            Connection conn = DatabaseUtils.getSQLite3Connection();
+            ensurePasswordHistorySchema(conn);
+            PreparedStatement pst = conn.prepareStatement(
+                    "INSERT INTO password_history (username, hashed_password, created_at) "
+                    + "VALUES (?, ?, ?);");
             pst.setString(1, username);
             pst.setString(2, hashedPassword);
             pst.setString(3, Instant.now().toString());

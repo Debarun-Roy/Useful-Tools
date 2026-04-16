@@ -30,11 +30,41 @@ import common.UserContext;
  */
 public class ComputeDAO {
 
+    public static void ensureExprTableSchema(Connection conn) throws SQLException {
+        try {
+             PreparedStatement pst = conn.prepareStatement(
+                     "CREATE TABLE IF NOT EXISTS expr_table ("
+                     + "expression TEXT PRIMARY KEY, "
+                     + "result TEXT NOT NULL);");
+            pst.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void ensureCalcHistorySchema(Connection conn) throws SQLException {
+        try {
+             PreparedStatement pst = conn.prepareStatement(
+                     "CREATE TABLE IF NOT EXISTS calc_history ("
+                     + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                     + "username TEXT NOT NULL, "
+                     + "expression TEXT NOT NULL, "
+                     + "result TEXT NOT NULL, "
+                     + "calculated_at TEXT NOT NULL);");
+            pst.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void storeExpressionResult(String expr, String ans) {
         // Legacy write — preserves backward compatibility with expr_table.
-        try (Connection conn = DatabaseUtils.getSQLite3Connection();
-             PreparedStatement pst = conn.prepareStatement(
-                     "INSERT INTO expr_table VALUES(?, ?);")) {
+        try {
+            Connection conn = DatabaseUtils.getSQLite3Connection();
+            ensureExprTableSchema(conn);
+            ensureCalcHistorySchema(conn);
+            PreparedStatement pst = conn.prepareStatement(
+                     "INSERT INTO expr_table VALUES(?, ?);");
             pst.setString(1, expr);
             pst.setString(2, ans);
             pst.executeUpdate();
@@ -82,7 +112,8 @@ public class ComputeDAO {
         int offset = page * size;
 
         try (Connection conn = DatabaseUtils.getSQLite3Connection()) {
-
+            ensureExprTableSchema(conn);
+            ensureCalcHistorySchema(conn);
             // Total count for pagination controls.
             try (PreparedStatement pst = conn.prepareStatement(
                     "SELECT COUNT(*) FROM calc_history WHERE username = ?")) {
@@ -104,7 +135,7 @@ public class ComputeDAO {
                 try (ResultSet rs = pst.executeQuery()) {
                     while (rs.next()) {
                         LinkedHashMap<String, Object> entry = new LinkedHashMap<>();
-                        entry.put("id",           rs.getLong("id"));
+                        entry.put("id",           Long.valueOf(rs.getLong("id")));
                         entry.put("expression",   rs.getString("expression"));
                         entry.put("result",       rs.getString("result"));
                         entry.put("calculatedAt", rs.getString("calculated_at"));

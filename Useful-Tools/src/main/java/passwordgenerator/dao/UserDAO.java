@@ -40,6 +40,17 @@ public class UserDAO {
 
         try (Statement st = conn.createStatement();
              ResultSet rs = st.executeQuery("PRAGMA table_info(user_table)")) {
+                if(!rs.next()) {
+                    st.executeUpdate("CREATE TABLE \"user_table\"(" +
+                            "username VARCHAR(500) NOT NULL, " +
+                            "hashed_password VARCHAR(5000) NOT NULL, " +
+                            "failed_attempts INTEGER DEFAULT 0, " +
+                            "locked_until TEXT, " +
+                            "created_date TEXT" +
+                            ");");
+                    logger.info("Created user_table with basic schema");
+                    return; // New table created, so no need to check for columns.
+                }
             while (rs.next()) {
                 if ("created_date".equalsIgnoreCase(rs.getString("name"))) {
                     hasCreatedDate = true;
