@@ -1,20 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Tomcat Context configuration.
+  Tomcat Context configuration (Tomcat 11.0.21+).
 
-  sameSiteCookies="none" — instructs Tomcat to append SameSite=None to every
-  cookie it sets, including JSESSIONID.  This is required for cross-origin
-  deployments (e.g. Vercel frontend → Railway backend) where the browser
-  would otherwise refuse to send session cookies on cross-origin requests.
-
-  SameSite=None is only valid in combination with Secure=true.
-  The session cookie already has <secure>true</secure> in web.xml, and the
-  CSRF cookie has csrfCookie.setSecure(true) in LoginController, so the
-  requirement is satisfied on HTTPS (Railway provides HTTPS).
-
-  On local HTTP development (port 3000 / 8080) SameSite=None + Secure means
-  the cookie is still sent for same-origin requests; the only difference is
-  that non-HTTPS browsers won't store it — which is fine for local dev.
+  IMPORTANT FIX (April 2026):
+  The attribute "sameSiteCookies" is not supported in Tomcat 11+ and is
+  ignored (generates WARNING: "failed to set property [sameSiteCookies]").
+  
+  Solution: Use the SameSiteFilter servlet filter instead. This filter
+  intercepts Set-Cookie response headers and appends "; SameSite=None" to
+  them. This ensures JSESSIONID gets SameSite=None for cross-origin requests.
+  
+  SameSite=None is only valid with Secure=true. Web.xml already sets
+  <secure>true</secure> for the session cookie, and Railway serves HTTPS,
+  so the requirement is satisfied.
 -->
-<Context sameSiteCookies="none">
+<Context>
+  <!-- Removed unsupported sameSiteCookies attribute (not recognized in Tomcat 11+) -->
 </Context>

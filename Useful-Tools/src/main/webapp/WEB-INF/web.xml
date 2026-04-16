@@ -13,6 +13,17 @@
 
   <!-- ── Filter declarations ─────────────────────────────────────────────── -->
 
+  <!--
+    SameSiteFilter (April 2026): Fixes Tomcat 11 cross-origin cookie issue.
+    The context.xml attribute "sameSiteCookies" is not supported in Tomcat 11+.
+    This filter adds "; SameSite=None" to Set-Cookie response headers to enable
+    JSESSIONID transmission on cross-origin requests (Vercel → Railway).
+  -->
+  <filter>
+    <filter-name>SameSiteFilter</filter-name>
+    <filter-class>common.filter.SameSiteFilter</filter-class>
+  </filter>
+
   <filter>
     <filter-name>CorsFilter</filter-name>
     <filter-class>common.filter.CorsFilter</filter-class>
@@ -45,21 +56,28 @@
 
   <!-- ── Filter mappings (ORDER MATTERS — top to bottom) ─────────────────── -->
 
-  <!-- 1. CORS runs first on every request. -->
+  <!-- 0. SameSite runs first on ALL requests to add SameSite=None to cookies. -->
+  <filter-mapping>
+    <filter-name>SameSiteFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+
+  <!-- 1. CORS runs second on every request. -->
   <filter-mapping>
     <filter-name>CorsFilter</filter-name>
     <url-pattern>/*</url-pattern>
     <dispatcher>REQUEST</dispatcher>
   </filter-mapping>
 
-  <!-- 2. Rate limit runs second, only on auth endpoints. -->
+  <!-- 2. Rate limit runs third, only on auth endpoints. -->
   <filter-mapping>
     <filter-name>RateLimitFilter</filter-name>
     <url-pattern>/api/auth/*</url-pattern>
     <dispatcher>REQUEST</dispatcher>
   </filter-mapping>
 
-  <!-- 3. Auth runs third on all API endpoints. -->
+  <!-- 3. Auth runs fourth on all API endpoints. -->
   <filter-mapping>
     <filter-name>AuthFilter</filter-name>
     <url-pattern>/api/*</url-pattern>
@@ -80,18 +98,17 @@
          
          IMPORTANT: In cross-origin deployments (Vercel → Railway), the
          JSESSIONID cookie must have SameSite=None to be sent on 
-         cross-origin requests. This is handled by context.xml's
-         sameSiteCookies="none" configuration, but an explicit timeout
-         here prevents session state confusion.
+         cross-origin requests. This is now handled by SameSiteFilter
+         (which adds "; SameSite=None" to all Set-Cookie headers).
+         Tomcat 11 doesn't support the context.xml sameSiteCookies attribute.
     -->
     <session-timeout>60</session-timeout>
     <cookie-config>
       <http-only>true</http-only>
       <secure>true</secure>
-      <!-- NOTE: SameSite attribute for JSESSIONID is set by Tomcat's
-           context.xml <Context sameSiteCookies="none"> directive,
-           NOT via web.xml cookie-config. This ensures all cookies
-           (JSESSIONID, XSRF-TOKEN) have SameSite=None for cross-origin.
+      <!-- SameSite attribute is set by SameSiteFilter (April 2026 fix),
+           not by context.xml. This ensures JSESSIONID and XSRF-TOKEN
+           both have SameSite=None for cross-origin support.
       -->
     </cookie-config>
   </session-config>
