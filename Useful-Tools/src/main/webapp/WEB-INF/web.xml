@@ -74,9 +74,25 @@
   </filter-mapping>
 
   <session-config>
+    <!-- Session timeout set to 60 minutes of inactivity.
+         This ensures sufficient time for legitimate user activities like
+         calculations, but prevents indefinitely stale sessions.
+         
+         IMPORTANT: In cross-origin deployments (Vercel → Railway), the
+         JSESSIONID cookie must have SameSite=None to be sent on 
+         cross-origin requests. This is handled by context.xml's
+         sameSiteCookies="none" configuration, but an explicit timeout
+         here prevents session state confusion.
+    -->
+    <session-timeout>60</session-timeout>
     <cookie-config>
       <http-only>true</http-only>
       <secure>true</secure>
+      <!-- NOTE: SameSite attribute for JSESSIONID is set by Tomcat's
+           context.xml <Context sameSiteCookies="none"> directive,
+           NOT via web.xml cookie-config. This ensures all cookies
+           (JSESSIONID, XSRF-TOKEN) have SameSite=None for cross-origin.
+      -->
     </cookie-config>
   </session-config>
 

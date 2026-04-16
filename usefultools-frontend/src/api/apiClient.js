@@ -166,6 +166,17 @@ export const logoutUser = () =>
 export const fetchCsrfToken = () =>
   request('/auth/csrf-token')
 
+/**
+ * Validates that the current session is still valid.
+ * Returns session status including username and authentication state.
+ * 
+ * This endpoint helps diagnose cross-origin session cookie transmission issues
+ * by explicitly checking if the JSESSIONID cookie is being sent properly
+ * on cross-origin requests (Vercel → Railway).
+ */
+export const validateSession = () =>
+  request('/auth/session-status')
+
 // ── Calculator — standard ─────────────────────────────────────────────────────
 
 function evaluateStandard(path, expression) {
