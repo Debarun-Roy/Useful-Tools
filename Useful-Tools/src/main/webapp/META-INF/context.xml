@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Tomcat Context configuration.
+
+  sameSiteCookies="none" — instructs Tomcat to append SameSite=None to every
+  cookie it sets, including JSESSIONID.  This is required for cross-origin
+  deployments (e.g. Vercel frontend → Railway backend) where the browser
+  would otherwise refuse to send session cookies on cross-origin requests.
+
+  SameSite=None is only valid in combination with Secure=true.
+  The session cookie already has <secure>true</secure> in web.xml, and the
+  CSRF cookie has csrfCookie.setSecure(true) in LoginController, so the
+  requirement is satisfied on HTTPS (Railway provides HTTPS).
+
+  On local HTTP development (port 3000 / 8080) SameSite=None + Secure means
+  the cookie is still sent for same-origin requests; the only difference is
+  that non-HTTPS browsers won't store it — which is fine for local dev.
+-->
+<Context sameSiteCookies="none">
+</Context>

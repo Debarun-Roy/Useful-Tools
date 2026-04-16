@@ -9,7 +9,6 @@ const ERROR_MESSAGES = {
   MISSING_CREDENTIALS: 'Please enter both username and password.',
   USER_NOT_FOUND:      'No account found for that username. Try registering.',
   INVALID_CREDENTIALS: 'Incorrect password. Please try again.',
-  // Sprint 6: account lockout and rate limiting
   ACCOUNT_LOCKED:      null, // Use the server message directly (contains time remaining).
   RATE_LIMITED:        'Too many login attempts. Please wait a moment before trying again.',
   INTERNAL_ERROR:      'Something went wrong on our end. Please try again.',
@@ -17,7 +16,6 @@ const ERROR_MESSAGES = {
 
 function getErrorMessage(errorCode, serverMessage) {
   if (errorCode === 'ACCOUNT_LOCKED') {
-    // The server message already contains the time remaining — use it directly.
     return serverMessage || 'Account temporarily locked. Please try again later.'
   }
   return ERROR_MESSAGES[errorCode] ?? 'An unexpected error occurred.'
@@ -31,7 +29,7 @@ export default function LoginPage() {
   const [loading,  setLoading]  = useState(false)
 
   const { login, authNotice, clearAuthNotice } = useAuth()
-  const navigate  = useNavigate()
+  const navigate = useNavigate()
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -48,7 +46,11 @@ export default function LoginPage() {
       const { data } = await loginUser(username.trim(), password)
 
       if (data.success) {
-        login(data.data.username)
+        // Pass the csrfToken from the response body so AuthContext can store
+        // it in sessionStorage.  In cross-origin deployments (Vercel → Railway)
+        // the XSRF-TOKEN cookie cannot be read from document.cookie, so the
+        // token must come via the response body instead.
+        login(data.data.username, data.data.csrfToken)
         navigate('/dashboard')
       } else {
         setError(getErrorMessage(data.errorCode, data.error))

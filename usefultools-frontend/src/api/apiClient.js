@@ -1,18 +1,82 @@
 /**
- * apiClient.js — the single place where all HTTP calls to the backend are made.
+ * apiClient.js — single place for all HTTP calls to the backend.
  *
- * Sprint 6 addition: CSRF double-submit cookie pattern.
- *   getCsrfToken() reads the XSRF-TOKEN cookie set by LoginController.
- *   The token is sent as the X-XSRF-TOKEN header on every POST/PUT/DELETE
- *   request. CsrfFilter on the server validates header === session token.
+ * Cross-origin CSRF fix (Vercel frontend / Railway backend):
  *
- * Sprint 8 addition:
- *   performBaseArithmetic() — POST /api/analyzer/base-arithmetic
+ *   Problem: In same-origin deployments the frontend reads the XSRF-TOKEN
+ *   cookie from document.cookie and attaches it as X-XSRF-TOKEN.  In
+ *   cross-origin deployments the XSRF-TOKEN cookie belongs to the Railway
+ *   domain; JavaScript running on the Vercel domain cannot read it via
+ *   document.cookie — the browser's same-origin policy forbids this.
+ *
+ *   Solution: A module-level variable (_csrfToken) is used as the primary
+ *   source.  AuthContext sets it via setCsrfToken() immediately after login
+ *   (the token is now included in the login response body).  sessionStorage
+ *   is used as a persistence layer so page refreshes within the same browser
+ *   session do not require a new login.  On first load after a refresh,
+ *   AuthContext calls fetchCsrfToken() (GET /api/auth/csrf-token) to
+ *   retrieve the token from the still-valid server session.  The original
+ *   cookie-based fallback remains for same-origin (local dev) deployments.
  */
 
 const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/UsefulTools/api'
 let unauthorizedHandler = null
 let unauthorizedHandled = false
+
+// ── CSRF token state ──────────────────────────────────────────────────────────
+
+/**
+ * In-memory CSRF token.  Survives SPA navigation but not page reloads.
+ * sessionStorage backs it up for page-reload survival within the same tab.
+ */
+let _csrfToken = ''
+const CSRF_STORAGE_KEY = '_ut_xsrf'
+
+/** Called by AuthContext after login and on mount (restore from storage). */
+export function setCsrfToken(token) {
+  _csrfToken = token || ''
+  if (_csrfToken) {
+    try { sessionStorage.setItem(CSRF_STORAGE_KEY, _csrfToken) } catch { /* storage blocked */ }
+  }
+}
+
+/** Called by AuthContext on logout. */
+export function clearCsrfToken() {
+  _csrfToken = ''
+  try { sessionStorage.removeItem(CSRF_STORAGE_KEY) } catch { /* storage blocked */ }
+}
+
+/**
+ * Returns the best-available CSRF token using a three-tier fallback:
+ *   1. Module-level variable  — fastest, always up-to-date after login.
+ *   2. sessionStorage         — survives page refreshes in the same tab.
+ *   3. document.cookie        — works in same-origin (local dev) deployments.
+ */
+function getCsrfToken() {
+  // Tier 1: module variable
+  if (_csrfToken) return _csrfToken
+
+  // Tier 2: sessionStorage (page-refresh survival)
+  try {
+    const stored = sessionStorage.getItem(CSRF_STORAGE_KEY)
+    if (stored) {
+      _csrfToken = stored // warm the in-memory cache
+      return _csrfToken
+    }
+  } catch { /* storage blocked in some iframe contexts */ }
+
+  // Tier 3: cookie (same-origin / local-dev fallback)
+  try {
+    const match = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('XSRF-TOKEN='))
+    if (match) return decodeURIComponent(match.split('=')[1])
+  } catch { /* cookie API unavailable */ }
+
+  return ''
+}
+
+// ── Core request helper ───────────────────────────────────────────────────────
 
 export function registerUnauthorizedHandler(handler) {
   unauthorizedHandler = handler
@@ -27,41 +91,16 @@ export function registerUnauthorizedHandler(handler) {
 async function parseResponseBody(response) {
   const raw = await response.text()
   if (!raw) return {}
-
-  try {
-    return JSON.parse(raw)
-  } catch {
-    return {
-      success: false,
-      error: raw,
-    }
-  }
-}
-
-/**
- * Reads the XSRF-TOKEN cookie value set by the server on login.
- * Returns an empty string if the cookie is absent (e.g. before login).
- */
-function getCsrfToken() {
-  try {
-    const match = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('XSRF-TOKEN='))
-    return match ? decodeURIComponent(match.split('=')[1]) : ''
-  } catch {
-    return ''
-  }
+  try { return JSON.parse(raw) } catch { return { success: false, error: raw } }
 }
 
 async function request(path, { method = 'GET', body, isForm = false, isJson = false } = {}) {
   const headers = {}
 
-  // Inject CSRF token for all state-changing methods (Sprint 6).
+  // Attach CSRF token header for all state-changing methods.
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())) {
-    const csrfToken = getCsrfToken()
-    if (csrfToken) {
-      headers['X-XSRF-TOKEN'] = csrfToken
-    }
+    const token = getCsrfToken()
+    if (token) headers['X-XSRF-TOKEN'] = token
   }
 
   let encodedBody
@@ -93,11 +132,7 @@ async function request(path, { method = 'GET', body, isForm = false, isJson = fa
     path !== '/auth/register'
   ) {
     unauthorizedHandled = true
-    unauthorizedHandler({
-      path,
-      status: response.status,
-      data,
-    })
+    unauthorizedHandler({ path, status: response.status, data })
   } else if (response.status !== 401) {
     unauthorizedHandled = false
   }
@@ -123,17 +158,25 @@ export const updatePassword = (username, updatedPassword) =>
 export const logoutUser = () =>
   request('/auth/logout', { method: 'POST' })
 
+/**
+ * Fetches the CSRF token from the server session.
+ * Used by AuthContext on page reload when sessionStorage is empty but
+ * the server session (JSESSIONID) is still valid.
+ */
+export const fetchCsrfToken = () =>
+  request('/auth/csrf-token')
+
 // ── Calculator — standard ─────────────────────────────────────────────────────
 
 function evaluateStandard(path, expression) {
   return request(path, { method: 'POST', isJson: true, body: { expression } })
 }
 
-export const evaluateSimple       = (expr) => evaluateStandard('/calculator/simple',      expr)
-export const evaluateIntermediate = (expr) => evaluateStandard('/calculator/intermediate', expr)
-export const evaluateBoolean      = (expr) => evaluateStandard('/calculator/boolean',      expr)
-export const evaluateTrig         = (expr) => evaluateStandard('/calculator/trig',         expr)
-export const evaluateCombined     = (expr) => evaluateStandard('/calculator/combined',     expr)
+export const evaluateSimple       = (expr) => evaluateStandard('/calculator/simple',       expr)
+export const evaluateIntermediate = (expr) => evaluateStandard('/calculator/intermediate',  expr)
+export const evaluateBoolean      = (expr) => evaluateStandard('/calculator/boolean',       expr)
+export const evaluateTrig         = (expr) => evaluateStandard('/calculator/trig',          expr)
+export const evaluateCombined     = (expr) => evaluateStandard('/calculator/combined',      expr)
 
 // ── Calculator — complex ──────────────────────────────────────────────────────
 
@@ -196,14 +239,6 @@ export const fetchAllSeries = (terms) =>
 export const fetchSelectedSeries = (terms, choiceMap) =>
   request('/analyzer/series/selected', { method: 'POST', isJson: true, body: { terms, choiceMap } })
 
-/**
- * Performs arithmetic on two numbers expressed in an arbitrary base.
- *
- * @param {string} number1   First operand as a string in the given base.
- * @param {string} number2   Second operand as a string in the given base.
- * @param {number} base      The base (2–62).
- * @param {string} operation One of: add | subtract | multiply | divide
- */
 export const performBaseArithmetic = (number1, number2, base, operation) =>
   request('/analyzer/base-arithmetic', {
     method: 'POST',
@@ -215,23 +250,16 @@ export const performBaseArithmetic = (number1, number2, base, operation) =>
 
 export const generatePassword = (_username, platform, length, customize = 'auto', customFields = {}) => {
   const params = new URLSearchParams()
-
   params.append('platform', platform)
   params.append('length', String(length))
   params.append('customize_password', customize)
-
   if (customize === 'custom') {
     Object.keys(customFields).forEach(key => {
       params.append('customization_checkboxes', key)
       params.append(key, String(customFields[key]))
     })
   }
-
-  return request('/passwords/generate', {
-    method: 'POST',
-    isForm: true,
-    body: params,
-  })
+  return request('/passwords/generate', { method: 'POST', isForm: true, body: params })
 }
 
 export const savePassword = (_username, platform, password) =>
@@ -269,9 +297,7 @@ export const fetchUserProfile = () =>
 // ── Vault Management ──────────────────────────────────────────────────────────
 
 export const deleteVaultEntry = (platform) =>
-  request(`/passwords/delete?platform=${encodeURIComponent(platform)}`, {
-    method: 'DELETE',
-  })
+  request(`/passwords/delete?platform=${encodeURIComponent(platform)}`, { method: 'DELETE' })
 
 export const updateVaultEntry = (platform, password) =>
   request('/passwords/update', {
@@ -292,20 +318,12 @@ export const calculateMatrix = (operation, size, matrix1, matrix2 = null) =>
 // ── Statistics Calculator ─────────────────────────────────────────────────────
 
 export const calculateStats = (data) =>
-  request('/calculator/stats', {
-    method: 'POST',
-    isJson: true,
-    body: { data },
-  })
+  request('/calculator/stats', { method: 'POST', isJson: true, body: { data } })
 
 // ── Equation Solver ───────────────────────────────────────────────────────────
 
 export const solveEquation = (equation) =>
-  request('/calculator/solve', {
-    method: 'POST',
-    isJson: true,
-    body: { equation },
-  })
+  request('/calculator/solve', { method: 'POST', isJson: true, body: { equation } })
 
 // ── Probability Calculator ────────────────────────────────────────────────────
 
@@ -327,18 +345,5 @@ export const calculatePolynomial = (operation, coefficients, x = null) =>
 
 // ── Feedback ──────────────────────────────────────────────────────────────────
 
-/**
- * Submits user feedback.
- *
- * @param {object} feedbackData
- * @param {number}  feedbackData.overallRating     - Required, 1–5
- * @param {string}  feedbackData.generalComment    - Optional
- * @param {Array}   feedbackData.featureFeedback   - Optional array of
- *   { featureName: string, rating: number|null, comment: string|null }
- */
 export const submitFeedback = (feedbackData) =>
-  request('/feedback/submit', {
-    method: 'POST',
-    isJson: true,
-    body: feedbackData,
-  })
+  request('/feedback/submit', { method: 'POST', isJson: true, body: feedbackData })

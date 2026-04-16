@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import com.google.gson.Gson;
+
 import common.ApiResponse;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -14,11 +15,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 /**
- * Sprint 6 addition: clears the XSRF-TOKEN cookie on logout by setting its
- * max-age to 0. This is a defence-in-depth measure — the cookie becomes
- * invalid immediately when the server session is invalidated regardless, but
- * explicitly clearing it prevents the stale cookie from lingering in the
- * browser and causing confusing CSRF failures on the next login.
+ * Clears the server session and the XSRF-TOKEN cookie on logout.
+ *
+ * CHANGE — Cross-origin deployment fix:
+ *   To delete a cookie the browser already has, the clearing Set-Cookie header
+ *   must match all attributes of the original cookie (Path, Secure, SameSite,
+ *   HttpOnly).  LoginController now sets the XSRF-TOKEN cookie with
+ *   SameSite=None and Secure=true; the clearing cookie here is updated to
+ *   match, otherwise browsers on some platforms silently ignore the deletion.
  */
 @WebServlet("/api/auth/logout")
 public class LogoutController extends HttpServlet {
@@ -40,11 +44,15 @@ public class LogoutController extends HttpServlet {
                 session.invalidate();
             }
 
-            // Clear the CSRF cookie (Sprint 6).
+            // Clear the CSRF cookie.
+            // Attributes must match the original Set-Cookie exactly so the
+            // browser actually removes it (RFC 6265 §5.3 step 11).
             Cookie csrfCookie = new Cookie("XSRF-TOKEN", "");
             csrfCookie.setPath("/");
-            csrfCookie.setMaxAge(0);       // Instructs the browser to delete it.
+            csrfCookie.setMaxAge(0);           // Instructs the browser to delete it.
             csrfCookie.setHttpOnly(false);
+            csrfCookie.setSecure(true);        // FIX: match login cookie
+            csrfCookie.setAttribute("SameSite", "None"); // FIX: was missing, must match login cookie
             response.addCookie(csrfCookie);
 
             response.setStatus(HttpServletResponse.SC_OK);
