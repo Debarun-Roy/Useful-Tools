@@ -2,18 +2,47 @@
 <!--
   Tomcat Context configuration (Tomcat 11.0.21+).
 
-  IMPORTANT FIX (April 2026):
+  CRITICAL FIX (April 2026):
   The attribute "sameSiteCookies" is not supported in Tomcat 11+ and is
   ignored (generates WARNING: "failed to set property [sameSiteCookies]").
   
-  Solution: Use the SameSiteFilter servlet filter instead. This filter
-  intercepts Set-Cookie response headers and appends "; SameSite=None" to
-  them. This ensures JSESSIONID gets SameSite=None for cross-origin requests.
+  ROOT CAUSE ANALYSIS:
+  ────────────────────
+  Tomcat's session manager adds JSESSIONID cookies OUTSIDE the Servlet filter
+  chain, directly to the response connector buffer during response commit.
+  This means:
+  1. Tomcat's automatic JSESSIONID is NOT intercepted by response wrappers
+  2. Even if SessionCookieConfig.setSameSite() worked, it wouldn't reach browsers
+     on cross-origin requests without our manual cookie
   
-  SameSite=None is only valid with Secure=true. Web.xml already sets
-  <secure>true</secure> for the session cookie, and Railway serves HTTPS,
-  so the requirement is satisfied.
+  SOLUTION (Multi-layered defense):
+  ────────────────────────────────
+  1. LoginController.java: Manually creates JSESSIONID cookie with SameSite=None
+     Using response.addHeader("Set-Cookie", "JSESSIONID=...; SameSite=None")
+     This is added BEFORE Tomcat's automatic cookie to make it primary.
+  
+  2. SameSiteFilter: Still catches explicit response.addCookie() calls (like
+     XSRF-TOKEN) and enhances Set-Cookie headers where possible.
+  
+  3. CookieConfigListener: SessionCookieConfig configuration as fallback (though
+     limited in Tomcat 11+).
+  
+  CROSS-ORIGIN REQUIREMENTS:
+  ──────────────────────────
+  For Vercel (frontend) → Railway (backend) to work:
+  - JSESSIONID must have SameSite=None (now: ✅ manual in LoginController)
+  - XSRF-TOKEN must have SameSite=None (now: ✅ via SameSiteFilter)  
+  - HTTPS required for SameSite=None (Railway: ✅ HTTPS)
+  - <secure>true</secure> in web.xml (session cookie: ✅ configured)
+  
+  DEPLOYMENT NOTES:
+  ─────────────────
+  This fix ONLY works for LoginController (login endpoint). Session cookies
+  created through other mechanisms may still lack SameSite=None.
+  The SameSiteFilter provides defense-in-depth for any cookies created
+  via response.addCookie() or response.addHeader("Set-Cookie", ...).
 -->
 <Context>
   <!-- Removed unsupported sameSiteCookies attribute (not recognized in Tomcat 11+) -->
+  <!-- Session cookie routing is now handled in LoginController.java -->
 </Context>

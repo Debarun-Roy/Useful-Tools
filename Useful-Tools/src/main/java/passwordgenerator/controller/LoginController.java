@@ -108,7 +108,21 @@ public class LoginController extends HttpServlet {
             // ── 6. Session fixation prevention ────────────────────────────
             HttpSession session = request.getSession(true);
             request.changeSessionId();
+            String sessionId = session.getId();
             session.setAttribute("username", username);
+            
+            // CRITICAL FIX (April 2026): Manually add JSESSIONID cookie with SameSite=None
+            // 
+            // Problem: Tomcat's session manager adds JSESSIONID automatically, but it
+            // doesn't use the sessionCookieConfig SameSite setting in Tomcat 11+.
+            // The automatic JSESSIONID is added OUTSIDE the filter wrapper, so our
+            // SameSiteFilter cannot intercept it.
+            //
+            // Solution: Explicitly add the JSESSIONID header with SameSite=None ourselves.
+            // This ensures the browser sends the session cookie on cross-origin requests.
+            String jsessionidHeader = "JSESSIONID=" + sessionId + "; Path=/; Secure; HttpOnly; SameSite=None";
+            response.addHeader("Set-Cookie", jsessionidHeader);
+            System.out.println("[LoginController] Manually added JSESSIONID with SameSite=None: " + sessionId);
 
             // ── 7. CSRF token ──────────────────────────────────────────────
             String csrfToken = UUID.randomUUID().toString();
