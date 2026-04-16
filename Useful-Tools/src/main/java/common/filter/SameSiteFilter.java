@@ -18,26 +18,18 @@ import jakarta.servlet.http.HttpServletResponseWrapper;
  *
  * PROBLEM:
  *   In Tomcat 11.0.21, the context.xml attribute "sameSiteCookies" is not
- *   recognized (warning: "failed to set property [sameSiteCookies] to [none]").
- *   As a result, JSESSIONID cookies don't get SameSite=None, and the browser
- *   won't send them on cross-origin requests (Vercel → Railway).
+ *   recognized. JSESSIONID cookies are sent without SameSite=None and won't
+ *   be transmitted on cross-origin requests (Vercel → Railway).
  *
  * SOLUTION:
- *   This filter intercepts ALL cookie operations (both addCookie() AND
- *   Set-Cookie headers) and ensures each cookie gets "; SameSite=None".
- *   This ensures:
- *   1. JSESSIONID gets SameSite=None (allows cross-origin transmission)
- *   2. XSRF-TOKEN gets SameSite=None (for CSRF double-submit pattern)
- *   3. Any other session cookies also get it (future-proof)
- *
- * IMPORTANT:
- *   SameSite=None requires Secure flag. Web.xml already sets
- *   <secure>true</secure> for the session cookie, and Railway serves HTTPS.
- *   The cookies will already have Secure=true, so we just append SameSite=None.
- *
- * FILTER ORDER:
- *   This runs FIRST on all requests (/* mapping in web.xml).
- *   Runs BEFORE CorsFilter to ensure all responses are modified.
+ *   Wrap response to intercept ALL cookie operations (addCookie, addHeader,
+ *   setHeader) and ensure every cookie gets SameSite=None appended.
+ *   
+ *   Strategy:
+ *   1. Don't manually add JSESSIONID in servlet code
+ *   2. Let Tomcat add it automatically when getSession() is called
+ *   3. Wrapper intercepts Tomcat's addHeader("Set-Cookie",...) call
+ *   4. We enhance the header to include SameSite=None
  */
 @WebFilter(filterName = "SameSiteFilter", urlPatterns = "/*")
 public class SameSiteFilter implements Filter {
@@ -65,34 +57,24 @@ public class SameSiteFilter implements Filter {
                 System.out.println("[SameSiteFilter] Intercepting " + method + " " + uri);
             }
             
-            // Wrap the response to intercept cookie operations
+            // Wrap the response
             HttpServletResponse wrappedResponse = new SameSiteCookieWrapper(httpResponse);
 
             try {
                 chain.doFilter(request, wrappedResponse);
             } finally {
-                // After chain completes, check what headers were set in the wrapper
                 System.out.println("[SameSiteFilter] After chain - checking response headers");
                 
-                // Get all headers from the wrapped response
                 java.util.Collection<String> headers = wrappedResponse.getHeaderNames();
                 if (headers != null && !headers.isEmpty()) {
-                    System.out.println("[SameSiteFilter] Response has " + headers.size() 
-                        + " header types: " + headers);
-                    
-                    // Check specifically for Set-Cookie
                     java.util.Collection<String> cookieHeaders = wrappedResponse.getHeaders("Set-Cookie");
                     if (cookieHeaders != null && !cookieHeaders.isEmpty()) {
-                        System.out.println("[SameSiteFilter] Final Set-Cookie headers in response (" 
+                        System.out.println("[SameSiteFilter] Final Set-Cookie headers (" 
                             + cookieHeaders.size() + " total):");
                         for (String header : cookieHeaders) {
                             System.out.println("  └─ " + header);
                         }
-                    } else {
-                        System.out.println("[SameSiteFilter] No Set-Cookie headers in response");
                     }
-                } else {
-                    System.out.println("[SameSiteFilter] Response has no headers set");
                 }
             }
         } else {
@@ -102,28 +84,22 @@ public class SameSiteFilter implements Filter {
 
     @Override
     public void destroy() {
-        // No cleanup needed
     }
 
     /**
-     * Custom response wrapper that adds SameSite=None to all cookies.
-     * Intercepts BOTH addCookie() method calls AND Set-Cookie headers.
+     * Response wrapper that adds SameSite=None to all cookies
      */
     private static class SameSiteCookieWrapper extends HttpServletResponseWrapper {
         
         private static final String SAMESITE_NONE = "; SameSite=None";
-        private java.util.List<String> allSetCookieHeaders = new java.util.ArrayList<>();
-        private boolean debugLogging = true; // Enable verbose logging
-        private boolean jsessionidWithSameSiteAdded = false; // Track if we added JSESSIONID with SameSite
+        private boolean debugLogging = true;
 
         public SameSiteCookieWrapper(HttpServletResponse response) {
             super(response);
         }
 
         /**
-         * Intercept addCookie() calls (the primary method Tomcat uses).
-         * This is called when servlets use response.addCookie(cookie).
-         * We modify the cookie's attributes BEFORE it's sent.
+         * Intercept addCookie() to add SameSite=None
          */
         @Override
         public void addCookie(Cookie cookie) {
@@ -132,89 +108,30 @@ public class SameSiteFilter implements Filter {
                 System.out.println("[SameSiteCookieWrapper]   Name: " + cookie.getName());
             }
             
-            // CRITICAL: Check if this is a JSESSIONID cookie
-            if ("JSESSIONID".equals(cookie.getName())) {
-                // If we already added a JSESSIONID with SameSite, skip Tomcat's automatic duplicate
-                if (jsessionidWithSameSiteAdded) {
-                    if (debugLogging) {
-                        System.out.println("[SameSiteCookieWrapper]   ⚠ SKIPPING: Duplicate JSESSIONID");
-                        System.out.println("[SameSiteCookieWrapper]        Reason: Already added JSESSIONID with SameSite=None");
-                    }
-                    return; // Skip this cookie - don't call super.addCookie()
-                } else {
-                    // First JSESSIONID we see - mark it as tracked
-                    jsessionidWithSameSiteAdded = true;
-                    if (debugLogging) {
-                        System.out.println("[SameSiteCookieWrapper]   ➣ Tracking JSESSIONID via addCookie()");
-                    }
-                }
-            }
-            
-            // For debugging: show cookie details
-            if (debugLogging) {
-                System.out.println("[SameSiteCookieWrapper]   Value: " + cookie.getValue());
-                System.out.println("[SameSiteCookieWrapper]   Before: Secure=" + cookie.getSecure() 
-                    + ", HttpOnly=" + cookie.isHttpOnly());
-            }
-            
-            // Set the cookie to be sent on cross-origin requests
+            // Add SameSite=None to all cookies
             cookie.setAttribute("SameSite", "None");
-            // SameSite=None requires Secure flag
             cookie.setSecure(true);
             
             if (debugLogging) {
-                System.out.println("[SameSiteCookieWrapper]   After: Added SameSite=None, Secure=true");
+                System.out.println("[SameSiteCookieWrapper]   ✓ Set SameSite=None");
             }
             
             super.addCookie(cookie);
         }
 
         /**
-         * Intercept addHeader() calls for Set-Cookie headers.
-         * This catches any direct Set-Cookie header manipulations.
+         * Intercept addHeader() for Set-Cookie headers
          */
         @Override
         public void addHeader(String name, String value) {
             if ("Set-Cookie".equalsIgnoreCase(name)) {
-                if (debugLogging) {
-                    System.out.println("[SameSiteCookieWrapper] ▶ addHeader(Set-Cookie) called");
+                if (debugLogging && value.contains("JSESSIONID")) {
+                    System.out.println("[SameSiteCookieWrapper] ▶ addHeader(Set-Cookie) for JSESSIONID");
                     System.out.println("[SameSiteCookieWrapper]   Before: " + value);
                 }
                 
                 String original = value;
-                
-                // CRITICAL: Check if this is a JSESSIONID cookie
-                if (value.contains("JSESSIONID=")) {
-                    // Track if we're adding one with SameSite=None
-                    if (value.toLowerCase().contains("samesite")) {
-                        jsessionidWithSameSiteAdded = true;
-                        if (debugLogging) {
-                            System.out.println("[SameSiteCookieWrapper]   → JSESSIONID with SameSite detected, marking as added");
-                        }
-                    } else {
-                        // This is JSESSIONID WITHOUT SameSite - check if we already have one with SameSite
-                        if (jsessionidWithSameSiteAdded) {
-                            // Skip this duplicate - don't add Tomcat's automatic one
-                            if (debugLogging) {
-                                System.out.println("[SameSiteCookieWrapper]   ⚠ SKIPPING: Tomcat's automatic JSESSIONID (no SameSite)");
-                                System.out.println("[SameSiteCookieWrapper]        Reason: Already added JSESSIONID with SameSite=None");
-                            }
-                            return; // Don't add this header!
-                        } else {
-                            // First JSESSIONID we see - enhance it with SameSite
-                            value = enhanceSetCookieHeader(value);
-                            jsessionidWithSameSiteAdded = true;
-                            if (debugLogging) {
-                                System.out.println("[SameSiteCookieWrapper]   → Enhanced with SameSite=None");
-                            }
-                        }
-                    }
-                } else {
-                    // Not JSESSIONID, enhance normally
-                    value = enhanceSetCookieHeader(value);
-                }
-                
-                allSetCookieHeaders.add(value);
+                value = enhanceSetCookieHeader(value);
                 
                 if (!original.equals(value) && debugLogging) {
                     System.out.println("[SameSiteCookieWrapper]   After:  " + value);
@@ -224,65 +141,27 @@ public class SameSiteFilter implements Filter {
         }
 
         /**
-         * Intercept setHeader() calls for Set-Cookie headers.
-         * This catches any Set-Cookie header replacements.
+         * Intercept setHeader() for Set-Cookie headers
          */
         @Override
         public void setHeader(String name, String value) {
             if ("Set-Cookie".equalsIgnoreCase(name)) {
-                if (debugLogging) {
-                    System.out.println("[SameSiteCookieWrapper] ▶ setHeader(Set-Cookie) called");
-                    System.out.println("[SameSiteCookieWrapper]   Value: " + value);
-                }
-                
                 String original = value;
                 value = enhanceSetCookieHeader(value);
-                
-                if (!original.equals(value) && debugLogging) {
-                    System.out.println("[SameSiteCookieWrapper]   Modified to: " + value);
-                }
-                
-                // Track JSESSIONID with SameSite for setHeader too
-                if (value.contains("JSESSIONID=") && value.toLowerCase().contains("samesite")) {
-                    jsessionidWithSameSiteAdded = true;
+                if (!original.equals(value) && debugLogging && value.contains("JSESSIONID")) {
+                    System.out.println("[SameSiteCookieWrapper] ▶ setHeader(Set-Cookie) - modified to add SameSite=None");
                 }
             }
             super.setHeader(name, value);
         }
 
         /**
-         * Intercept flushBuffer() to detect when response is committed
-         */
-        @Override
-        public void flushBuffer() throws IOException {
-            if (debugLogging) {
-                System.out.println("[SameSiteCookieWrapper] ▶ flushBuffer() called - response being sent");
-            }
-            super.flushBuffer();
-        }
-
-        /**
-         * Enhances a Set-Cookie header string by appending SameSite=None if missing.
-         * 
-         * Examples:
-         *   "JSESSIONID=abc123; Path=/; Secure; HttpOnly"
-         *   → "JSESSIONID=abc123; Path=/; Secure; HttpOnly; SameSite=None"
-         *
-         * @param cookieValue The Set-Cookie header value
-         * @return The enhanced value with SameSite=None appended (if not already present)
+         * Add SameSite=None to Set-Cookie header if missing
          */
         private String enhanceSetCookieHeader(String cookieValue) {
-            if (cookieValue == null) {
+            if (cookieValue == null || cookieValue.toLowerCase().contains("samesite")) {
                 return cookieValue;
             }
-
-            // Check if SameSite is already present
-            if (cookieValue.toLowerCase().contains("samesite")) {
-                return cookieValue;
-            }
-
-            // Add SameSite=None to the Set-Cookie header
-            // Note: Secure flag should already be present from web.xml configuration
             return cookieValue + SAMESITE_NONE;
         }
     }
