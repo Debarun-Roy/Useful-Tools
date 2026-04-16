@@ -54,7 +54,8 @@ public class SameSiteFilter implements Filter {
             if (request instanceof jakarta.servlet.http.HttpServletRequest) {
                 String method = ((jakarta.servlet.http.HttpServletRequest) request).getMethod();
                 String uri = ((jakarta.servlet.http.HttpServletRequest) request).getRequestURI();
-                System.out.println("[SameSiteFilter] Intercepting " + method + " " + uri);
+                System.out.println("[SameSiteFilter] ▶ Intercepting " + method + " " + uri);
+                System.out.flush();
             }
             
             // Wrap the response
@@ -63,18 +64,30 @@ public class SameSiteFilter implements Filter {
             try {
                 chain.doFilter(request, wrappedResponse);
             } finally {
-                System.out.println("[SameSiteFilter] After chain - checking response headers");
+                System.out.println("[SameSiteFilter] ◀ Response chain completed");
+                System.out.flush();
                 
-                java.util.Collection<String> headers = wrappedResponse.getHeaderNames();
-                if (headers != null && !headers.isEmpty()) {
-                    java.util.Collection<String> cookieHeaders = wrappedResponse.getHeaders("Set-Cookie");
-                    if (cookieHeaders != null && !cookieHeaders.isEmpty()) {
-                        System.out.println("[SameSiteFilter] Final Set-Cookie headers (" 
-                            + cookieHeaders.size() + " total):");
-                        for (String header : cookieHeaders) {
-                            System.out.println("  └─ " + header);
+                try {
+                    java.util.Collection<String> headers = wrappedResponse.getHeaderNames();
+                    if (headers != null && !headers.isEmpty()) {
+                        java.util.Collection<String> cookieHeaders = wrappedResponse.getHeaders("Set-Cookie");
+                        if (cookieHeaders != null && !cookieHeaders.isEmpty()) {
+                            System.out.println("[SameSiteFilter] ✓ Final Set-Cookie headers (" 
+                                + cookieHeaders.size() + " total):");
+                            System.out.flush();
+                            for (String header : cookieHeaders) {
+                                System.out.println("    └─ " + header);
+                                System.out.flush();
+                            }
+                        } else {
+                            System.out.println("[SameSiteFilter] ✗ No Set-Cookie headers found");
+                            System.out.flush();
                         }
                     }
+                } catch (Exception e) {
+                    System.out.println("[SameSiteFilter] ✗ Error reading headers: " + e.getMessage());
+                    e.printStackTrace();
+                    System.out.flush();
                 }
             }
         } else {
@@ -103,18 +116,17 @@ public class SameSiteFilter implements Filter {
          */
         @Override
         public void addCookie(Cookie cookie) {
-            if (debugLogging) {
-                System.out.println("[SameSiteCookieWrapper] ▶ addCookie() called");
-                System.out.println("[SameSiteCookieWrapper]   Name: " + cookie.getName());
-            }
+            System.out.println("[SameSiteCookieWrapper] ▶ addCookie() called");
+            System.out.println("[SameSiteCookieWrapper]   → Name: " + cookie.getName());
+            System.out.println("[SameSiteCookieWrapper]   → Value: " + (cookie.getValue() != null ? cookie.getValue().substring(0, Math.min(20, cookie.getValue().length())) + "..." : "null"));
+            System.out.flush();
             
             // Add SameSite=None to all cookies
             cookie.setAttribute("SameSite", "None");
             cookie.setSecure(true);
             
-            if (debugLogging) {
-                System.out.println("[SameSiteCookieWrapper]   ✓ Set SameSite=None");
-            }
+            System.out.println("[SameSiteCookieWrapper]   ✓ Set SameSite=None, Secure=true");
+            System.out.flush();
             
             super.addCookie(cookie);
         }
@@ -125,16 +137,16 @@ public class SameSiteFilter implements Filter {
         @Override
         public void addHeader(String name, String value) {
             if ("Set-Cookie".equalsIgnoreCase(name)) {
-                if (debugLogging && value.contains("JSESSIONID")) {
-                    System.out.println("[SameSiteCookieWrapper] ▶ addHeader(Set-Cookie) for JSESSIONID");
-                    System.out.println("[SameSiteCookieWrapper]   Before: " + value);
-                }
+                System.out.println("[SameSiteCookieWrapper] ▶ addHeader('Set-Cookie')");
+                System.out.println("[SameSiteCookieWrapper]   Before: " + value.substring(0, Math.min(60, value.length())));
+                System.out.flush();
                 
                 String original = value;
                 value = enhanceSetCookieHeader(value);
                 
-                if (!original.equals(value) && debugLogging) {
-                    System.out.println("[SameSiteCookieWrapper]   After:  " + value);
+                if (!original.equals(value)) {
+                    System.out.println("[SameSiteCookieWrapper]   After:  " + value.substring(0, Math.min(80, value.length())) + (value.length() > 80 ? "..." : ""));
+                    System.out.flush();
                 }
             }
             super.addHeader(name, value);
@@ -146,10 +158,12 @@ public class SameSiteFilter implements Filter {
         @Override
         public void setHeader(String name, String value) {
             if ("Set-Cookie".equalsIgnoreCase(name)) {
+                System.out.println("[SameSiteCookieWrapper] ▶ setHeader('Set-Cookie')");
                 String original = value;
                 value = enhanceSetCookieHeader(value);
-                if (!original.equals(value) && debugLogging && value.contains("JSESSIONID")) {
-                    System.out.println("[SameSiteCookieWrapper] ▶ setHeader(Set-Cookie) - modified to add SameSite=None");
+                if (!original.equals(value)) {
+                    System.out.println("[SameSiteCookieWrapper]   Enhanced with SameSite=None");
+                    System.out.flush();
                 }
             }
             super.setHeader(name, value);
