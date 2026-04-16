@@ -107,7 +107,6 @@ public class LoginController extends HttpServlet {
 
             // ── 6. Session fixation prevention ────────────────────────────
             HttpSession session = request.getSession(true);
-            request.changeSessionId();
             String sessionId = session.getId();
             session.setAttribute("username", username);
             
