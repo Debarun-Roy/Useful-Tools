@@ -113,16 +113,23 @@ public class LoginController extends HttpServlet {
             
             // CRITICAL FIX (April 2026): Manually add JSESSIONID cookie with SameSite=None
             // 
-            // Problem: Tomcat's session manager adds JSESSIONID automatically, but it
-            // doesn't use the sessionCookieConfig SameSite setting in Tomcat 11+.
-            // The automatic JSESSIONID is added OUTSIDE the filter wrapper, so our
-            // SameSiteFilter cannot intercept it.
+            // Problem: Tomcat's session manager adds JSESSIONID at connector level
+            // (AFTER filter wrapper returns), making addHeader() ineffective.
+            // Response headers added via addHeader() get overwritten by Tomcat's 
+            // automatic JSESSIONID. 
             //
-            // Solution: Explicitly add the JSESSIONID header with SameSite=None ourselves.
-            // This ensures the browser sends the session cookie on cross-origin requests.
-            String jsessionidHeader = "JSESSIONID=" + sessionId + "; Path=/; Secure; HttpOnly; SameSite=None";
-            response.addHeader("Set-Cookie", jsessionidHeader);
-            System.out.println("[LoginController] Manually added JSESSIONID with SameSite=None: " + sessionId);
+            // Solution: Use response.addCookie() instead of addHeader()
+            // This ensures:
+            // 1. Cookie goes through SameSiteCookieWrapper (applies SameSite=None)
+            // 2. Our version is the PRIMARY cookie sent to browser
+            // 3. Survives response commit and connector-level processing
+            Cookie jsessionidCookie = new Cookie("JSESSIONID", sessionId);
+            jsessionidCookie.setPath("/");
+            jsessionidCookie.setSecure(true);
+            jsessionidCookie.setHttpOnly(true);
+            jsessionidCookie.setAttribute("SameSite", "None");
+            response.addCookie(jsessionidCookie);
+            System.out.println("[LoginController] Added JSESSIONID via addCookie() with SameSite=None: " + sessionId);
 
             // ── 7. CSRF token ──────────────────────────────────────────────
             String csrfToken = UUID.randomUUID().toString();

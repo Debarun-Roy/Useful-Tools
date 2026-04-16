@@ -135,6 +135,15 @@ public class SameSiteFilter implements Filter {
                     + ", HttpOnly=" + cookie.isHttpOnly());
             }
             
+            // IMPORTANT: Track JSESSIONID added via addCookie()
+            // This is now the primary method (changed from addHeader in LoginController)
+            if ("JSESSIONID".equals(cookie.getName())) {
+                jsessionidWithSameSiteAdded = true;
+                if (debugLogging) {
+                    System.out.println("[SameSiteCookieWrapper]   ➣ Tracking JSESSIONID via addCookie()");
+                }
+            }
+            
             // Set the cookie to be sent on cross-origin requests
             cookie.setAttribute("SameSite", "None");
             // SameSite=None requires Secure flag
