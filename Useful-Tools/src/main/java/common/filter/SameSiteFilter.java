@@ -130,18 +130,31 @@ public class SameSiteFilter implements Filter {
             if (debugLogging) {
                 System.out.println("[SameSiteCookieWrapper] ▶ addCookie() called");
                 System.out.println("[SameSiteCookieWrapper]   Name: " + cookie.getName());
+            }
+            
+            // CRITICAL: Check if this is a JSESSIONID cookie
+            if ("JSESSIONID".equals(cookie.getName())) {
+                // If we already added a JSESSIONID with SameSite, skip Tomcat's automatic duplicate
+                if (jsessionidWithSameSiteAdded) {
+                    if (debugLogging) {
+                        System.out.println("[SameSiteCookieWrapper]   ⚠ SKIPPING: Duplicate JSESSIONID");
+                        System.out.println("[SameSiteCookieWrapper]        Reason: Already added JSESSIONID with SameSite=None");
+                    }
+                    return; // Skip this cookie - don't call super.addCookie()
+                } else {
+                    // First JSESSIONID we see - mark it as tracked
+                    jsessionidWithSameSiteAdded = true;
+                    if (debugLogging) {
+                        System.out.println("[SameSiteCookieWrapper]   ➣ Tracking JSESSIONID via addCookie()");
+                    }
+                }
+            }
+            
+            // For debugging: show cookie details
+            if (debugLogging) {
                 System.out.println("[SameSiteCookieWrapper]   Value: " + cookie.getValue());
                 System.out.println("[SameSiteCookieWrapper]   Before: Secure=" + cookie.getSecure() 
                     + ", HttpOnly=" + cookie.isHttpOnly());
-            }
-            
-            // IMPORTANT: Track JSESSIONID added via addCookie()
-            // This is now the primary method (changed from addHeader in LoginController)
-            if ("JSESSIONID".equals(cookie.getName())) {
-                jsessionidWithSameSiteAdded = true;
-                if (debugLogging) {
-                    System.out.println("[SameSiteCookieWrapper]   ➣ Tracking JSESSIONID via addCookie()");
-                }
             }
             
             // Set the cookie to be sent on cross-origin requests
