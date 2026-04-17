@@ -10,7 +10,9 @@
  *   performBaseArithmetic() — POST /api/analyzer/base-arithmetic
  */
 
-const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/UsefulTools/api'
+import { resolveApiBase } from './apiBase'
+
+const BASE = resolveApiBase(import.meta.env.VITE_API_BASE)
 let unauthorizedHandler = null
 let unauthorizedHandled = false
 
