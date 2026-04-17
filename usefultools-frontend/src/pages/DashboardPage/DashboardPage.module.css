@@ -66,6 +66,22 @@
   color: var(--clr-dark-muted);
 }
 
+/* Badge shown next to "Guest User" username */
+.guestBadge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(74,144,217,0.15);
+  border: 1px solid rgba(74,144,217,0.35);
+  color: var(--clr-accent);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
 .logoutButton {
   padding: 6px var(--space-md);
   background: transparent;
@@ -232,7 +248,7 @@
 
 .card:active { transform: translateY(-1px); }
 
-/* ─── Feature card (disabled) ────────────────────────────────────────────── */
+/* ─── Feature card (disabled — coming soon) ──────────────────────────────── */
 .cardDisabled {
   display: flex;
   flex-direction: column;
@@ -245,6 +261,40 @@
   text-align: left;
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ─── Feature card (locked — requires login) ─────────────────────────────── */
+/*
+ * .cardLockedWrapper — the span that carries the tooltip title.
+ *   pointer-events: auto so hover fires and the browser shows the title.
+ *
+ * .cardLocked — the inner card content.
+ *   pointer-events: none so clicks pass through to nothing (not the wrapper)
+ *   and the cursor changes to not-allowed from the wrapper.
+ */
+.cardLockedWrapper {
+  display: flex;        /* match grid cell sizing */
+  cursor: not-allowed;
+}
+
+.cardLocked {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  padding: var(--space-lg);
+  background: var(--clr-surface);
+  border: 1px dashed var(--clr-border);
+  border-radius: var(--radius-lg);
+  text-align: left;
+  opacity: 0.45;
+  pointer-events: none;    /* clicks fall through to wrapper */
+  width: 100%;
+  transition: opacity var(--transition);
+}
+
+.cardLockedWrapper:hover .cardLocked {
+  opacity: 0.35;           /* subtle feedback that hover is active */
 }
 
 /* ─── Card internals ─────────────────────────────────────────────────────── */
@@ -285,4 +335,19 @@
   padding: 3px 9px;
   border-radius: 999px;
   letter-spacing: 0.04em;
+}
+
+/* Lock badge shown on guest-restricted cards */
+.cardLockBadge {
+  margin-top: var(--space-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--clr-text-muted);
+  background: rgba(0,0,0,0.05);
+  padding: 3px 9px;
+  border-radius: 999px;
+  letter-spacing: 0.03em;
 }

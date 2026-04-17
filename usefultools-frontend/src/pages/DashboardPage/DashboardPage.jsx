@@ -4,6 +4,13 @@ import { useAuth }     from '../../auth/useAuth'
 import ThemePicker     from '../../components/ThemePicker/ThemePicker'
 import styles          from './DashboardPage.module.css'
 
+/**
+ * Features that require a real authenticated account.
+ * Guest users (username === 'Guest User') see these greyed out with a lock icon.
+ * A tooltip "Please login to access this resource." appears on hover.
+ */
+const GUEST_RESTRICTED_PATHS = new Set(['/profile', '/update-password', '/vault'])
+
 const FEATURES = [
   {
     label:  'Calculator',
@@ -28,6 +35,7 @@ const FEATURES = [
     ready:  true,
     icon:   '🔐',
     desc:   'Generate, save and retrieve passwords securely with RSA-2048 encryption',
+    requiresAuth: true,
   },
   {
     label:  'Unit Converter',
@@ -76,6 +84,7 @@ const FEATURES = [
     ready:  true,
     icon:   '👤',
     desc:   'View your activity summary and account details',
+    requiresAuth: true,
   },
   {
     label:  'Update Password',
@@ -84,12 +93,14 @@ const FEATURES = [
     ready:  true,
     icon:   '🔑',
     desc:   'Change your account password securely',
+    requiresAuth: true,
   },
 ]
 
 export default function DashboardPage() {
   const { username, logout } = useAuth()
   const navigate = useNavigate()
+  const isGuest  = username === 'Guest User'
 
   async function handleLogout() {
     try { await logoutUser() } catch { /* ignore network errors */ }
@@ -109,6 +120,9 @@ export default function DashboardPage() {
           <ThemePicker />
           <span className={styles.usernameLabel}>
             Signed in as <strong style={{ color: 'var(--clr-dark-text)' }}>{username}</strong>
+            {isGuest && (
+              <span className={styles.guestBadge}>Guest</span>
+            )}
           </span>
           <button className={styles.logoutButton} onClick={handleLogout}>
             Sign out
@@ -127,7 +141,9 @@ export default function DashboardPage() {
             <span className={styles.greetingAccent}>{username}</span>.
           </h1>
           <p className={styles.subtitle}>
-            Select a tool below to get started.
+            {isGuest
+              ? 'You are browsing as a guest. Some features require a full account.'
+              : 'Select a tool below to get started.'}
           </p>
         </div>
       </section>
@@ -135,23 +151,58 @@ export default function DashboardPage() {
       <main className={styles.main}>
         <p className={styles.sectionTitle}>Available tools</p>
         <div className={styles.grid}>
-          {FEATURES.map(feature => (
-            <button
-              key={feature.path}
-              className={feature.ready ? styles.card : styles.cardDisabled}
-              onClick={() => feature.ready && navigate(feature.path)}
-              disabled={!feature.ready}
-            >
-              <div className={styles.cardIconWrap}>
-                <span className={styles.cardIcon} aria-hidden="true">{feature.icon}</span>
-              </div>
-              <span className={styles.cardLabel}>{feature.label}</span>
-              <span className={styles.cardDesc}>{feature.desc}</span>
-              {!feature.ready && (
-                <span className={styles.cardBadge}>Sprint {feature.sprint}</span>
-              )}
-            </button>
-          ))}
+          {FEATURES.map(feature => {
+            const locked = isGuest && feature.requiresAuth
+
+            if (locked) {
+              return (
+                /* Wrapper carries the tooltip; the inner card is visually
+                   disabled and has pointer-events:none so it can't be clicked. */
+                <span
+                  key={feature.path}
+                  className={styles.cardLockedWrapper}
+                  title="Please login to access this resource."
+                  aria-label={`${feature.label} — login required`}
+                >
+                  <div className={styles.cardLocked} aria-disabled="true">
+                    <div className={styles.cardIconWrap}>
+                      <span className={styles.cardIcon} aria-hidden="true">{feature.icon}</span>
+                    </div>
+                    <span className={styles.cardLabel}>{feature.label}</span>
+                    <span className={styles.cardDesc}>{feature.desc}</span>
+                    <span className={styles.cardLockBadge} aria-hidden="true">🔒 Login required</span>
+                  </div>
+                </span>
+              )
+            }
+
+            if (!feature.ready) {
+              return (
+                <div key={feature.path} className={styles.cardDisabled}>
+                  <div className={styles.cardIconWrap}>
+                    <span className={styles.cardIcon} aria-hidden="true">{feature.icon}</span>
+                  </div>
+                  <span className={styles.cardLabel}>{feature.label}</span>
+                  <span className={styles.cardDesc}>{feature.desc}</span>
+                  <span className={styles.cardBadge}>Sprint {feature.sprint}</span>
+                </div>
+              )
+            }
+
+            return (
+              <button
+                key={feature.path}
+                className={styles.card}
+                onClick={() => navigate(feature.path)}
+              >
+                <div className={styles.cardIconWrap}>
+                  <span className={styles.cardIcon} aria-hidden="true">{feature.icon}</span>
+                </div>
+                <span className={styles.cardLabel}>{feature.label}</span>
+                <span className={styles.cardDesc}>{feature.desc}</span>
+              </button>
+            )
+          })}
         </div>
       </main>
 
