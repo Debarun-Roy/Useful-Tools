@@ -281,6 +281,7 @@ export default function CalculatorPage() {
   const [activeTab, setActiveTab] = useState('simple')
   const { username, logout } = useAuth()
   const navigate = useNavigate()
+  const isGuest = username === 'Guest User'
 
   async function handleLogout() {
     try { await logoutUser() } catch { /* ignore */ }
@@ -322,19 +323,19 @@ export default function CalculatorPage() {
         <main className={styles.main}>
           <section className={styles.content}>
             {activeTab === 'complex'
-              ? <ComplexCalc />
+              ? <ComplexCalc isGuest={isGuest} />
               : activeTab === 'financial'
-              ? <FinancialCalc />
+              ? <FinancialCalc isGuest={isGuest} />
               : activeTab === 'matrix'
-              ? <MatrixCalc />
+              ? <MatrixCalc isGuest={isGuest} />
               : activeTab === 'stats'
-              ? <StatsCalc />
+              ? <StatsCalc isGuest={isGuest} />
               : activeTab === 'solver'
-              ? <SolverCalc />
+              ? <SolverCalc isGuest={isGuest} />
               : activeTab === 'probability'
-              ? <ProbabilityCalc />
+              ? <ProbabilityCalc isGuest={isGuest} />
               : activeTab === 'polynomial'
-              ? <PolynomialCalc />
+              ? <PolynomialCalc isGuest={isGuest} />
               : activeTab === 'history'
               ? <HistoryTab />
               : (
@@ -344,6 +345,7 @@ export default function CalculatorPage() {
                   buttonGroups={BUTTON_GROUPS[activeTab]}
                   note={NOTES[activeTab] || ''}
                   mode={activeTab}
+                  isGuest={isGuest}
                 />
               )
             }

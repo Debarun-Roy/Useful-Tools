@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { calculatePolynomial } from '../../../api/apiClient'
 
-export default function PolynomialCalc() {
+export default function PolynomialCalc({ isGuest }) {
   const [operation, setOperation] = useState('evaluate')
   const [coefficients, setCoefficients] = useState('')
   const [x, setX] = useState(0)
@@ -31,6 +31,17 @@ export default function PolynomialCalc() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {!isGuest && (
+        <div style={{ 
+          padding: '12px', 
+          backgroundColor: 'var(--clr-bg-secondary)', 
+          borderRadius: '8px', 
+          fontSize: '14px',
+          lineHeight: '1.5'
+        }}>
+          Results from this calculator are automatically saved to calculation history.
+        </div>
+      )}
       <div>
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
           Operation:

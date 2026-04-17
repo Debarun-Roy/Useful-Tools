@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { solveEquation } from '../../../api/apiClient'
 
-export default function SolverCalc() {
+export default function SolverCalc({ isGuest }) {
   const [equation, setEquation] = useState('')
   const [result, setResult] = useState('')
   const [error, setError] = useState('')
@@ -27,6 +27,17 @@ export default function SolverCalc() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {!isGuest && (
+        <div style={{ 
+          padding: '12px', 
+          backgroundColor: 'var(--clr-bg-secondary)', 
+          borderRadius: '8px', 
+          fontSize: '14px',
+          lineHeight: '1.5'
+        }}>
+          Results from this calculator are automatically saved to calculation history.
+        </div>
+      )}
       <div>
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
           Equation (set to 0):

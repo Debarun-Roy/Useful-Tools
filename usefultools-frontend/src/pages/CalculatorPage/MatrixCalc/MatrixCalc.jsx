@@ -74,7 +74,7 @@ function MatrixDisplay({ matrix, size }) {
   )
 }
 
-export default function MatrixCalc() {
+export default function MatrixCalc({ isGuest }) {
   const [size,      setSize]      = useState(2)
   const [operation, setOperation] = useState('determinant')
   const [matA,      setMatA]      = useState(emptyMatrix(2))
@@ -146,6 +146,12 @@ export default function MatrixCalc() {
 
   return (
     <div className={styles.calculator}>
+
+      {!isGuest && (
+        <div className={styles.note}>
+          Results from this calculator are automatically saved to calculation history.
+        </div>
+      )}
 
       {/* ── Controls ─────────────────────────────────────────────── */}
       <div className={styles.controlRow}>

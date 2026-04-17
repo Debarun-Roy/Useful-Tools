@@ -27,7 +27,7 @@ function formatValue(key, value) {
   return String(value)
 }
 
-export default function StatsCalc() {
+export default function StatsCalc({ isGuest }) {
   const [input,   setInput]   = useState('')
   const [result,  setResult]  = useState(null)
   const [error,   setError]   = useState('')
@@ -76,6 +76,12 @@ export default function StatsCalc() {
 
   return (
     <div className={styles.calculator}>
+
+      {!isGuest && (
+        <div className={styles.note}>
+          Results from this calculator are automatically saved to calculation history.
+        </div>
+      )}
 
       {/* ── Input ──────────────────────────────────────────────────── */}
       <div className={styles.inputSection}>

@@ -13,6 +13,7 @@ import styles from './StandardCalc.module.css'
  *                   'boolean'|'combined'
  *                   Passed to validateExpression() so the backend uses the
  *                   correct expression builder for this mode.
+ *   isGuest       — boolean flag: true if user is a guest
  *
  * FIX: Previously validateExpression(expression) was called without a mode.
  * The backend defaulted to standard arithmetic validation, which rejected
@@ -21,7 +22,7 @@ import styles from './StandardCalc.module.css'
  * Now validateExpression(expression, mode) passes the active tab id, and the
  * backend selects the appropriate ExpressionBuilder.
  */
-export default function StandardCalc({ evaluateFn, buttonGroups, note, mode }) {
+export default function StandardCalc({ evaluateFn, buttonGroups, note, mode, isGuest }) {
 
   const [expression, setExpression] = useState('')
   const [result,     setResult]     = useState(null)
@@ -134,6 +135,12 @@ export default function StandardCalc({ evaluateFn, buttonGroups, note, mode }) {
     <div className={styles.calculator}>
 
       {note && <div className={styles.note}>{note}</div>}
+
+      {!isGuest && (
+        <div className={styles.note}>
+          Results from this calculator are automatically saved to calculation history.
+        </div>
+      )}
 
       <div className={styles.displayPanel}>
 

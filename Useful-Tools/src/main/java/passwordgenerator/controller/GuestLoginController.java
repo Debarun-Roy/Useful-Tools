@@ -55,15 +55,14 @@ public class GuestLoginController extends HttpServlet {
 
         try (PrintWriter out = response.getWriter()) {
 
-            // ── 1. Generate unique guest username ──────────────────────────
-            // Format: guest_<UUID> to ensure uniqueness per session
-            String guestId = "guest_" + UUID.randomUUID().toString().replace("-", "");
-            System.out.println("[GuestLoginController] Generated guest ID: " + guestId);
+            // ── 1. Set guest username ──────────────────────────────────────
+            String guestUsername = "Guest User";
+            System.out.println("[GuestLoginController] Guest login initiated");
 
             // ── 2. Create/get session ──────────────────────────────────────
             HttpSession session = request.getSession(true);
             String sessionId = session.getId();
-            session.setAttribute("username", guestId);
+            session.setAttribute("username", guestUsername);
             System.out.println("[GuestLoginController] Created session with ID: " + sessionId);
 
             // ── 3. Manually add JSESSIONID with SameSite=None ────────────────
@@ -89,14 +88,14 @@ public class GuestLoginController extends HttpServlet {
 
             // ── 6. Return success response ────────────────────────────────
             LinkedHashMap<String, Object> data = new LinkedHashMap<>();
-            data.put("username", guestId);
+            data.put("username", guestUsername);
             data.put("csrfToken", csrfToken);
             data.put("isGuest", true);
 
             response.setStatus(HttpServletResponse.SC_OK);
             out.print(gson.toJson(ApiResponse.ok(data)));
 
-            System.out.println("[GuestLoginController] Guest login successful: " + guestId);
+            System.out.println("[GuestLoginController] Guest login successful");
 
         } catch (Exception e) {
             e.printStackTrace();

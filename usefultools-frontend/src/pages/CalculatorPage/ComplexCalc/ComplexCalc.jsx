@@ -69,7 +69,7 @@ const OPERATIONS = [
   },
 ]
 
-export default function ComplexCalc() {
+export default function ComplexCalc({ isGuest }) {
 
   const [real1, setReal1] = useState('')
   const [imag1, setImag1] = useState('')
@@ -145,6 +145,12 @@ export default function ComplexCalc() {
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className={styles.calculator}>
+
+      {!isGuest && (
+        <div className={styles.note}>
+          Results from this calculator are automatically saved to calculation history.
+        </div>
+      )}
 
       {/* ── Input section ─────────────────────────────────────────────── */}
       <div className={styles.inputSection}>
