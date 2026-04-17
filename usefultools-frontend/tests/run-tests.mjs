@@ -34,6 +34,36 @@ await run('normalizeApiBase trims and removes trailing slashes', () => {
   assert.equal(normalizeApiBase('/api///'), '/api')
 })
 
+await run('cross-origin api base is rejected in production-like browser context', () => {
+  globalThis.window = {
+    location: {
+      origin: 'https://usefultools-deba.vercel.app',
+    },
+  }
+
+  assert.equal(
+    resolveApiBase('https://useful-tools-production-2d71.up.railway.app/api'),
+    '/api'
+  )
+
+  delete globalThis.window
+})
+
+await run('local development may still use an absolute backend base', () => {
+  globalThis.window = {
+    location: {
+      origin: 'http://localhost:3000',
+    },
+  }
+
+  assert.equal(
+    resolveApiBase('http://localhost:8080/UsefulTools/api'),
+    'http://localhost:8080/UsefulTools/api'
+  )
+
+  delete globalThis.window
+})
+
 await run('vercel.json keeps api proxy ahead of spa fallback', async () => {
   const raw = await readFile(new URL('../vercel.json', import.meta.url), 'utf8')
   const config = JSON.parse(raw)
