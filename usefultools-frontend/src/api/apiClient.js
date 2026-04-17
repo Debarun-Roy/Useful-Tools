@@ -19,7 +19,9 @@
  *   cookie-based fallback remains for same-origin (local dev) deployments.
  */
 
-const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/UsefulTools/api'
+import { resolveApiBase } from './apiBase'
+
+const BASE = resolveApiBase(import.meta.env.VITE_API_BASE)
 let unauthorizedHandler = null
 let unauthorizedHandled = false
 
