@@ -105,8 +105,7 @@ public class SameSiteFilter implements Filter {
     private static class SameSiteCookieWrapper extends HttpServletResponseWrapper {
         
         private static final String SAMESITE_NONE = "; SameSite=None";
-        private boolean debugLogging = true;
-        private boolean jsessionidHandled = false; // Track if we've already handled JSESSIONID
+        private boolean jsessionidHandled = false;
 
         public SameSiteCookieWrapper(HttpServletResponse response) {
             super(response);
@@ -235,100 +234,7 @@ public class SameSiteFilter implements Filter {
             super.setHeader(name, value);
         }
 
-        /**
-         * Override getHeaders() to filter duplicate JSESSIONID cookies
-         * We'll keep only the one WITH SameSite=None
-         */
-        @Override
-        public java.util.Collection<String> getHeaders(String name) {
-            if (!"Set-Cookie".equalsIgnoreCase(name)) {
-                return super.getHeaders(name);
-            }
-            
-            java.util.Collection<String> originalCookies = super.getHeaders(name);
-            if (originalCookies == null || originalCookies.isEmpty()) {
-                return originalCookies;
-            }
-            
-            // Check if we have duplicate JSESSIONID cookies
-            java.util.List<String> jsessionidCookies = new java.util.ArrayList<>();
-            java.util.List<String> otherCookies = new java.util.ArrayList<>();
-            
-            for (String cookie : originalCookies) {
-                if (cookie.contains("JSESSIONID=")) {
-                    jsessionidCookies.add(cookie);
-                } else {
-                    otherCookies.add(cookie);
-                }
-            }
-            
-            // If we have multiple JSESSIONID cookies, keep only the one with SameSite=None
-            if (jsessionidCookies.size() > 1) {
-                System.out.println("[SameSiteCookieWrapper] ▶ getHeaders('Set-Cookie'): Found " + jsessionidCookies.size() + " JSESSIONID cookies");
-                
-                String jsessionidWithSameSite = null;
-                String jsessionidWithoutSameSite = null;
-                
-                for (String cookie : jsessionidCookies) {
-                    if (cookie.toLowerCase().contains("samesite=none")) {
-                        jsessionidWithSameSite = cookie;
-                        System.out.println("[SameSiteCookieWrapper]   → Cookie WITH SameSite=None: " + cookie.substring(0, Math.min(50, cookie.length())));
-                    } else {
-                        jsessionidWithoutSameSite = cookie;
-                        System.out.println("[SameSiteCookieWrapper]   ⚠ Cookie WITHOUT SameSite: " + cookie.substring(0, Math.min(50, cookie.length())));
-                    }
-                }
-                System.out.flush();
-                
-                // Keep only the one with SameSite=None
-                if (jsessionidWithSameSite != null) {
-                    otherCookies.add(jsessionidWithSameSite);
-                    System.out.println("[SameSiteCookieWrapper]   ✓ Kept JSESSIONID with SameSite=None, removed duplicate");
-                    System.out.flush();
-                } else if (jsessionidWithoutSameSite != null) {
-                    // No SameSite version found, add the one without (not ideal but better than nothing)
-                    otherCookies.add(jsessionidWithoutSameSite);
-                    System.out.println("[SameSiteCookieWrapper]   ⚠ No JSESSIONID with SameSite found, keeping first");
-                    System.out.flush();
-                }
-                
-                return otherCookies;
-            }
-            
-            return originalCookies;
-        }
 
-        /**
-         * Override flushBuffer to ensure we've handled all cookies
-         */
-        @Override
-        public void flushBuffer() throws IOException {
-            System.out.println("[SameSiteCookieWrapper] ▶ flushBuffer()");
-            
-            try {
-                java.util.Collection<String> cookies = super.getHeaders("Set-Cookie");
-                if (cookies != null) {
-                    System.out.println("[SameSiteCookieWrapper]   Total Set-Cookie headers: " + cookies.size());
-                    int jsessionidCount = 0;
-                    for (String cookie : cookies) {
-                        if (cookie.contains("JSESSIONID=")) {
-                            jsessionidCount++;
-                            System.out.println("[SameSiteCookieWrapper]   - JSESSIONID: " + 
-                                (cookie.toLowerCase().contains("samesite") ? "✓ HAS SameSite" : "⚠ NO SameSite"));
-                        }
-                    }
-                    if (jsessionidCount != 1) {
-                        System.out.println("[SameSiteCookieWrapper]   ⚠ WARNING: Expected 1 JSESSIONID but found " + jsessionidCount);
-                    }
-                }
-                System.out.flush();
-            } catch (Exception e) {
-                System.out.println("[SameSiteCookieWrapper]   Error in flushBuffer: " + e.getMessage());
-                System.out.flush();
-            }
-            
-            super.flushBuffer();
-        }
 
         /**
          * Add SameSite=None to Set-Cookie header if missing
