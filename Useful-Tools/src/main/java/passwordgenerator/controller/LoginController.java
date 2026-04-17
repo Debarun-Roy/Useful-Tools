@@ -105,24 +105,24 @@ public class LoginController extends HttpServlet {
             // ── 5. Successful auth — reset lockout counter ─────────────────
             UserDAO.resetFailedAttempts(username);
 
-            // ── 6. CRITICAL FIX: Generate JSESSIONID BEFORE calling getSession ────
-            // Tomcat adds automatic JSESSIONID at connector level (after filter chain).
-            // By setting the cookie first, we ensure Tomcat uses OUR cookie ID in the
-            // response, hopefully preventing a duplicate.
-            String sessionId = UUID.randomUUID().toString().toUpperCase();
+            // ── 6. Create/get session ──────────────────────────────────────
+            // Call getSession(true) FIRST to get Tomcat's session + ID
+            HttpSession session = request.getSession(true);
+            String sessionId = session.getId();
+            session.setAttribute("username", username);
+            System.out.println("[LoginController] Created session with ID: " + sessionId);
+
+            // ── 6b. CRITICAL: Manually add JSESSIONID with SameSite=None ────
+            // Even though Tomcat adds automatic cookie, we add it here too via
+            // response.addCookie() so our wrapper can enhance it with SameSite=None.
+            // The key difference from before: we use Tomcat's session ID, not a
+            // generated one, so addCookie() enhances the one cookie that matters.
             Cookie jsessionidCookie = new Cookie("JSESSIONID", sessionId);
             jsessionidCookie.setPath("/");
             jsessionidCookie.setSecure(true);
             jsessionidCookie.setHttpOnly(true);
             response.addCookie(jsessionidCookie);
-            System.out.println("[LoginController] Pre-added JSESSIONID cookie with ID: " + sessionId);
-
-            // ── 6b. Now create/get session ─────────────────────────────────────────
-            // Now when we call getSession(true), Tomcat will create a session.
-            // Our pre-set cookie should prevent duplicate generation.
-            HttpSession session = request.getSession(true);
-            session.setAttribute("username", username);
-            System.out.println("[LoginController] Created/obtained session: " + session.getId());
+            System.out.println("[LoginController] Re-added JSESSIONID via addCookie() - wrapper will add SameSite=None");
 
             // ── 7. CSRF token ──────────────────────────────────────────────
             String csrfToken = UUID.randomUUID().toString();
