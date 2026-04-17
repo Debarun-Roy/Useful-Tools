@@ -147,12 +147,6 @@ export default function MatrixCalc({ isGuest }) {
   return (
     <div className={styles.calculator}>
 
-      {!isGuest && (
-        <div className={styles.note}>
-          Results from this calculator are automatically saved to calculation history.
-        </div>
-      )}
-
       {/* ── Controls ─────────────────────────────────────────────── */}
       <div className={styles.controlRow}>
 

@@ -77,12 +77,6 @@ export default function StatsCalc({ isGuest }) {
   return (
     <div className={styles.calculator}>
 
-      {!isGuest && (
-        <div className={styles.note}>
-          Results from this calculator are automatically saved to calculation history.
-        </div>
-      )}
-
       {/* ── Input ──────────────────────────────────────────────────── */}
       <div className={styles.inputSection}>
         <label className={styles.inputLabel} htmlFor="stats-input">

@@ -146,12 +146,6 @@ export default function ComplexCalc({ isGuest }) {
   return (
     <div className={styles.calculator}>
 
-      {!isGuest && (
-        <div className={styles.note}>
-          Results from this calculator are automatically saved to calculation history.
-        </div>
-      )}
-
       {/* ── Input section ─────────────────────────────────────────────── */}
       <div className={styles.inputSection}>
 

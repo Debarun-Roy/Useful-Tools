@@ -136,7 +136,7 @@ export default function StandardCalc({ evaluateFn, buttonGroups, note, mode, isG
 
       {note && <div className={styles.note}>{note}</div>}
 
-      {!isGuest && (
+      {!isGuest && mode !== 'simple' && (
         <div className={styles.note}>
           Results from this calculator are automatically saved to calculation history.
         </div>

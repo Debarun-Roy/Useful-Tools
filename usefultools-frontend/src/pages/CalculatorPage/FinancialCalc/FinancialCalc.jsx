@@ -19,22 +19,17 @@ export default function FinancialCalc({ isGuest }) {
 
   function renderCalculator() {
     switch (activeTab) {
-      case 'emi':      return <EMI isGuest={isGuest} />
-      case 'tax':      return <TaxCalculator isGuest={isGuest} />
-      case 'compound': return <CompoundInterest isGuest={isGuest} />
-      case 'salary':   return <SalaryBreakdown isGuest={isGuest} />
+      case 'emi':      return <EMI />
+      case 'tax':      return <TaxCalculator />
+      case 'compound': return <CompoundInterest />
+      case 'salary':   return <SalaryBreakdown />
       case 'history':  return <FinancialHistory />
-      default:         return <EMI isGuest={isGuest} />
+      default:         return <EMI />
     }
   }
 
   return (
     <div className={styles.financialCalcContainer}>
-      {!isGuest && (
-        <div className={styles.note}>
-          Results from this calculator are automatically saved to calculation history.
-        </div>
-      )}
       <PageTabs
         tabs={TABS}
         activeTab={activeTab}
