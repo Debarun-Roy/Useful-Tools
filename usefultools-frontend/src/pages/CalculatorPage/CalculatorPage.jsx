@@ -10,6 +10,7 @@ import {
 import AppHeader from '../../components/AppHeader/AppHeader'
 import ToolHero from '../../components/ToolHero/ToolHero'
 import PageTabs from '../../components/PageTabs/PageTabs'
+import LockedTabContent from '../../components/LockedTabContent/LockedTabContent'
 import StandardCalc from './StandardCalc/StandardCalc'
 import ComplexCalc from './ComplexCalc/ComplexCalc'
 import FinancialCalc from './FinancialCalc/FinancialCalc'
@@ -281,6 +282,11 @@ export default function CalculatorPage() {
   const navigate = useNavigate()
   const isGuest = username === 'Guest User'
 
+  const tabsWithDisabled = TABS.map(tab => ({
+    ...tab,
+    disabled: isGuest && tab.id === 'history'
+  }))
+
   async function handleLogout() {
     try { await logoutUser() } catch { /* ignore */ }
     logout()
@@ -312,7 +318,7 @@ export default function CalculatorPage() {
         />
 
         <PageTabs
-          tabs={TABS}
+          tabs={tabsWithDisabled}
           activeTab={activeTab}
           onChange={setActiveTab}
           ariaLabel="Calculator modes"
@@ -335,7 +341,7 @@ export default function CalculatorPage() {
               : activeTab === 'polynomial'
               ? <PolynomialCalc isGuest={isGuest} />
               : activeTab === 'history'
-              ? <HistoryTab />
+              ? <LockedTabContent isLocked={isGuest}><HistoryTab /></LockedTabContent>
               : (
                 <StandardCalc
                   key={activeTab}

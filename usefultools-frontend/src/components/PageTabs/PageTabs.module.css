@@ -12,7 +12,8 @@
 }
 
 .tab,
-.tabActive {
+.tabActive,
+.tabDisabled {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -43,7 +44,27 @@
   box-shadow: 0 8px 20px rgba(23, 58, 114, 0.2);
 }
 
+.tabDisabled {
+  opacity: 0.5;
+  background-color: #f0f0f0;
+  color: #999;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.tabDisabled:hover {
+  transform: none;
+  background-color: #f0f0f0;
+}
+
 .icon {
   font-family: var(--font-mono);
   font-size: 0.86rem;
+}
+
+.lockBadge {
+  font-size: 12px;
+  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
 }

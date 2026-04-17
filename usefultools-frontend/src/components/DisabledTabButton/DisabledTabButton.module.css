@@ -1,0 +1,37 @@
+.disabledTab {
+  opacity: 0.5;
+  color: #999;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  padding: 8px 16px;
+  border-radius: 4px 4px 0 0;
+  cursor: not-allowed;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.disabledTab:hover {
+  background-color: #f0f0f0;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.disabledTab:active {
+  cursor: not-allowed;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.lockBadge {
+  font-size: 12px;
+  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+}

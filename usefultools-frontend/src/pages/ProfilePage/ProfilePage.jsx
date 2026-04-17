@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate }         from 'react-router-dom'
 import { fetchUserProfile, logoutUser } from '../../api/apiClient'
 import { useAuth }             from '../../auth/useAuth'
+import LockedResourceOverlay from '../../components/LockedResourceOverlay/LockedResourceOverlay'
 import styles                  from './ProfilePage.module.css'
 
 export default function ProfilePage() {
@@ -10,8 +11,14 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState('')
+  const isGuest = username === 'Guest User'
 
   useEffect(() => {
+    if (isGuest) {
+      setLoading(false)
+      return
+    }
+    
     fetchUserProfile()
       .then(({ data }) => {
         if (data.success) setProfile(data.data)
@@ -19,7 +26,7 @@ export default function ProfilePage() {
       })
       .catch(() => setError('Could not reach the server.'))
       .finally(() => setLoading(false))
-  }, [])
+  }, [isGuest])
 
   async function handleLogout() {
     try { await logoutUser() } catch { /* ignore */ }
@@ -88,15 +95,24 @@ export default function ProfilePage() {
       {/* Content */}
       <main className={styles.main}>
 
-        {loading && (
+        {isGuest && (
+          <div style={{ position: 'relative', minHeight: '400px' }}>
+            <div style={{ opacity: 0.5, pointerEvents: 'none', userSelect: 'none' }}>
+              <div className={styles.loading}>Loading your profile…</div>
+            </div>
+            <LockedResourceOverlay />
+          </div>
+        )}
+
+        {!isGuest && loading && (
           <div className={styles.loading}>Loading your profile…</div>
         )}
 
-        {error && (
+        {!isGuest && error && (
           <div className={styles.errorBanner} role="alert">{error}</div>
         )}
 
-        {profile && (
+        {!isGuest && profile && (
           <>
             {/* Identity card */}
             <div className={styles.identityCard}>
