@@ -44,17 +44,27 @@
   box-shadow: 0 8px 20px rgba(23, 58, 114, 0.2);
 }
 
+/* The button itself is visually disabled — pointer-events are intentionally
+   NOT set to none here so the parent .disabledWrapper span can still receive
+   hover and display the browser tooltip via its `title` attribute. */
 .tabDisabled {
-  opacity: 0.5;
-  background-color: #f0f0f0;
-  color: #999;
+  opacity: 0.45;
+  background: var(--clr-input-bg);
+  color: var(--clr-text-muted);
   cursor: not-allowed;
-  pointer-events: none;
+  /* No pointer-events: none — handled by the wrapper span */
 }
 
-.tabDisabled:hover {
-  transform: none;
-  background-color: #f0f0f0;
+/* Wrapper span that carries the tooltip title and disables clicks */
+.disabledWrapper {
+  display: inline-flex;
+  cursor: not-allowed;
+}
+
+/* The inner button must not intercept pointer events so the wrapper's
+   title fires reliably across browsers. */
+.disabledWrapper .tabDisabled {
+  pointer-events: none;
 }
 
 .icon {
