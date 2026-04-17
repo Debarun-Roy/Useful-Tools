@@ -1,0 +1,11 @@
+.lockedContainer {
+  position: relative;
+  width: 100%;
+}
+
+.lockedContent {
+  opacity: 0.5;
+  color: #999;
+  pointer-events: none;
+  user-select: none;
+}

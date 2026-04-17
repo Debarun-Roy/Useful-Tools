@@ -3,6 +3,7 @@ import { useNavigate }     from 'react-router-dom'
 import { updatePassword, logoutUser } from '../../api/apiClient'
 import { useAuth }         from '../../auth/useAuth'
 import AuthLayout          from '../../components/AuthLayout/AuthLayout'
+import LockedResourceOverlay from '../../components/LockedResourceOverlay/LockedResourceOverlay'
 import styles              from './UpdatePasswordPage.module.css'
 
 const ERROR_MESSAGES = {
@@ -22,6 +23,7 @@ export default function UpdatePasswordPage() {
 
   const { username, logout } = useAuth()
   const navigate = useNavigate()
+  const isGuest = username === 'Guest User'
 
   const [newPassword,     setNewPassword]     = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -70,6 +72,47 @@ export default function UpdatePasswordPage() {
       <AuthLayout title="Password updated">
         <div className={styles.success}>
           ✓ Password updated successfully. Redirecting to sign in…
+        </div>
+      </AuthLayout>
+    )
+  }
+
+  if (isGuest) {
+    return (
+      <AuthLayout title="Update password">
+        <div style={{ position: 'relative', minHeight: '300px' }}>
+          <div style={{ opacity: 0.5, pointerEvents: 'none', userSelect: 'none' }}>
+            <form noValidate>
+              <div className={styles.field}>
+                <span className={styles.label}>Account</span>
+                <div className={styles.usernameDisplay}>{username}</div>
+              </div>
+              <div className={styles.field}>
+                <label htmlFor="new-password" className={styles.label}>New password</label>
+                <input
+                  id="new-password"
+                  type="password"
+                  className={styles.input}
+                  placeholder="At least 8 characters"
+                  disabled
+                />
+              </div>
+              <div className={styles.field}>
+                <label htmlFor="confirm-password" className={styles.label}>Confirm new password</label>
+                <input
+                  id="confirm-password"
+                  type="password"
+                  className={styles.input}
+                  placeholder="Re-enter new password"
+                  disabled
+                />
+              </div>
+              <button type="submit" className={styles.button} disabled>
+                Update password
+              </button>
+            </form>
+          </div>
+          <LockedResourceOverlay />
         </div>
       </AuthLayout>
     )

@@ -11,6 +11,7 @@ import {
 } from '../../api/apiClient'
 import styles from './PasswordVaultPage.module.css'
 import { deleteVaultEntry, updateVaultEntry } from '../../api/apiClient'
+import LockedTabContent from '../../components/LockedTabContent/LockedTabContent'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -952,6 +953,10 @@ export default function PasswordVaultPage() {
   const { username, logout } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('generate')
+  const isGuest = username === 'Guest User'
+
+  const restrictedTabs = ['save', 'vault', 'history']
+  const isTabDisabled = (tabId) => isGuest && restrictedTabs.includes(tabId)
 
   async function handleLogout() {
     try { await logoutUser() } catch { /* ignore */ }
@@ -1013,22 +1018,34 @@ export default function PasswordVaultPage() {
 
         {/* ── Tab bar ──────────────────────────────────────────────────── */}
         <nav className={styles.tabBar} aria-label="Vault sections">
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              className={activeTab === tab.id ? styles.tabActive : styles.tab}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <span className={styles.tabIcon} aria-hidden="true">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
+          {TABS.map(tab => {
+            const disabled = isTabDisabled(tab.id)
+            return (
+              <button
+                key={tab.id}
+                className={
+                  disabled
+                    ? styles.tabDisabled
+                    : activeTab === tab.id
+                    ? styles.tabActive
+                    : styles.tab
+                }
+                onClick={() => !disabled && setActiveTab(tab.id)}
+                disabled={disabled}
+                title={disabled ? 'Please login to access this resource' : undefined}
+              >
+                <span className={styles.tabIcon} aria-hidden="true">{tab.icon}</span>
+                {tab.label}
+                {disabled && <span className={styles.lockBadge} aria-hidden="true">🔒</span>}
+              </button>
+            )
+          })}
         </nav>
 
         {activeTab === 'generate' && <GenerateTab username={username} />}
-        {activeTab === 'save'     && <SaveTab     username={username} />}
-        {activeTab === 'vault'    && <VaultTab />}
-        {activeTab === 'history'  && <GeneratedHistoryTab />}
+        {activeTab === 'save'     && <LockedTabContent isLocked={isTabDisabled('save')}><SaveTab username={username} /></LockedTabContent>}
+        {activeTab === 'vault'    && <LockedTabContent isLocked={isTabDisabled('vault')}><VaultTab /></LockedTabContent>}
+        {activeTab === 'history'  && <LockedTabContent isLocked={isTabDisabled('history')}><GeneratedHistoryTab /></LockedTabContent>}
 
       </main>
     </div>
