@@ -44,10 +44,22 @@
   </filter>
 
   <!--
+    GuestRestrictionFilter: server-side enforcement of guest-user restrictions.
+    Rejects requests from "Guest User" sessions to endpoints that require a
+    full registered account (vault operations, profile, password update).
+    Placed AFTER AuthFilter so the session is guaranteed to be valid.
+    Placed BEFORE CsrfFilter so we return a clear 403 instead of a CSRF error.
+  -->
+  <filter>
+    <filter-name>GuestRestrictionFilter</filter-name>
+    <filter-class>common.filter.GuestRestrictionFilter</filter-class>
+  </filter>
+
+  <!--
     CsrfFilter (Sprint 6): double-submit cookie CSRF protection.
     Validates X-XSRF-TOKEN header against the session csrfToken attribute
     for all non-safe, non-public HTTP requests.
-    Placed AFTER AuthFilter so unauthenticated requests are already rejected.
+    Placed AFTER AuthFilter and GuestRestrictionFilter.
   -->
   <filter>
     <filter-name>CsrfFilter</filter-name>
@@ -84,7 +96,14 @@
     <dispatcher>REQUEST</dispatcher>
   </filter-mapping>
 
-  <!-- 4. CSRF runs last on all API endpoints (after Auth rejects unauth). -->
+  <!-- 4. Guest restriction runs fifth — after auth, before CSRF. -->
+  <filter-mapping>
+    <filter-name>GuestRestrictionFilter</filter-name>
+    <url-pattern>/api/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+
+  <!-- 5. CSRF runs last on all API endpoints (after Auth rejects unauth). -->
   <filter-mapping>
     <filter-name>CsrfFilter</filter-name>
     <url-pattern>/api/*</url-pattern>
@@ -95,9 +114,9 @@
     <!-- Session timeout set to 60 minutes of inactivity.
          This ensures sufficient time for legitimate user activities like
          calculations, but prevents indefinitely stale sessions.
-         
+
          IMPORTANT: In cross-origin deployments (Vercel → Railway), the
-         JSESSIONID cookie must have SameSite=None to be sent on 
+         JSESSIONID cookie must have SameSite=None to be sent on
          cross-origin requests. This is now handled by SameSiteFilter
          (which adds "; SameSite=None" to all Set-Cookie headers).
          Tomcat 11 doesn't support the context.xml sameSiteCookies attribute.
@@ -106,10 +125,6 @@
     <cookie-config>
       <http-only>true</http-only>
       <secure>true</secure>
-      <!-- SameSite attribute is set by SameSiteFilter (April 2026 fix),
-           not by context.xml. This ensures JSESSIONID and XSRF-TOKEN
-           both have SameSite=None for cross-origin support.
-      -->
     </cookie-config>
   </session-config>
 

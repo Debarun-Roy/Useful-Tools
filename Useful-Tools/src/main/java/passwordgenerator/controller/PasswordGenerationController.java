@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.gson.Gson;
+
 import common.ApiResponse;
 import common.UnifiedLogger;
 import jakarta.servlet.ServletException;
@@ -22,6 +23,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import passwordgenerator.dao.UserPasswordDAO;
 import passwordgenerator.models.PasswordModel;
+import passwordgenerator.utilities.EntropyUtils;
 import passwordgenerator.utilities.PasswordGeneratorUtils;
 
 /**
@@ -31,6 +33,20 @@ import passwordgenerator.utilities.PasswordGeneratorUtils;
  *   The authenticated username is now read from the HTTP session instead of
  *   trusting a request parameter. This prevents one logged-in user from
  *   writing generated-password history rows into another user's account.
+ *
+ * Sprint 10 addition — entropy and strength in response:
+ *   The response now includes:
+ *     "entropyBits"    — information-theoretic entropy of the generated password
+ *     "strengthLabel"  — human-readable strength ("Weak", "Fair", "Strong", etc.)
+ *   These values are computed by EntropyUtils and based on the actual characters
+ *   present in the password, not just the declared generator settings.
+ *
+ * Guest restriction note:
+ *   The GuestRestrictionFilter rejects "Guest User" before this servlet runs
+ *   for the /api/passwords/save, /api/passwords/fetch etc. endpoints.
+ *   Password *generation* is intentionally left open to guests (it is
+ *   stateless — no data is written for guests because the guest check
+ *   happens in the controller: if username is guest, skip the DB insert).
  */
 @WebServlet("/api/passwords/generate")
 public class PasswordGenerationController extends HttpServlet {
@@ -41,6 +57,9 @@ public class PasswordGenerationController extends HttpServlet {
     private static final Logger logger = new UnifiedLogger().writeLogs("controller");
     private final Gson gson = new Gson();
 
+    /** Username used for guest sessions — must match GuestRestrictionFilter. */
+    private static final String GUEST_USERNAME = "Guest User";
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -50,7 +69,7 @@ public class PasswordGenerationController extends HttpServlet {
 
         try (PrintWriter out = response.getWriter()) {
 
-        	HttpSession session = request.getSession(false);
+            HttpSession session = request.getSession(false);
             String username = (session != null)
                     ? (String) session.getAttribute("username")
                     : null;
@@ -68,7 +87,7 @@ public class PasswordGenerationController extends HttpServlet {
                     || lengthParam == null || lengthParam.isBlank()) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 out.print(gson.toJson(ApiResponse.fail(
-                		"platform and length are required.", "INVALID_PARAMETERS")));
+                        "platform and length are required.", "INVALID_PARAMETERS")));
                 return;
             }
 
@@ -162,14 +181,28 @@ public class PasswordGenerationController extends HttpServlet {
 
             pass.setPassword(password);
             pass.setGeneratedTimestamp(Timestamp.from(Instant.now()));
-            UserPasswordDAO.saveGeneratedPasswordDetails(pass);
-            logger.info("Password generated for user=" + username + " platform=" + platform);
+
+            // Only persist history for authenticated (non-guest) users.
+            // Guests can still generate passwords but the result is not stored.
+            if (!GUEST_USERNAME.equals(username)) {
+                UserPasswordDAO.saveGeneratedPasswordDetails(pass);
+                logger.info("Password generated and saved for user=" + username
+                        + " platform=" + platform);
+            } else {
+                logger.info("Password generated (not saved) for guest, platform=" + platform);
+            }
+
+            // ── Entropy / strength calculation ─────────────────────────────
+            double entropy = EntropyUtils.calculate(password);
+            String strength = EntropyUtils.strengthLabel(entropy);
 
             LinkedHashMap<String, Object> data = new LinkedHashMap<>();
-            data.put("password", password);
-            data.put("length",   password.length());
-            data.put("username", username.trim());
-            data.put("platform", platform.trim());
+            data.put("password",      password);
+            data.put("length",        password.length());
+            data.put("username",      username.trim());
+            data.put("platform",      platform.trim());
+            data.put("entropyBits",   entropy);
+            data.put("strengthLabel", strength);
 
             response.setStatus(HttpServletResponse.SC_OK);
             out.print(gson.toJson(ApiResponse.ok(data)));
