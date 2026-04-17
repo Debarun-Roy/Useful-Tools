@@ -273,9 +273,7 @@ const BUTTON_GROUPS = {
   ],
 }
 
-const NOTES = {
-  intermediate: 'Results from this calculator are automatically saved to calculation history.',
-}
+const NOTES = {}
 
 export default function CalculatorPage() {
   const [activeTab, setActiveTab] = useState('simple')
