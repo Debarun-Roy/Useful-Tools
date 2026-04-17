@@ -1,6 +1,6 @@
 import { useState }            from 'react'
 import { useNavigate, Link }   from 'react-router-dom'
-import { loginUser }           from '../../api/apiClient'
+import { loginUser, loginAsGuest } from '../../api/apiClient'
 import { useAuth }             from '../../auth/useAuth'
 import AuthLayout              from '../../components/AuthLayout/AuthLayout'
 import styles                  from './LoginPage.module.css'
@@ -54,6 +54,28 @@ export default function LoginPage() {
         navigate('/dashboard')
       } else {
         setError(getErrorMessage(data.errorCode, data.error))
+      }
+    } catch {
+      setError('Could not reach the server. Please check that Tomcat is running.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleGuestLogin() {
+    setLoading(true)
+    setError('')
+
+    try {
+      const { data } = await loginAsGuest()
+
+      if (data.success) {
+        // Guest login returns the same format as regular login:
+        // username (guest_<UUID>) and csrfToken
+        login(data.data.username, data.data.csrfToken)
+        navigate('/dashboard')
+      } else {
+        setError(data.error || 'Failed to start guest session.')
       }
     } catch {
       setError('Could not reach the server. Please check that Tomcat is running.')
@@ -120,6 +142,15 @@ export default function LoginPage() {
           disabled={loading}
         >
           {loading ? 'Signing in…' : 'Sign in'}
+        </button>
+
+        <button
+          type="button"
+          className={styles.guestButton}
+          onClick={handleGuestLogin}
+          disabled={loading}
+        >
+          {loading ? 'Starting guest session…' : 'Continue as Guest'}
         </button>
 
       </form>

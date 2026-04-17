@@ -95,6 +95,38 @@
   cursor: not-allowed;
 }
 
+/* ─── Guest login button (secondary) ─────────────────────────────────────── */
+.guestButton {
+  width: 100%;
+  padding: 13px;
+  margin-top: var(--space-sm);
+  background: transparent;
+  color: var(--clr-accent);
+  border: 1.5px solid var(--clr-accent);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: all var(--transition);
+  background-color: rgba(74, 144, 217, 0.08);
+}
+
+.guestButton:hover:not(:disabled) {
+  background-color: rgba(74, 144, 217, 0.15);
+  border-color: var(--clr-primary-light);
+  transform: translateY(-1px);
+}
+
+.guestButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.guestButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 /* ─── Footer link ────────────────────────────────────────────────────────── */
 .footer {
   text-align: center;

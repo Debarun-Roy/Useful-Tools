@@ -147,6 +147,9 @@ async function request(path, { method = 'GET', body, isForm = false, isJson = fa
 export const loginUser = (username, password) =>
   request('/auth/login', { method: 'POST', isForm: true, body: { username, password } })
 
+export const loginAsGuest = () =>
+  request('/auth/login-guest', { method: 'POST' })
+
 export const registerUser = (username, password) =>
   request('/auth/register', { method: 'POST', isForm: true, body: { username, password } })
 
