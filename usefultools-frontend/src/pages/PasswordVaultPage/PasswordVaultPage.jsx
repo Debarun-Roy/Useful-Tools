@@ -19,7 +19,7 @@ import {
   calculateEntropy,
   strengthLabel as entropyStrengthLabel,
   checkDictionaryRisk,
-} from '../../utils/passwordSafety'
+} from '../../utils/PasswordSafety'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
