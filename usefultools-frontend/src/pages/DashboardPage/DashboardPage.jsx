@@ -2,15 +2,20 @@ import { useNavigate } from 'react-router-dom'
 import { logoutUser }  from '../../api/apiClient'
 import { useAuth }     from '../../auth/useAuth'
 import ThemePicker     from '../../components/ThemePicker/ThemePicker'
+import UserMenu        from '../../components/UserMenu/UserMenu'
 import styles          from './DashboardPage.module.css'
 
 /**
  * Features that require a real authenticated account.
  * Guest users (username === 'Guest User') see these greyed out with a lock icon.
  * A tooltip "Please login to access this resource." appears on hover.
+ *
+ * NOTE (Sprint 14):
+ *   The "Profile" and "Update Password" tiles were removed from this grid and
+ *   moved into the UserMenu dropdown in the header. Navigation now mirrors
+ *   the convention of most web apps — account actions live with the identity
+ *   button, and the tile grid stays focused on tools.
  */
-const GUEST_RESTRICTED_PATHS = new Set(['/profile', '/update-password', '/vault'])
-
 const FEATURES = [
   {
     label:  'Calculator',
@@ -78,22 +83,12 @@ const FEATURES = [
     desc:   'CSS gradients, box-shadows, Flexbox, robots.txt, favicons',
   },
   {
-    label:  'Profile',
-    path:   '/profile',
-    sprint: 5,
+    label:  'Image Tools',
+    path:   '/image-tools',
+    sprint: 14,
     ready:  true,
-    icon:   '👤',
-    desc:   'View your activity summary and account details',
-    requiresAuth: true,
-  },
-  {
-    label:  'Update Password',
-    path:   '/update-password',
-    sprint: 1,
-    ready:  true,
-    icon:   '🔑',
-    desc:   'Change your account password securely',
-    requiresAuth: true,
+    icon:   '🖼️',
+    desc:   'Resize, convert PNG/JPG/WebP, compress, crop, rotate, and filter — all client-side',
   },
 ]
 
@@ -118,12 +113,7 @@ export default function DashboardPage() {
         </div>
         <div className={styles.userArea}>
           <ThemePicker />
-          <span className={styles.usernameLabel}>
-            Signed in as <strong style={{ color: 'var(--clr-dark-text)' }}>{username}</strong>
-            {isGuest && (
-              <span className={styles.guestBadge}>Guest</span>
-            )}
-          </span>
+          <UserMenu username={username} isGuest={isGuest} variant="dark" />
           <button className={styles.logoutButton} onClick={handleLogout}>
             Sign out
           </button>

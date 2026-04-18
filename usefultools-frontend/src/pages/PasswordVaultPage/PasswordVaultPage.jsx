@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import {
@@ -7,11 +7,19 @@ import {
   fetchAllPasswords,
   exportVaultEntries,
   fetchGeneratedPasswordHistory,
+  deleteVaultEntry,
+  updateVaultEntry,
   logoutUser,
 } from '../../api/apiClient'
 import styles from './PasswordVaultPage.module.css'
-import { deleteVaultEntry, updateVaultEntry } from '../../api/apiClient'
 import LockedTabContent from '../../components/LockedTabContent/LockedTabContent'
+import UserMenu from '../../components/UserMenu/UserMenu'
+import {
+  analysePassword,
+  calculateEntropy,
+  strengthLabel as entropyStrengthLabel,
+  checkDictionaryRisk,
+} from '../../utils/passwordSafety'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -19,7 +27,7 @@ const TABS = [
   { id: 'generate', label: 'Generate',  icon: '⚡' },
   { id: 'save',     label: 'Save',      icon: '🔒' },
   { id: 'vault',    label: 'My Vault',  icon: '🗄' },
-  { id: 'history',  label: 'Generated History', icon: 'â—·' },
+  { id: 'history',  label: 'Generated History', icon: '◷' },
 ]
 
 const CHAR_TYPES = [
@@ -89,6 +97,60 @@ function CopyButton({ text }) {
   )
 }
 
+/**
+ * EntropyLine — shows bit-entropy and strength label underneath a password.
+ * The server returns entropyBits / strengthLabel in the generate response, but
+ * we also compute it locally so the same line can appear on vault and history
+ * entries where there is no response payload. Both formulas match so the
+ * displayed value agrees regardless of source.
+ */
+function EntropyLine({ password, serverBits, serverLabel }) {
+  const bits  = serverBits  ?? calculateEntropy(password)
+  const label = serverLabel ?? entropyStrengthLabel(bits)
+  const toneCls =
+    bits < 28  ? styles.entropyVeryWeak   :
+    bits < 36  ? styles.entropyWeak       :
+    bits < 60  ? styles.entropyFair       :
+    bits < 128 ? styles.entropyStrong     :
+                 styles.entropyVeryStrong
+  return (
+    <div className={`${styles.entropyLine} ${toneCls}`}>
+      <span className={styles.entropyIcon} aria-hidden="true">📊</span>
+      <span className={styles.entropyText}>
+        Entropy: <strong>{bits.toFixed(2)} bits</strong> · {label}
+      </span>
+    </div>
+  )
+}
+
+/**
+ * DictionaryWarning — banner shown when checkDictionaryRisk flags a password.
+ * The action prop is an optional "Regenerate" button placed inside the banner;
+ * if omitted the banner is advisory-only (used in Generated History where no
+ * platform is bound to the generated password row).
+ */
+function DictionaryWarning({ risk, action }) {
+  if (!risk?.vulnerable) return null
+  const severityCls =
+    risk.severity === 'critical' ? styles.dictCritical :
+    risk.severity === 'high'     ? styles.dictHigh     :
+                                   styles.dictMedium
+  const heading =
+    risk.severity === 'critical' ? 'Dictionary attack — critical risk' :
+    risk.severity === 'high'     ? 'Dictionary attack — high risk'     :
+                                   'Weak password'
+  return (
+    <div className={`${styles.dictWarning} ${severityCls}`} role="alert">
+      <span className={styles.dictIcon} aria-hidden="true">⚠️</span>
+      <div className={styles.dictBody}>
+        <div className={styles.dictHeading}>{heading}</div>
+        <div className={styles.dictMessage}>{risk.message}</div>
+      </div>
+      {action}
+    </div>
+  )
+}
+
 // ─── Generate tab ─────────────────────────────────────────────────────────────
 
 function GenerateTab({ username }) {
@@ -96,7 +158,7 @@ function GenerateTab({ username }) {
   const [length,     setLength]     = useState(16)
   const [mode,       setMode]       = useState('auto')        // 'auto' | 'custom'
   const [counts,     setCounts]     = useState({ Numbers: 4, 'Special Characters': 4, 'Uppercase Alphabets': 4, 'Lowercase Alphabets': 4 })
-  const [result,     setResult]     = useState(null)          // { password, length }
+  const [result,     setResult]     = useState(null)          // { password, length, entropyBits, strengthLabel }
   const [loading,    setLoading]    = useState(false)
   const [saving,     setSaving]     = useState(false)
   const [error,      setError]      = useState('')
@@ -109,8 +171,15 @@ function GenerateTab({ username }) {
 
   const customTotal = Object.values(counts).reduce((s, v) => s + v, 0)
 
+  // Dictionary-risk check on the current result. Memoised so typing in the
+  // platform field doesn't re-trigger the scan — only a new `result` does.
+  const resultRisk = useMemo(
+    () => (result ? checkDictionaryRisk(result.password) : null),
+    [result],
+  )
+
   async function handleGenerate(e) {
-    e.preventDefault()
+    if (e) e.preventDefault()
     if (!platform.trim()) { setError('Platform name is required.'); return }
     if (mode === 'custom' && customTotal < MIN_LEN) {
       setError(`Custom total is ${customTotal} — must be at least ${MIN_LEN}.`); return
@@ -260,6 +329,39 @@ function GenerateTab({ username }) {
           </div>
           <code className={styles.passwordDisplay}>{result.password}</code>
           <StrengthBar password={result.password} />
+
+          {/*
+            Entropy line — uses the values returned by the server when present,
+            and falls back to client-side calc for older server responses.
+            Requirement 1: show entropy as a message below the generated password.
+          */}
+          <EntropyLine
+            password={result.password}
+            serverBits={result.entropyBits}
+            serverLabel={result.strengthLabel}
+          />
+
+          {/*
+            Dictionary-attack check on the freshly generated password.
+            In practice the server-side random generator will rarely (if ever)
+            produce a hit, but we still run the check so the user can trust
+            that every password they see went through the same screening.
+            Action button re-runs handleGenerate() to mint another one.
+          */}
+          <DictionaryWarning
+            risk={resultRisk}
+            action={
+              <button
+                type="button"
+                className={styles.regenBtn}
+                onClick={() => handleGenerate()}
+                disabled={loading}
+              >
+                {loading ? 'Regenerating…' : '↺ Regenerate'}
+              </button>
+            }
+          />
+
           <div className={styles.resultMeta}>
             {result.length} characters · generated just now
           </div>
@@ -295,6 +397,13 @@ function SaveTab({ username }) {
   const [success,   setSuccess]   = useState('')
   const [error,     setError]     = useState('')
 
+  // Live dictionary-risk scan — runs as the user types. Memoised on password
+  // alone so toggling "show" does not retrigger.
+  const passwordAnalysis = useMemo(
+    () => (password ? analysePassword(password) : null),
+    [password],
+  )
+
   async function handleSave(e) {
     e.preventDefault()
     if (!platform.trim()) { setError('Platform name is required.'); return }
@@ -312,6 +421,32 @@ function SaveTab({ username }) {
       }
     } catch {
       setError('Could not reach the server. Please check that Tomcat is running.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /**
+   * Generate-and-fill helper — clicked from the dictionary-warning banner.
+   * Replaces the typed (weak) password with a freshly generated strong one.
+   * Requires a platform so the backend can record the generation for history.
+   */
+  async function handleGenerateStrong() {
+    if (!platform.trim()) {
+      setError('Enter a platform first so the generated password can be logged correctly.')
+      return
+    }
+    setLoading(true); setError(''); setSuccess('')
+    try {
+      const { data } = await generatePassword(username, platform.trim(), 16, 'auto')
+      if (data.success) {
+        setPassword(data.data.password)
+        setShow(true) // reveal so the user can see what was put in
+      } else {
+        setError(data.error || 'Generation failed.')
+      }
+    } catch {
+      setError('Could not reach the server.')
     } finally {
       setLoading(false)
     }
@@ -362,6 +497,32 @@ function SaveTab({ username }) {
             </button>
           </div>
           {password && <StrengthBar password={password} />}
+
+          {/*
+            Requirement 2 (Save side): show entropy + dictionary warning while
+            the user is typing. Save is still allowed — legitimate use cases
+            include storing an existing weak password the user cannot yet
+            change — but the warning + Generate-strong button make the
+            healthier option one click away.
+          */}
+          {password && passwordAnalysis && (
+            <>
+              <EntropyLine password={password} />
+              <DictionaryWarning
+                risk={passwordAnalysis.risk}
+                action={
+                  <button
+                    type="button"
+                    className={styles.regenBtn}
+                    onClick={handleGenerateStrong}
+                    disabled={loading}
+                  >
+                    {loading ? 'Generating…' : '⚡ Replace with strong'}
+                  </button>
+                }
+              />
+            </>
+          )}
         </div>
 
         {error   && <div className={styles.errorBanner}   role="alert">{error}</div>}
@@ -378,124 +539,11 @@ function SaveTab({ username }) {
 }
 
 // ─── Vault tab ────────────────────────────────────────────────────────────────
-
-// function VaultTab() {
-//   const [entries,   setEntries]   = useState(null)   // null = not loaded yet
-//   const [loading,   setLoading]   = useState(false)
-//   const [error,     setError]     = useState('')
-//   const [search,    setSearch]    = useState('')
-//   const [revealed,  setRevealed]  = useState({})     // { platform: bool }
-
-//   const loadVault = useCallback(async () => {
-//     setLoading(true); setError('')
-//     try {
-//       const { data } = await fetchAllPasswords()
-//       if (data.success) {
-//         // Convert indexed map to array for easier rendering
-//         setEntries(Object.values(data.data))
-//       } else {
-//         setError(data.error || 'Could not load the vault.')
-//       }
-//     } catch {
-//       setError('Could not reach the server. Please check that Tomcat is running.')
-//     } finally {
-//       setLoading(false)
-//     }
-//   }, [])
-
-//   function toggleReveal(platform) {
-//     setRevealed(r => ({ ...r, [platform]: !r[platform] }))
-//   }
-
-//   const filtered = (entries || []).filter(e =>
-//     e.platform.toLowerCase().includes(search.toLowerCase())
-//   )
-
-//   return (
-//     <div className={styles.panel}>
-//       <div className={styles.inputCard}>
-//         <div className={styles.vaultHeader}>
-//           <div>
-//             <h2 className={styles.cardTitle}>My Vault</h2>
-//             <p className={styles.cardHint}>
-//               All your stored passwords, decrypted on demand.
-//             </p>
-//           </div>
-//           <button
-//             type="button"
-//             className={styles.refreshBtn}
-//             onClick={loadVault}
-//             disabled={loading}
-//           >
-//             {loading ? <><Pulse /><span>Loading…</span></> : entries === null ? '🔓 Open Vault' : '↺ Refresh'}
-//           </button>
-//         </div>
-
-//         {error && <div className={styles.errorBanner} role="alert">{error}</div>}
-
-//         {entries !== null && (
-//           <>
-//             {/* Search */}
-//             <div className={styles.searchWrap}>
-//               <span className={styles.searchIcon}>🔍</span>
-//               <input
-//                 className={styles.searchInput}
-//                 type="text"
-//                 placeholder="Search platforms…"
-//                 value={search}
-//                 onChange={e => setSearch(e.target.value)}
-//               />
-//             </div>
-
-//             {/* Entry list */}
-//             {filtered.length === 0 ? (
-//               <p className={styles.emptyVault}>
-//                 {entries.length === 0
-//                   ? 'No passwords stored yet. Use the Generate or Save tab to add some.'
-//                   : `No platforms matching "${search}".`}
-//               </p>
-//             ) : (
-//               <ul className={styles.entryList}>
-//                 {filtered.map(entry => {
-//                   const isRevealed = !!revealed[entry.platform]
-//                   return (
-//                     <li key={entry.platform} className={styles.entryRow}>
-//                       <div className={styles.entryPlatform}>
-//                         <span className={styles.entryIcon} aria-hidden="true">🌐</span>
-//                         <span className={styles.entryPlatformName}>{entry.platform}</span>
-//                       </div>
-//                       <div className={styles.entryPasswordWrap}>
-//                         <code className={styles.entryPassword}>
-//                           {isRevealed
-//                             ? entry.decrypted_password
-//                             : '••••••••••••'}
-//                         </code>
-//                         <button
-//                           type="button"
-//                           className={styles.revealBtn}
-//                           onClick={() => toggleReveal(entry.platform)}
-//                         >
-//                           {isRevealed ? '🙈 Hide' : '👁 Reveal'}
-//                         </button>
-//                         {isRevealed && (
-//                           <CopyButton text={entry.decrypted_password} />
-//                         )}
-//                       </div>
-//                     </li>
-//                   )
-//                 })}
-//               </ul>
-//             )}
-
-//             <div className={styles.vaultFooter}>
-//               {filtered.length} of {entries.length} entries
-//             </div>
-//           </>
-//         )}
-//       </div>
-//     </div>
-//   )
-// }
+/*
+ * Note: an earlier stub of VaultTab lived here as commented-out code.
+ * It was removed in the Sprint 14 pass; this implementation is the
+ * authoritative version.
+ */
 
 function VaultTab() {
   const [entries,   setEntries]   = useState(null)
@@ -509,6 +557,7 @@ function VaultTab() {
   const [actionMsg, setActionMsg] = useState({}) // { [platform]: { text, isError } }
   const [exporting, setExporting] = useState(false)
   const [exportMsg, setExportMsg] = useState(null)
+  const [regenBusy, setRegenBusy] = useState({}) // { [platform]: bool }
 
   const loadVault = useCallback(async () => {
     setLoading(true); setError('')
@@ -576,6 +625,11 @@ function VaultTab() {
     try {
       const { data } = await updateVaultEntry(platform, newPass)
       if (data.success) {
+        // Reflect the new password in the local state so the row re-renders
+        // with fresh entropy / dictionary-risk analysis immediately.
+        setEntries(prev => prev.map(e =>
+          e.platform === platform ? { ...e, decrypted_password: newPass } : e
+        ))
         setActionMsg(m => ({ ...m, [platform]: { text: '✓ Password updated.', isError: false } }))
         setRowAction(r => ({ ...r, [platform]: null }))
         setEditPass(p => ({ ...p, [platform]: '' }))
@@ -584,6 +638,43 @@ function VaultTab() {
       }
     } catch {
       setActionMsg(m => ({ ...m, [platform]: { text: 'Could not reach the server.', isError: true } }))
+    }
+  }
+
+  /**
+   * Regenerate — called from the dictionary-attack warning banner on a vault
+   * row. Generates a new strong password for the given platform, pre-fills
+   * the edit field with it, and opens the edit UI so the user can review and
+   * click "Save" to commit. This keeps the audit flow identical to a manual
+   * edit: no password is silently persisted.
+   */
+  async function handleRegenerate(platform) {
+    setRegenBusy(b => ({ ...b, [platform]: true }))
+    setActionMsg(m => ({ ...m, [platform]: null }))
+    try {
+      const { data } = await generatePassword(null, platform, 16, 'auto')
+      if (data.success) {
+        setEditPass(p => ({ ...p, [platform]: data.data.password }))
+        setRowAction(r => ({ ...r, [platform]: 'editing' }))
+        setRevealed(r => ({ ...r, [platform]: true }))
+        setActionMsg(m => ({
+          ...m,
+          [platform]: {
+            text: 'Strong password generated — review and click Save to commit.',
+            isError: false,
+          },
+        }))
+      } else {
+        setActionMsg(m => ({
+          ...m, [platform]: { text: data.error || 'Generation failed.', isError: true },
+        }))
+      }
+    } catch {
+      setActionMsg(m => ({
+        ...m, [platform]: { text: 'Could not reach the server.', isError: true },
+      }))
+    } finally {
+      setRegenBusy(b => ({ ...b, [platform]: false }))
     }
   }
 
@@ -627,6 +718,12 @@ function VaultTab() {
     e.platform.toLowerCase().includes(search.toLowerCase())
   )
 
+  // Aggregate count of compromised entries, for the summary banner at the top.
+  const compromisedCount = useMemo(() => {
+    if (!entries) return 0
+    return entries.filter(e => checkDictionaryRisk(e.decrypted_password).vulnerable).length
+  }, [entries])
+
   return (
     <div className={styles.panel}>
       <div className={styles.inputCard}>
@@ -644,15 +741,15 @@ function VaultTab() {
             >
               {exporting ? 'Exporting...' : 'Export Encrypted JSON'}
             </button>
-          <button
-            type="button"
-            className={styles.refreshBtn}
-            onClick={loadVault}
-            disabled={loading}
-          >
-            {loading ? <><Pulse /><span>Loading…</span></> : entries === null ? '🔓 Open Vault' : '↺ Refresh'}
-          </button>
-        </div>
+            <button
+              type="button"
+              className={styles.refreshBtn}
+              onClick={loadVault}
+              disabled={loading}
+            >
+              {loading ? <><Pulse /><span>Loading…</span></> : entries === null ? '🔓 Open Vault' : '↺ Refresh'}
+            </button>
+          </div>
         </div>
 
         {error && <div className={styles.errorBanner} role="alert">{error}</div>}
@@ -663,6 +760,21 @@ function VaultTab() {
             role={exportMsg.isError ? 'alert' : 'status'}
           >
             {exportMsg.text}
+          </div>
+        )}
+
+        {/*
+          Summary banner: counts vault entries that failed the dictionary check.
+          Only shown when at least one is compromised so it doesn't nag on
+          healthy vaults.
+        */}
+        {entries !== null && compromisedCount > 0 && (
+          <div className={styles.vaultAuditBanner} role="status">
+            <span aria-hidden="true">🛡️</span>
+            <span>
+              <strong>{compromisedCount}</strong> of your stored password{compromisedCount === 1 ? '' : 's'}
+              {' '}would fall quickly to a dictionary attack. Review the flagged entries below.
+            </span>
           </div>
         )}
 
@@ -692,6 +804,8 @@ function VaultTab() {
                   const isRevealed   = !!revealed[platform]
                   const action       = rowAction[platform] || null
                   const msg          = actionMsg[platform] || null
+                  // Dictionary-risk check per row — lightweight enough to run on render.
+                  const risk         = checkDictionaryRisk(decrypted_password)
 
                   return (
                     <li key={platform} className={styles.entryRow}
@@ -703,6 +817,16 @@ function VaultTab() {
                         <div className={styles.entryPlatform}>
                           <span className={styles.entryIcon} aria-hidden="true">🌐</span>
                           <span className={styles.entryPlatformName}>{platform}</span>
+                          {/* Inline warning sign next to platform name — always visible */}
+                          {risk.vulnerable && (
+                            <span
+                              className={styles.entryRiskPill}
+                              title={risk.message}
+                              aria-label={risk.message}
+                            >
+                              ⚠️ {risk.severity === 'critical' ? 'Compromised' : 'Weak'}
+                            </span>
+                          )}
                         </div>
 
                         <div className={styles.entryPasswordWrap}>
@@ -729,14 +853,39 @@ function VaultTab() {
                         </div>
                       </div>
 
+                      {/* Entropy line — only when the password is revealed. */}
+                      {isRevealed && (
+                        <EntropyLine password={decrypted_password} />
+                      )}
+
+                      {/*
+                        Dictionary-attack warning for this entry. The action is
+                        an "immediate regenerate" button — exactly what the
+                        spec asks for. handleRegenerate opens the edit UI with
+                        the new password pre-filled so the user still confirms.
+                      */}
+                      <DictionaryWarning
+                        risk={risk}
+                        action={
+                          <button
+                            type="button"
+                            className={styles.regenBtn}
+                            onClick={() => handleRegenerate(platform)}
+                            disabled={!!regenBusy[platform]}
+                          >
+                            {regenBusy[platform] ? 'Generating…' : '⚡ Regenerate password'}
+                          </button>
+                        }
+                      />
+
                       {/* Inline edit form */}
                       {action === 'editing' && (
                         <div style={{ display: 'flex', gap: 8, marginTop: 8,
                                       alignItems: 'center', flexWrap: 'wrap' }}>
                           <input
-                            type="password"
+                            type="text"
                             className={styles.textInput}
-                            style={{ flex: 1, minWidth: 180 }}
+                            style={{ flex: 1, minWidth: 180, fontFamily: 'var(--font-mono)' }}
                             placeholder="Enter new password"
                             value={editPass[platform] || ''}
                             onChange={e => setEditPass(p => ({ ...p, [platform]: e.target.value }))}
@@ -790,7 +939,7 @@ function VaultTab() {
   )
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
+// ─── Generated-history tab ────────────────────────────────────────────────────
 
 function GeneratedHistoryTab() {
   const [entries, setEntries] = useState([])
@@ -878,6 +1027,8 @@ function GeneratedHistoryTab() {
                   + (entry.specialCharacterCount || 0)
                   + (entry.lowercaseCount || 0)
                   + (entry.uppercaseCount || 0)
+                // Dictionary-risk assessment for the stored generated password.
+                const risk = checkDictionaryRisk(entry.password)
 
                 return (
                   <div key={entry.id} className={styles.historyCard}>
@@ -885,6 +1036,16 @@ function GeneratedHistoryTab() {
                       <div>
                         <div className={styles.historyCardTitle}>
                           Generated password #{entry.id}
+                          {risk.vulnerable && (
+                            <span
+                              className={styles.entryRiskPill}
+                              style={{ marginLeft: 8 }}
+                              title={risk.message}
+                              aria-label={risk.message}
+                            >
+                              ⚠️ {risk.severity === 'critical' ? 'Compromised' : 'Weak'}
+                            </span>
+                          )}
                         </div>
                         <div className={styles.historyTimestamp}>
                           {formatTimestamp(entry.generatedAt)}
@@ -910,6 +1071,19 @@ function GeneratedHistoryTab() {
                       <span className={styles.historyBadge}>Upper {entry.uppercaseCount}</span>
                       <span className={styles.historyBadge}>Lower {entry.lowercaseCount}</span>
                     </div>
+
+                    {/* Entropy line — only when password is revealed. */}
+                    {isRevealed && <EntropyLine password={entry.password} />}
+
+                    {/*
+                      Dictionary-attack warning for a history entry. No action
+                      button is attached — history rows are not tied to a
+                      platform, so there is no per-row "regenerate this vault
+                      entry" operation. The warning is advisory and steers the
+                      user toward not using that password if they were planning
+                      to.
+                    */}
+                    {risk.vulnerable && <DictionaryWarning risk={risk} />}
 
                     {isRevealed && (
                       <div className={styles.historyActions}>
@@ -949,6 +1123,8 @@ function GeneratedHistoryTab() {
   )
 }
 
+// ─── Main page ────────────────────────────────────────────────────────────────
+
 export default function PasswordVaultPage() {
   const { username, logout } = useAuth()
   const navigate = useNavigate()
@@ -979,7 +1155,7 @@ export default function PasswordVaultPage() {
           </button>
         </div>
         <div className={styles.headerRight}>
-          <span className={styles.userBadge}>{username}</span>
+          <UserMenu username={username} isGuest={isGuest} variant="light" />
           <button className={styles.logoutBtn} onClick={handleLogout}>Sign out</button>
         </div>
       </header>

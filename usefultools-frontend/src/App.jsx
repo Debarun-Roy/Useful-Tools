@@ -15,6 +15,7 @@ import TextUtilitiesPage      from './pages/TextUtilitiesPage/TextUtilitiesPage'
 import EncodingDecodingPage   from './pages/EncodingDecodingPage/EncodingDecodingPage'
 import CodeUtilitiesPage      from './pages/CodeUtilitiesPage/CodeUtilitiesPage'
 import WebDevHelpersPage      from './pages/WebDevHelpersPage/WebDevHelpersPage'
+import ImageToolsPage         from './pages/ImageToolsPage/ImageToolsPage'
 import FeedbackModal          from './components/FeedbackModal/FeedbackModal'
 
 export default function App() {
@@ -61,6 +62,9 @@ export default function App() {
             } />
             <Route path="/web-dev" element={
               <ProtectedRoute><WebDevHelpersPage /></ProtectedRoute>
+            } />
+            <Route path="/image-tools" element={
+              <ProtectedRoute><ImageToolsPage /></ProtectedRoute>
             } />
 
             {/* ── Fallback ──────────────────────────────────────────────── */}

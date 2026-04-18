@@ -1,0 +1,207 @@
+/*
+ * UserMenu.module.css
+ *
+ * Shared styles for the avatar-letter identity button used on every page's
+ * header. Two visual variants:
+ *   .light — for headers with light surface background (tool pages).
+ *   .dark  — for headers with dark background (Dashboard, Calculator).
+ *
+ * The variants differ only in colour tokens; layout, spacing, and motion
+ * are identical so the component keeps a single visual grammar across
+ * the app.
+ */
+
+.container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ─── Shared button shell ──────────────────────────────────────────────── */
+/*
+ * Both the clickable <button> (non-guest) and the static <div> (guest) pick
+ * up the same pill shape so they occupy identical visual space. The static
+ * version uses cursor:default and no hover — it reads as a badge.
+ */
+.button,
+.buttonDisplay {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 12px 5px 5px;
+  border-radius: 999px;
+  font-family: var(--font);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1;
+  transition: background 140ms, border-color 140ms, color 140ms, transform 120ms;
+  white-space: nowrap;
+}
+
+.button {
+  cursor: pointer;
+}
+
+.buttonDisplay {
+  cursor: default;
+  user-select: none;
+}
+
+/* ─── Avatar circle ────────────────────────────────────────────────────── */
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--clr-primary), var(--clr-accent-bright));
+  color: #fff;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(74, 144, 217, 0.3);
+}
+
+.name {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chevron {
+  display: inline-block;
+  font-size: 0.75rem;
+  opacity: 0.7;
+  transition: transform 160ms ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+/* ─── Guest badge pill ─────────────────────────────────────────────────── */
+.guestBadge {
+  margin-left: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ─── Light variant (tool pages) ───────────────────────────────────────── */
+.light .button,
+.light .buttonDisplay {
+  background: var(--clr-bg);
+  border: 1px solid var(--clr-border);
+  color: var(--clr-text);
+}
+
+.light .button:hover,
+.light .button[aria-expanded='true'] {
+  background: var(--clr-surface);
+  border-color: var(--clr-accent);
+}
+
+.light .guestBadge {
+  background: rgba(74, 144, 217, 0.12);
+  border: 1px solid rgba(74, 144, 217, 0.28);
+  color: var(--clr-primary);
+}
+
+/* ─── Dark variant (Dashboard / Calculator header) ─────────────────────── */
+.dark .button,
+.dark .buttonDisplay {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--clr-dark-text);
+}
+
+.dark .button:hover,
+.dark .button[aria-expanded='true'] {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(74, 144, 217, 0.5);
+}
+
+.dark .guestBadge {
+  background: rgba(74, 144, 217, 0.18);
+  border: 1px solid rgba(74, 144, 217, 0.38);
+  color: var(--clr-accent-bright);
+}
+
+/* ─── Dropdown panel ───────────────────────────────────────────────────── */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  padding: 6px;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 14px;
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.18),
+    0 2px 6px rgba(0, 0, 0, 0.08);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: dropdownIn 140ms ease both;
+}
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+/* ─── Dropdown menu items ──────────────────────────────────────────────── */
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--clr-text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+
+.menuItem:hover,
+.menuItem:focus-visible {
+  background: var(--clr-bg);
+  color: var(--clr-primary);
+  outline: none;
+}
+
+.menuIcon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+}
+
+.menuLabel {
+  flex: 1;
+}
+
+/* ─── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 520px) {
+  .name {
+    max-width: 120px;
+  }
+  .dropdown {
+    right: -4px;
+    min-width: 200px;
+  }
+}
