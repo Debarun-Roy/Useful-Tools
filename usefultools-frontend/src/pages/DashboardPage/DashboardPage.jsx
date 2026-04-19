@@ -5,7 +5,7 @@ import { useAuth }     from '../../auth/useAuth'
 import ThemePicker     from '../../components/ThemePicker/ThemePicker'
 import UserMenu        from '../../components/UserMenu/UserMenu'
 import RecentActivity  from '../../components/RecentActivity/RecentActivity'
-import useFavorites    from '../../hooks/useFavorites'
+import useFavorites    from '../../hooks/useFavorites.js'
 import styles          from './DashboardPage.module.css'
 
 /**
