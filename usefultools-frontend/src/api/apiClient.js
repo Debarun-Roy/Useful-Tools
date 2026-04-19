@@ -17,6 +17,10 @@
  *   AuthContext calls fetchCsrfToken() (GET /api/auth/csrf-token) to
  *   retrieve the token from the still-valid server session.  The original
  *   cookie-based fallback remains for same-origin (local dev) deployments.
+ *
+ * Sprint 15 additions — 7 new exports at the bottom of this file:
+ *   logActivity / fetchActivityList / clearActivity  → unified activity log
+ *   fetchFavorites / toggleFavorite / removeFavorite / reorderFavorites
  */
 
 import { resolveApiBase } from './apiBase'
@@ -363,3 +367,108 @@ export const calculatePolynomial = (operation, coefficients, x = null) =>
 
 export const submitFeedback = (feedbackData) =>
   request('/feedback/submit', { method: 'POST', isJson: true, body: feedbackData })
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── Sprint 15 — Activity log & Favorites ──────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// These seven exports are the new Sprint 15 endpoints. They wrap the backend
+// controllers delivered in Batch 1 (ActivityLogController, ActivityListController,
+// ActivityClearController, FavoritesListController, FavoritesToggleController,
+// FavoritesReorderController).
+//
+// The activity-log endpoints are used by the logActivity.js utility (debounced
+// fire-and-forget) from inside each client-side tool; the favorites endpoints
+// are used by the useFavorites hook on the Dashboard.
+
+// ── Activity log ──────────────────────────────────────────────────────────────
+
+/**
+ * Post a single activity entry. Fire-and-forget from the caller's perspective
+ * — the promise is returned for debugging only and should not be awaited by
+ * business logic.
+ *
+ * @param {string} summary    One-line human-readable summary (≤200 chars).
+ * @param {string} toolName   A value from ActivityDAO.VALID_TOOL_NAMES.
+ * @param {object} [payload]  Optional JSON-serialisable blob. MUST NOT
+ *                            contain any content-derived data (see
+ *                            logActivity.js header for the full rules).
+ */
+export const logActivity = (summary, toolName, payload) =>
+  request('/activity/log', {
+    method: 'POST',
+    isJson: true,
+    body: { toolName, summary, payload },
+  })
+
+/**
+ * Fetch recent activity entries for the current user.
+ *
+ * @param {object} [opts]
+ * @param {string} [opts.tool]    Optional tool_name filter.
+ * @param {number} [opts.limit]   Page size (default 10, server clamps to ≤100).
+ * @param {number} [opts.offset]  Row offset for pagination.
+ */
+export const fetchActivityList = ({ tool, limit = 10, offset = 0 } = {}) => {
+  const params = new URLSearchParams()
+  if (tool) params.append('tool', tool)
+  params.append('limit',  String(limit))
+  params.append('offset', String(offset))
+  return request(`/activity/list?${params.toString()}`)
+}
+
+/**
+ * Clear the current user's activity log, optionally restricted to a single tool.
+ *
+ * @param {string} [tool]  Optional tool_name to restrict the delete.
+ */
+export const clearActivity = (tool) => {
+  const suffix = tool ? `?tool=${encodeURIComponent(tool)}` : ''
+  return request(`/activity/clear${suffix}`, { method: 'DELETE' })
+}
+
+// ── Favorites ─────────────────────────────────────────────────────────────────
+
+/**
+ * Fetch the current user's favorite tools in display order.
+ * Response: { favorites: [{ id, toolPath, displayOrder, createdAt }...], max: 20 }
+ */
+export const fetchFavorites = () =>
+  request('/favorites/list')
+
+/**
+ * Add a tool path to the current user's favorites.
+ * Server returns 409 FAVORITES_FULL if at cap.
+ *
+ * @param {string} toolPath  A value from FavoritesDAO.VALID_TOOL_PATHS
+ *                           ('/calculator', '/dev-utils', ...).
+ */
+export const toggleFavorite = (toolPath) =>
+  request('/favorites/toggle', {
+    method: 'POST',
+    isJson: true,
+    body: { toolPath },
+  })
+
+/**
+ * Remove a tool path from the current user's favorites.
+ * Mirror of toggleFavorite; kept separate so callers can be explicit about
+ * intent (add-if-absent vs always-remove).
+ */
+export const removeFavorite = (toolPath) =>
+  request(`/favorites/toggle?toolPath=${encodeURIComponent(toolPath)}`, {
+    method: 'DELETE',
+  })
+
+/**
+ * Replace the display order of the user's favorites with the given list.
+ *
+ * @param {string[]} orderedPaths  Full list of favorited tool paths in the
+ *                                 desired new order.
+ */
+export const reorderFavorites = (orderedPaths) =>
+  request('/favorites/reorder', {
+    method: 'PUT',
+    isJson: true,
+    body: { orderedPaths },
+  })
