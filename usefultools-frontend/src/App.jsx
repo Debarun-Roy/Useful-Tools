@@ -16,6 +16,7 @@ import EncodingDecodingPage   from './pages/EncodingDecodingPage/EncodingDecodin
 import CodeUtilitiesPage      from './pages/CodeUtilitiesPage/CodeUtilitiesPage'
 import WebDevHelpersPage      from './pages/WebDevHelpersPage/WebDevHelpersPage'
 import ImageToolsPage         from './pages/ImageToolsPage/ImageToolsPage'
+import DevUtilsPage           from './pages/DevUtilsPage/DevUtilsPage'
 import FeedbackModal          from './components/FeedbackModal/FeedbackModal'
 
 export default function App() {
@@ -65,6 +66,17 @@ export default function App() {
             } />
             <Route path="/image-tools" element={
               <ProtectedRoute><ImageToolsPage /></ProtectedRoute>
+            } />
+            {/*
+              Sprint 15 addition: DevUtilsPage hosts two new tools
+              (Hash Identifier + API Key Generator) behind one route.
+              Both tools run entirely client-side; no new backend
+              endpoint is needed for their core functionality. The only
+              server-side interaction is the activity log (fire-and-forget
+              POST /api/activity/log via logActivity.js).
+            */}
+            <Route path="/dev-utils" element={
+              <ProtectedRoute><DevUtilsPage /></ProtectedRoute>
             } />
 
             {/* ── Fallback ──────────────────────────────────────────────── */}
