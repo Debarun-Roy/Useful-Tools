@@ -3,11 +3,23 @@
  * Dark sticky header + light feature grid below.
  *
  * Sprint 14 header refresh:
- *   The inline "Signed in as <name> [Guest]" text was replaced with a
+ *   The inline "Signed in as <n> [Guest]" text was replaced with a
  *   <UserMenu> component (avatar + name + dropdown) and the Profile /
  *   Update Password tiles were removed from the grid. The header now carries
  *   ThemePicker · UserMenu · Sign-out, separated by the wider gap defined
  *   on .userArea to avoid visual congestion.
+ *
+ * Sprint 15 additions:
+ *   • Favorites section above the main grid, with a tinted background
+ *     and an entrance animation.
+ *   • Star-toggle button overlaid on each ready card (top-right).
+ *   • Reorder-arrow controls overlaid on favorite cards (top-left,
+ *     vertically stacked).
+ *   • Drag-and-drop feedback classes (.cardDragging, .cardDragOver).
+ *   • The feature card changed from a <button> to a <div role="button">
+ *     to allow nested interactive children. The .card rules now include
+ *     font/colour inheritance, tabIndex focus-ring, and explicit outline-
+ *     offset for the focus ring.
  */
 
 /* ─── Page shell ─────────────────────────────────────────────────────────── */
@@ -198,12 +210,15 @@
 }
 
 .sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: var(--fs-sm);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--clr-text-muted);
-  margin-bottom: var(--space-md);
+  margin: 0 0 var(--space-md);
 }
 
 /* ─── Feature grid ───────────────────────────────────────────────────────── */
@@ -214,6 +229,12 @@
 }
 
 /* ─── Feature card (available) ───────────────────────────────────────────── */
+/*
+ * NOTE (Sprint 15): the card is now a <div role="button"> instead of a
+ * <button> so it can contain interactive children (star toggle, reorder
+ * arrows). The font / colour / outline declarations are the baseline that
+ * a <button> used to get for free.
+ */
 .card {
   display: flex;
   flex-direction: column;
@@ -228,6 +249,11 @@
   cursor: pointer;
   transition: transform var(--transition), box-shadow var(--transition),
               border-color var(--transition);
+  font: inherit;
+  color: inherit;
+  outline-offset: 2px;
+  width: 100%;
+  height: 100%;
 }
 
 .card:hover {
@@ -237,6 +263,11 @@
 }
 
 .card:active { transform: translateY(-1px); }
+
+.card:focus-visible {
+  outline: 2px solid var(--clr-accent);
+  outline-offset: 2px;
+}
 
 /* ─── Feature card (disabled — coming soon) ──────────────────────────────── */
 .cardDisabled {
@@ -340,4 +371,204 @@
   padding: 3px 9px;
   border-radius: 999px;
   letter-spacing: 0.03em;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════ */
+/* ── Sprint 15 — Favorites + reorder affordances ────────────────────────── */
+/* ═════════════════════════════════════════════════════════════════════════ */
+
+/*
+ * .cardWrap — a relative-positioned wrapper around every ready card so the
+ * star toggle and reorder arrows can be absolutely positioned on top. We
+ * give it the same display characteristics as a grid cell so nothing shifts
+ * when moving a card between Favorites and the main grid.
+ */
+.cardWrap {
+  position: relative;
+  display: flex;
+}
+
+/* Shift the card icon right on draggable cards to avoid colliding with the
+   top-left reorder arrows. */
+.cardWrap[draggable="true"] .cardIconWrap {
+  margin-left: 30px;
+}
+
+.cardDragging {
+  opacity: 0.45;
+  transform: scale(0.98);
+}
+
+.cardDragOver .card {
+  border-color: var(--clr-primary);
+  box-shadow: 0 0 0 2px rgba(59, 111, 212, 0.35);
+}
+
+/* ── Star toggle (overlaid on top-right of the card) ─────────────────────── */
+.starButton,
+.starButtonActive {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--clr-border);
+  background: var(--clr-surface);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 120ms, color 120ms, border-color 120ms, transform 120ms;
+  padding: 0;
+}
+.starButton {
+  color: var(--clr-text-muted);
+}
+.starButton:hover {
+  color: #d89614;
+  border-color: #d89614;
+  transform: scale(1.08);
+}
+.starButtonActive {
+  color: #fff;
+  background: #d89614;
+  border-color: #d89614;
+  box-shadow: 0 2px 8px rgba(216, 150, 20, 0.35);
+}
+.starButtonActive:hover {
+  transform: scale(1.08);
+}
+
+/* ── Reorder arrows (overlaid on top-left of favorite cards) ─────────────── */
+.reorderControls {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reorderBtn {
+  width: 24px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  border: 1px solid var(--clr-border);
+  background: var(--clr-surface);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+.reorderBtn:hover:not(:disabled) {
+  background: var(--clr-primary);
+  color: #fff;
+  border-color: var(--clr-primary);
+}
+.reorderBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ── Favorites section (tinted background, entrance animation) ──────────── */
+.favoritesSection {
+  margin-bottom: var(--space-xl);
+  padding: var(--space-lg);
+  background: linear-gradient(180deg,
+              rgba(216, 150, 20, 0.05),
+              rgba(216, 150, 20, 0.00));
+  border: 1px solid rgba(216, 150, 20, 0.15);
+  border-radius: var(--radius-lg);
+  animation: favoritesIn 260ms ease both;
+}
+
+@keyframes favoritesIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.sectionIcon {
+  font-size: 0.95rem;
+  color: #d89614;
+  line-height: 1;
+}
+
+.favoriteCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  margin-left: 4px;
+  background: rgba(216, 150, 20, 0.12);
+  border: 1px solid rgba(216, 150, 20, 0.3);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #d89614;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.favoriteHint {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--clr-text-muted);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ── Error banner (used in favorites section for toggle/reorder failures) ─ */
+.errorBanner {
+  padding: 8px var(--space-md);
+  margin-bottom: var(--space-md);
+  background: var(--clr-error-bg);
+  border: 1px solid var(--clr-error-border);
+  border-left: 3px solid var(--clr-error);
+  border-radius: var(--radius-md);
+  color: var(--clr-error);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+
+/* ── Mobile tightening for Sprint 15 overlays ────────────────────────────── */
+@media (max-width: 540px) {
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .cardWrap[draggable="true"] .cardIconWrap {
+    margin-left: 0;
+  }
+  .reorderControls {
+    top: 6px;
+    left: 6px;
+  }
+  .starButton,
+  .starButtonActive {
+    top: 6px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+  }
 }
