@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
 import UserMenu from '../../components/UserMenu/UserMenu'
+import { logActivity } from '../../utils/logActivity'
 import styles from './ImageToolsPage.module.css'
 
 /*
@@ -22,6 +23,29 @@ import styles from './ImageToolsPage.module.css'
  *   filters    Grayscale / sepia / invert / brightness / contrast.
  *   info       Human-readable metadata (dimensions, size, MIME type).
  *   dataurl    Base64 data-URL export.
+ *
+ * ── Activity logging (Sprint 15, privacy-critical) ────────────────────────
+ * The six TRANSFORMATION tools (resize, convert, compress, crop, rotate,
+ * filters) call logActivity('image.process', …) on successful completion.
+ * InfoTool and DataUrlTool are intentionally NOT logged:
+ *   • InfoTool is a passive inspection — no transformation occurs.
+ *   • DataUrlTool runs locally too, but logging "encoded file X to
+ *     base64" could indirectly signal file content size or type via the
+ *     payload, and there is no transformation result to surface on the
+ *     Dashboard timeline. So we leave it silent.
+ *
+ * The CENTRAL rule for every call below is:
+ *
+ *     ✅  Log: operation name · output dimensions · format · quality ·
+ *             filter intensities · rotation / flip flags
+ *     ❌  NEVER log: filename · file bytes · data URL · base64 · source
+ *             dimensions · crop x/y coordinates · any thumbnail / preview
+ *
+ * Crop coordinates (x, y) are excluded because they reveal which region
+ * of the original image the user chose to keep — that is a form of
+ * content-derived leakage even though the numbers alone look innocuous.
+ * The output width and height are logged because they describe the result
+ * the user produced, not the input content.
  */
 
 const TABS = [
@@ -42,6 +66,18 @@ function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`
+}
+
+/**
+ * Maps a MIME type to the short label used in activity-log summaries.
+ * Kept here alongside the other shared helpers because every transformation
+ * tool uses it in its logActivity() call.
+ */
+function formatLabel(mime) {
+  if (mime === 'image/png')  return 'PNG'
+  if (mime === 'image/jpeg') return 'JPEG'
+  if (mime === 'image/webp') return 'WebP'
+  return mime || 'image'
 }
 
 /**
@@ -228,6 +264,22 @@ function ResizeTool() {
       const blob = await canvasToBlob(canvas, format, format === 'image/png' ? undefined : quality)
       const ext = format === 'image/png' ? 'png' : format === 'image/jpeg' ? 'jpg' : 'webp'
       triggerDownload(blob, `${baseName(source.file.name)}-${w}x${h}.${ext}`)
+
+      // ── Activity log ─────────────────────────────────────────────────────
+      // Target dimensions + format (+ quality for lossy codecs). NEVER the
+      // source filename and NEVER the image bytes.
+      const qualityStr = format === 'image/png' ? '' : ` ${Math.round(quality * 100)}%`
+      logActivity(
+        'image.process',
+        `Resized image to ${w}×${h} · ${formatLabel(format)}${qualityStr}`,
+        {
+          operation: 'resize',
+          width:   w,
+          height:  h,
+          format,
+          quality: format === 'image/png' ? null : quality,
+        }
+      )
     } catch (err) {
       setError(err.message || 'Resize failed.')
     } finally {
@@ -334,6 +386,22 @@ function ConvertTool() {
       const blob = await canvasToBlob(canvas, target, target === 'image/png' ? undefined : quality)
       const ext = target === 'image/png' ? 'png' : target === 'image/jpeg' ? 'jpg' : 'webp'
       triggerDownload(blob, `${baseName(source.file.name)}.${ext}`)
+
+      // ── Activity log ─────────────────────────────────────────────────────
+      // Target format + quality. The background colour is INTENTIONALLY not
+      // logged — it doesn't affect interpretation of the summary, and while
+      // it isn't strictly private it's a UI detail that doesn't belong on
+      // the Dashboard timeline.
+      const qualityStr = target === 'image/png' ? '' : ` ${Math.round(quality * 100)}%`
+      logActivity(
+        'image.process',
+        `Converted image to ${formatLabel(target)}${qualityStr}`,
+        {
+          operation: 'convert',
+          target,
+          quality: target === 'image/png' ? null : quality,
+        }
+      )
     } catch (err) {
       setError(err.message || 'Conversion failed.')
     } finally {
@@ -443,6 +511,26 @@ function CompressTool() {
         usedQuality = bestQ
       }
       setResult({ blob, size: blob.size, quality: usedQuality })
+
+      // ── Activity log ─────────────────────────────────────────────────────
+      // Compression mode + target parameters + the quality actually used.
+      // The resulting file size is a meaningful outcome metric and does not
+      // reveal image content — it describes compression effectiveness only.
+      const modeLabel = mode === 'quality'
+        ? `quality ${Math.round(usedQuality * 100)}%`
+        : `target ${targetKB} KB (quality ${Math.round(usedQuality * 100)}%)`
+      logActivity(
+        'image.process',
+        `Compressed image to ${formatLabel(format)} · ${modeLabel} · ${formatBytes(blob.size)}`,
+        {
+          operation:  'compress',
+          format,
+          mode,
+          quality:    usedQuality,
+          targetKB:   mode === 'target-size' ? targetKB : null,
+          outputSize: blob.size,
+        }
+      )
     } catch (err) {
       setError(err.message || 'Compression failed.')
     } finally {
@@ -468,46 +556,46 @@ function CompressTool() {
           <div className={styles.preview}>
             <img src={source.objectUrl} alt="preview" />
             <div className={styles.previewMeta}>
-              <span>Original size: <strong>{formatBytes(source.file.size)}</strong></span>
-              <span>Dimensions: <strong>{source.img.naturalWidth} × {source.img.naturalHeight}</strong></span>
+              <span>Original: <strong>{formatBytes(source.file.size)}</strong></span>
+              <span>Type: <strong>{source.file.type || 'unknown'}</strong></span>
             </div>
           </div>
           <div className={styles.fieldGrid}>
             <div className={styles.field}>
-              <label className={styles.fieldLabel}>Output format</label>
+              <label className={styles.fieldLabel}>Format</label>
               <select className={styles.textInput} value={format} onChange={e => setFormat(e.target.value)}>
                 <option value="image/jpeg">JPEG</option>
-                <option value="image/webp">WebP (usually smaller)</option>
+                <option value="image/webp">WebP</option>
               </select>
             </div>
             <div className={styles.field}>
               <label className={styles.fieldLabel}>Mode</label>
               <select className={styles.textInput} value={mode} onChange={e => setMode(e.target.value)}>
-                <option value="quality">Quality slider</option>
+                <option value="quality">Quality target</option>
                 <option value="target-size">Target file size</option>
               </select>
             </div>
+            {mode === 'quality' ? (
+              <div className={styles.field}>
+                <label className={styles.fieldLabel}>Quality ({Math.round(quality * 100)}%)</label>
+                <input
+                  type="range" min={0.05} max={1} step={0.05}
+                  value={quality}
+                  onChange={e => setQuality(Number(e.target.value))}
+                />
+              </div>
+            ) : (
+              <div className={styles.field}>
+                <label className={styles.fieldLabel}>Target size (KB)</label>
+                <input
+                  className={styles.textInput}
+                  type="number" min={1} max={10240}
+                  value={targetKB}
+                  onChange={e => setTargetKB(Number(e.target.value) || 1)}
+                />
+              </div>
+            )}
           </div>
-          {mode === 'quality' ? (
-            <div className={styles.field}>
-              <label className={styles.fieldLabel}>Quality ({Math.round(quality * 100)}%)</label>
-              <input
-                type="range" min={0.1} max={1} step={0.02}
-                value={quality}
-                onChange={e => setQuality(Number(e.target.value))}
-              />
-            </div>
-          ) : (
-            <div className={styles.field}>
-              <label className={styles.fieldLabel}>Target size (KB)</label>
-              <input
-                type="number" min={5} max={10000}
-                className={styles.textInput}
-                value={targetKB}
-                onChange={e => setTargetKB(Number(e.target.value) || 200)}
-              />
-            </div>
-          )}
           {error && <div className={styles.errorBanner} role="alert">{error}</div>}
           <div className={styles.actionRow}>
             <button className={styles.primaryBtn} onClick={handleCompress} disabled={working}>
@@ -563,6 +651,22 @@ function CropTool() {
       const blob = await canvasToBlob(canvas, format, 0.95)
       const ext = format === 'image/png' ? 'png' : format === 'image/jpeg' ? 'jpg' : 'webp'
       triggerDownload(blob, `${baseName(source.file.name)}-cropped.${ext}`)
+
+      // ── Activity log ─────────────────────────────────────────────────────
+      // ONLY the output dimensions + format. We DELIBERATELY exclude the
+      // crop x/y coordinates: they reveal which region of the original
+      // image the user chose to keep, which is a form of content-derived
+      // information even though the numbers alone look innocuous.
+      logActivity(
+        'image.process',
+        `Cropped image to ${w}×${h} · ${formatLabel(format)}`,
+        {
+          operation: 'crop',
+          width:  w,
+          height: h,
+          format,
+        }
+      )
     } catch (err) {
       setError(err.message || 'Crop failed.')
     } finally {
@@ -700,6 +804,28 @@ function RotateTool() {
       const blob = await canvasToBlob(canvas, format, 0.95)
       const ext = format === 'image/png' ? 'png' : format === 'image/jpeg' ? 'jpg' : 'webp'
       triggerDownload(blob, `${baseName(source.file.name)}-transformed.${ext}`)
+
+      // ── Activity log ─────────────────────────────────────────────────────
+      // The three transformation flags describe what happened in fully
+      // content-independent terms. The human-readable summary enumerates
+      // which ones were applied (or "no change" if the user exported an
+      // unmodified copy — a rare but valid flow).
+      const ops = []
+      if (rotation !== 0) ops.push(`${rotation}°`)
+      if (flipH) ops.push('flipped H')
+      if (flipV) ops.push('flipped V')
+      const opsLabel = ops.length > 0 ? ops.join(' + ') : 'no change'
+      logActivity(
+        'image.process',
+        `Rotated/flipped image · ${opsLabel} · ${formatLabel(format)}`,
+        {
+          operation: 'rotate',
+          rotation,
+          flipH,
+          flipV,
+          format,
+        }
+      )
     } catch (err) {
       setError(err.message || 'Rotation failed.')
     } finally {
@@ -806,6 +932,36 @@ function FiltersTool() {
       const blob = await canvasToBlob(canvas, format, 0.95)
       const ext = format === 'image/png' ? 'png' : format === 'image/jpeg' ? 'jpg' : 'webp'
       triggerDownload(blob, `${baseName(source.file.name)}-filtered.${ext}`)
+
+      // ── Activity log ─────────────────────────────────────────────────────
+      // Filter intensities are user-chosen parameters, not derived from
+      // image content, so they're safe to record. The summary lists only
+      // the non-default ones for readability; the payload is complete so
+      // the same transformation could be reconstructed from it.
+      const applied = []
+      if (grayscale > 0)      applied.push(`grayscale ${grayscale}%`)
+      if (sepia > 0)          applied.push(`sepia ${sepia}%`)
+      if (invert > 0)         applied.push(`invert ${invert}%`)
+      if (brightness !== 100) applied.push(`brightness ${brightness}%`)
+      if (contrast !== 100)   applied.push(`contrast ${contrast}%`)
+      if (saturation !== 100) applied.push(`saturation ${saturation}%`)
+      if (blur > 0)           applied.push(`blur ${blur}px`)
+      const appliedLabel = applied.length > 0 ? applied.join(', ') : 'no filters'
+      logActivity(
+        'image.process',
+        `Applied filters to image · ${appliedLabel} · ${formatLabel(format)}`,
+        {
+          operation: 'filters',
+          format,
+          grayscale,
+          sepia,
+          invert,
+          brightness,
+          contrast,
+          saturation,
+          blur,
+        }
+      )
     } catch (err) {
       setError(err.message || 'Filter export failed.')
     } finally {
@@ -895,6 +1051,9 @@ function InfoTool() {
       ]
     : []
 
+  // NOTE: No logActivity() here. Inspecting metadata is a passive read and
+  // there's no "result" to surface on the Dashboard timeline.
+
   return (
     <div className={styles.toolPanel}>
       <FilePicker onFile={handleFile} />
@@ -953,6 +1112,10 @@ function DataUrlTool() {
       setError('Clipboard access was denied.')
     }
   }
+
+  // NOTE: No logActivity() here. Data-URL export is closer to file I/O than
+  // to a transformation — and logging "file encoded to base64" would tie an
+  // activity entry to a specific file the user chose to export. Left silent.
 
   return (
     <div className={styles.toolPanel}>
