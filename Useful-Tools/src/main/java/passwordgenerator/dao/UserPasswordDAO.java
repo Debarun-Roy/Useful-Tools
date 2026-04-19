@@ -76,6 +76,26 @@ public class UserPasswordDAO {
             + "generated_timestamp TEXT NOT NULL"
             + ");";
 
+    private static final String CREATE_PASSWORD_TABLE_SQL =
+            "CREATE TABLE IF NOT EXISTS password_table ("
+            + "username TEXT NOT NULL, "
+            + "platform TEXT NOT NULL, "
+            + "encrypted_password TEXT, "
+            + "hashed_password TEXT, "
+            + "created_date TEXT, "
+            + "PRIMARY KEY (username, platform)"
+            + ");";
+    
+    private static final String CREATE_ENCRYPTION_TABLE_SQL =
+            "CREATE TABLE IF NOT EXISTS encryption_table ("
+            + "username TEXT NOT NULL, "
+            + "platform TEXT NOT NULL, "
+            + "encrypted_password TEXT, "
+            + "private_key TEXT, "
+            + "created_date TEXT, "
+            + "PRIMARY KEY (username, platform)"
+            + ");";
+
     /**
      * Sprint 9 introduced per-user generator history with the schema:
      *   id, username, password, ..., generated_timestamp
@@ -124,6 +144,59 @@ public class UserPasswordDAO {
             }
         }
     }
+
+    private static void ensurePasswordTableSchema(Connection conn) throws SQLException {
+        Set<String> columns = new HashSet<>();
+
+        try (Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery("PRAGMA table_info(password_table)")) {
+            while (rs.next()) {
+                columns.add(rs.getString("name").toLowerCase());
+            }
+        }
+
+        if (columns.isEmpty()) {
+            try (Statement st = conn.createStatement()) {
+                st.executeUpdate(CREATE_PASSWORD_TABLE_SQL);
+            }
+            logger.info("Created password_table using Sprint 9 schema");
+            return;
+        }
+
+        try (Statement st = conn.createStatement()) {
+            if (columns.contains("password_id") && !columns.contains("id")) {
+                st.executeUpdate("ALTER TABLE password_table RENAME COLUMN password_id TO id;");
+                logger.info("Migrated password_table column password_id -> id");
+            }
+            if (columns.contains("generate_date") && !columns.contains("generated_timestamp")) {
+                st.executeUpdate("ALTER TABLE password_table RENAME COLUMN generate_date TO generated_timestamp;");
+                logger.info("Migrated password_table column generate_date -> generated_timestamp");
+            }
+            if (!columns.contains("username")) {
+                st.executeUpdate("ALTER TABLE password_table "
+                        + "ADD COLUMN username TEXT NOT NULL DEFAULT '';");
+                logger.info("Added username column to password_table for per-user history");
+            }
+        }
+    }
+
+    private static void ensureEncryptionTableSchema(Connection conn) throws SQLException {
+        Set<String> columns = new HashSet<>();
+
+        try (Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery("PRAGMA table_info(encryption_table)")) {
+            while (rs.next()) {
+                columns.add(rs.getString("name").toLowerCase());
+            }
+        }
+
+        if (columns.isEmpty()) {
+            try (Statement st = conn.createStatement()) {
+                st.executeUpdate(CREATE_ENCRYPTION_TABLE_SQL);
+            }
+            logger.info("Created encryption_table using Sprint 9 schema");
+        }
+    }
     
     public static void saveGeneratedPasswordDetails(PasswordModel pass) {
         Connection conn = null;
@@ -160,6 +233,7 @@ public class UserPasswordDAO {
         try {
             conn = DatabaseUtils.getSQLite3Connection();
             logger.info("SQLite3 connection successful");
+            ensurePasswordTableSchema(conn);
             String sql = "INSERT INTO password_table "
                     + "(username, platform, encrypted_password, hashed_password, created_date) "
                     + "VALUES (?, ?, ?, ?, ?) "
@@ -273,6 +347,7 @@ public class UserPasswordDAO {
         try {
             conn = DatabaseUtils.getSQLite3Connection();
             logger.info("SQLite3 connection successful");
+            ensureEncryptionTableSchema(conn);
             String sql = "INSERT INTO encryption_table "
                     + "(username, platform, encrypted_password, private_key, created_date) "
                     + "VALUES (?, ?, ?, ?, ?) "
