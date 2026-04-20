@@ -94,8 +94,14 @@ function getCsrfToken() {
 // UNAUTHORIZED HANDLER
 // ─────────────────────────────────────────────────────────────
 
-export function registerUnauthorizedHandler(handler) {
+export function setUnauthorizedHandler(handler) {
   unauthorizedHandler = handler
+  unauthorizedHandled = false
+}
+
+export function registerUnauthorizedHandler(handler) {
+  setUnauthorizedHandler(handler)
+
   return () => {
     if (unauthorizedHandler === handler) {
       unauthorizedHandler = null
