@@ -318,6 +318,174 @@ export const calculatePolynomial =
     })
 
 
+    // ─────────────────────────────────────────────────────────────
+// FINANCIAL CALCULATORS
+// ─────────────────────────────────────────────────────────────
+
+export const calculateEMI = (principal, annualRate, tenure, tenureUnit = 'years') =>
+  request('/calculator/emi', {
+    method: 'POST',
+    isJson: true,
+    body: { principal, annualRate, tenure, tenureUnit },
+  })
+
+export const calculateTax = (income, regime = 'new', deductions = 0) =>
+  request('/calculator/tax', {
+    method: 'POST',
+    isJson: true,
+    body: { income, regime, deductions },
+  })
+
+export const calculateCompoundInterest = (principal, rate, time, frequency = 'annually') =>
+  request('/calculator/compound-interest', {
+    method: 'POST',
+    isJson: true,
+    body: { principal, rate, time, frequency },
+  })
+
+export const calculateSalaryBreakdown = (
+  basicSalary,
+  hra = 0,
+  da = 0,
+  allowances = 0,
+  pfContribution = 0,
+  professionalTax = 0,
+  otherDeductions = 0
+) =>
+  request('/calculator/salary-breakdown', {
+    method: 'POST',
+    isJson: true,
+    body: {
+      basicSalary,
+      hra,
+      da,
+      allowances,
+      pfContribution,
+      professionalTax,
+      otherDeductions,
+    },
+  })
+
+
+// ─────────────────────────────────────────────────────────────
+// EXPRESSION VALIDATION
+// ─────────────────────────────────────────────────────────────
+
+export const validateExpression = (expr, mode = 'simple') =>
+  request(
+    `/calculator/validate?expr=${encodeURIComponent(expr)}&mode=${encodeURIComponent(mode)}`
+  )
+
+
+// ─────────────────────────────────────────────────────────────
+// NUMBER ANALYZER
+// ─────────────────────────────────────────────────────────────
+
+export const classifyNumber = (number) =>
+  request('/analyzer/classify', {
+    method: 'POST',
+    isForm: true,
+    body: { number },
+  })
+
+export const fetchBaseRepresentation = (number, choice) =>
+  request('/analyzer/base-representation', {
+    method: 'POST',
+    isForm: true,
+    body: { number, choice },
+  })
+
+export const fetchAllSeries = (terms) =>
+  request('/analyzer/series/all', {
+    method: 'POST',
+    isJson: true,
+    body: { terms },
+  })
+
+export const fetchSelectedSeries = (terms, choiceMap) =>
+  request('/analyzer/series/selected', {
+    method: 'POST',
+    isJson: true,
+    body: { terms, choiceMap },
+  })
+
+export const performBaseArithmetic = (number1, number2, base, operation) =>
+  request('/analyzer/base-arithmetic', {
+    method: 'POST',
+    isJson: true,
+    body: { number1, number2, base, operation },
+  })
+
+
+// ─────────────────────────────────────────────────────────────
+// PASSWORD VAULT
+// ─────────────────────────────────────────────────────────────
+
+export const generatePassword = (_username, platform, length, customize = 'auto', customFields = {}) => {
+  const params = new URLSearchParams()
+
+  params.append('platform', platform)
+  params.append('length', String(length))
+  params.append('customize_password', customize)
+
+  if (customize === 'custom') {
+    Object.keys(customFields).forEach(key => {
+      params.append('customization_checkboxes', key)
+      params.append(key, String(customFields[key]))
+    })
+  }
+
+  return request('/passwords/generate', {
+    method: 'POST',
+    isForm: true,
+    body: params,
+  })
+}
+
+export const savePassword = (_username, platform, password) =>
+  request('/passwords/save', {
+    method: 'POST',
+    isForm: true,
+    body: { platform, password },
+  })
+
+export const fetchAllPasswords = () =>
+  request('/passwords/fetch?choice=All+Passwords')
+
+export const fetchPlatformPassword = (platform) =>
+  request(`/passwords/fetch?choice=Single&platform=${encodeURIComponent(platform)}`)
+
+export const exportVaultEntries = () =>
+  request('/passwords/export')
+
+export const fetchGeneratedPasswordHistory = (page = 0, size = 12) =>
+  request(`/passwords/generated-history?page=${page}&size=${size}`)
+
+export const deleteVaultEntry = (platform) =>
+  request(`/passwords/delete?platform=${encodeURIComponent(platform)}`, {
+    method: 'DELETE',
+  })
+
+export const updateVaultEntry = (platform, password) =>
+  request('/passwords/update', {
+    method: 'PUT',
+    isJson: true,
+    body: { platform, password },
+  })
+
+
+// ─────────────────────────────────────────────────────────────
+// HISTORY ENDPOINTS
+// ─────────────────────────────────────────────────────────────
+
+export const fetchCalculationHistory = (page = 0, size = 20) =>
+  request(`/calculator/history?page=${page}&size=${size}`)
+
+export const fetchFinancialHistory = (type, page = 0, size = 10) =>
+  request(
+    `/calculator/financial-history?type=${encodeURIComponent(type)}&page=${page}&size=${size}`
+  )
+
 // ─────────────────────────────────────────────────────────────
 // ACTIVITY LOG
 // ─────────────────────────────────────────────────────────────
@@ -440,4 +608,3 @@ export const submitFeedback =
       isJson: true,
       body: feedbackData
     })
-    
