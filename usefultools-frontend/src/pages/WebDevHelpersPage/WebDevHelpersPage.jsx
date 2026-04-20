@@ -1,15 +1,19 @@
 import { useState } from 'react'
+import { fetchRequestHeaders } from '../../api/apiClient'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
 import styles from './WebDevHelpersPage.module.css'
 
 const TABS = [
-  { id: 'gradient', label: 'CSS Gradient', icon: '∇' },
-  { id: 'shadow',   label: 'Box Shadow',   icon: '☁' },
-  { id: 'flexbox',  label: 'Flexbox',      icon: '⊞' },
-  { id: 'robots',   label: 'Robots.txt',   icon: '🤖' },
-  { id: 'favicon',  label: 'Favicon',      icon: '⭐' },
+  { id: 'gradient', label: 'CSS Gradient',  icon: '∇' },
+  { id: 'shadow',   label: 'Box Shadow',    icon: '☁' },
+  { id: 'flexbox',  label: 'Flexbox',       icon: '⊞' },
+  { id: 'robots',   label: 'Robots.txt',    icon: '🤖' },
+  { id: 'favicon',  label: 'Favicon',       icon: '⭐' },
+  { id: 'headers',  label: 'HTTP Headers',  icon: '📋' },
+  { id: 'rest',     label: 'REST Tester',   icon: '⚡' },
 ]
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -565,6 +569,12 @@ export default function WebDevHelpersPage() {
       case 'favicon': {
         return <FaviconTool />
       }
+      case 'headers': {
+        return <HttpHeadersTool />
+      }
+      case 'rest': {
+        return <RestTesterTool />
+      }
       default: {
         return <GradientTool />
       }
@@ -601,12 +611,13 @@ export default function WebDevHelpersPage() {
           </h1>
           <p className={styles.heroSub}>
             Essential web development tools: CSS gradient generator, box-shadow builder,
-            Flexbox playground, robots.txt creator, and favicon generator.
+            Flexbox playground, robots.txt creator, favicon generator, HTTP header viewer, 
+            and REST API tester — all in one place to supercharge your workflow.
           </p>
         </div>
         <div className={styles.heroStats}>
           <div className={styles.statCard}>
-            <span className={styles.statValue}>5</span>
+            <span className={styles.statValue}>{TABS.length}</span>
             <span className={styles.statLabel}>helpers</span>
           </div>
           <div className={styles.statCard}>
@@ -639,6 +650,419 @@ export default function WebDevHelpersPage() {
           {renderTab()}
         </div>
       </main>
+    </div>
+  )
+}
+
+// ─── HTTP Headers Tool ────────────────────────────────────────────────────────
+ 
+function HttpHeadersTool() {
+  const [data,     setData]     = React.useState(null)
+  const [loading,  setLoading]  = React.useState(true)
+  const [error,    setError]    = React.useState(null)
+  const [copied,   setCopied]   = React.useState(null)
+ 
+  async function load() {
+    setLoading(true)
+    setError(null)
+    try {
+      const { data: res } = await fetchRequestHeaders()
+      if (res?.success) setData(res.data)
+      else setError(res?.message || 'Failed to fetch headers')
+    } catch {
+      setError('Network error — make sure you are logged in')
+    } finally {
+      setLoading(false)
+    }
+  }
+ 
+  React.useEffect(() => { load() }, [])
+ 
+  async function copyValue(value) {
+    await navigator.clipboard.writeText(value)
+    setCopied(value)
+    setTimeout(() => setCopied(null), 1400)
+  }
+ 
+  const headerCount = data?.headers ? Object.keys(data.headers).length : 0
+ 
+  return (
+    <div className={styles.tabPanel}>
+      <div className={styles.headerToolBar}>
+        <div>
+          <p className={styles.toolDescription}>
+            These are the exact HTTP request headers your browser sent to the
+            server for this page request. Cookie and authorization headers are
+            redacted.
+          </p>
+        </div>
+        <button className={styles.refreshBtn} onClick={load} disabled={loading}>
+          {loading ? '…' : '↻ Refresh'}
+        </button>
+      </div>
+ 
+      {loading && (
+        <div className={styles.loadingCard}>Fetching headers from server…</div>
+      )}
+ 
+      {error && !loading && (
+        <div className={styles.errorCard}>{error}</div>
+      )}
+ 
+      {data && !loading && (
+        <>
+          {/* Meta row */}
+          <div className={styles.headerMetaRow}>
+            <span className={styles.metaBadge}>{data.protocol}</span>
+            <span className={styles.metaBadge}>{data.method}</span>
+            <span className={styles.metaBadge}>
+              {headerCount} header{headerCount !== 1 ? 's' : ''}
+            </span>
+            {data.remoteAddr && (
+              <span className={styles.metaBadge}>from {data.remoteAddr}</span>
+            )}
+          </div>
+ 
+          {/* Headers table */}
+          <div className={styles.headersTableWrap}>
+            <table className={styles.headersTable}>
+              <thead>
+                <tr>
+                  <th>Header</th>
+                  <th>Value</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(data.headers).map(([name, value]) => (
+                  <tr key={name} className={styles.headerRow}>
+                    <td className={styles.headerNameCell}>{name}</td>
+                    <td className={styles.headerValueCell}>{value}</td>
+                    <td>
+                      <button
+                        className={styles.copyBtnSm}
+                        onClick={() => copyValue(value)}
+                      >
+                        {copied === value ? '✓' : 'Copy'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+ 
+          {/* Redacted notice */}
+          <p className={styles.redactedNote}>
+            🔒 <strong>Cookie</strong> and <strong>X-XSRF-TOKEN</strong> headers
+            are redacted server-side to protect your session credentials.
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+ 
+ 
+// ─── REST Tester Tool ─────────────────────────────────────────────────────────
+ 
+const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
+const NO_BODY_METHODS = ['GET', 'HEAD', 'OPTIONS']
+ 
+function RestTesterTool() {
+  const [url,         setUrl]         = React.useState('')
+  const [method,      setMethod]      = React.useState('GET')
+  const [reqHeaders,  setReqHeaders]  = React.useState([{ key: '', value: '' }])
+  const [body,        setBody]        = React.useState('')
+  const [contentType, setContentType] = React.useState('json')
+  const [response,    setResponse]    = React.useState(null)
+  const [sending,     setSending]     = React.useState(false)
+  const [abortCtrl,   setAbortCtrl]   = React.useState(null)
+ 
+  const hasBody = !NO_BODY_METHODS.includes(method)
+ 
+  function addHeader() {
+    setReqHeaders(prev => [...prev, { key: '', value: '' }])
+  }
+ 
+  function updateHeader(idx, field, val) {
+    setReqHeaders(prev => prev.map((h, i) =>
+      i === idx ? { ...h, [field]: val } : h
+    ))
+  }
+ 
+  function removeHeader(idx) {
+    setReqHeaders(prev => prev.filter((_, i) => i !== idx))
+  }
+ 
+  async function send() {
+    const target = url.trim()
+    if (!target) return
+ 
+    const ctrl = new AbortController()
+    setAbortCtrl(ctrl)
+    setSending(true)
+    setResponse(null)
+ 
+    const start = performance.now()
+ 
+    // Build header object from rows (skip empty keys)
+    const headerObj = {}
+    reqHeaders.forEach(({ key, value }) => {
+      if (key.trim()) headerObj[key.trim()] = value
+    })
+ 
+    // Auto Content-Type for body requests
+    if (hasBody && !Object.keys(headerObj).some(k => k.toLowerCase() === 'content-type')) {
+      if (contentType === 'json')  headerObj['Content-Type'] = 'application/json'
+      if (contentType === 'form')  headerObj['Content-Type'] = 'application/x-www-form-urlencoded'
+      if (contentType === 'text')  headerObj['Content-Type'] = 'text/plain'
+    }
+ 
+    try {
+      const res = await fetch(target, {
+        method,
+        headers: headerObj,
+        body: hasBody && body.trim() ? body : undefined,
+        signal: ctrl.signal,
+        // Do NOT include credentials:'include' — this is not an internal request
+      })
+ 
+      const elapsed = Math.round(performance.now() - start)
+ 
+      // Collect response headers
+      const resHeaders = {}
+      res.headers.forEach((v, k) => { resHeaders[k] = v })
+ 
+      // Read body
+      let rawBody = ''
+      try { rawBody = await res.text() } catch { rawBody = '[Could not read response body]' }
+ 
+      // Pretty-print JSON if possible
+      let displayBody = rawBody
+      let isJson = false
+      const ct = res.headers.get('content-type') || ''
+      if (ct.includes('json') || (rawBody.trimStart().startsWith('{') || rawBody.trimStart().startsWith('['))) {
+        try {
+          displayBody = JSON.stringify(JSON.parse(rawBody), null, 2)
+          isJson = true
+        } catch { /* not valid JSON */ }
+      }
+ 
+      setResponse({ status: res.status, statusText: res.statusText, headers: resHeaders, body: displayBody, isJson, elapsed })
+ 
+    } catch (err) {
+      const elapsed = Math.round(performance.now() - start)
+      if (err.name === 'AbortError') {
+        setResponse({ aborted: true, elapsed })
+      } else {
+        const isTypeerror = err instanceof TypeError
+        setResponse({
+          error: err.message || 'Request failed',
+          corsLikely: isTypeerror,
+          elapsed,
+        })
+      }
+    } finally {
+      setSending(false)
+      setAbortCtrl(null)
+    }
+  }
+ 
+  function abort() {
+    abortCtrl?.abort()
+  }
+ 
+  function getStatusColor(status) {
+    if (status >= 200 && status < 300) return styles.status2xx
+    if (status >= 300 && status < 400) return styles.status3xx
+    if (status >= 400 && status < 500) return styles.status4xx
+    return styles.status5xx
+  }
+ 
+  return (
+    <div className={styles.tabPanel}>
+ 
+      {/* ── URL + Method ──────────────────────────────────────────── */}
+      <div className={styles.requestBar}>
+        <select
+          className={styles.methodSelect}
+          value={method}
+          onChange={e => setMethod(e.target.value)}
+        >
+          {HTTP_METHODS.map(m => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </select>
+        <input
+          type="url"
+          className={styles.urlInput}
+          placeholder="https://api.example.com/endpoint"
+          value={url}
+          onChange={e => setUrl(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && !sending && send()}
+          spellCheck={false}
+          autoComplete="off"
+        />
+        {sending
+          ? <button className={styles.abortBtn} onClick={abort}>Cancel</button>
+          : <button className={styles.sendBtn} onClick={send} disabled={!url.trim()}>Send</button>
+        }
+      </div>
+ 
+      {/* ── Request Headers ───────────────────────────────────────── */}
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.sectionTitle}>Request Headers</span>
+          <button className={styles.addHeaderBtn} onClick={addHeader}>+ Add</button>
+        </div>
+        <div className={styles.headersList}>
+          {reqHeaders.map((h, i) => (
+            <div key={i} className={styles.headerInputRow}>
+              <input
+                type="text"
+                className={styles.headerKeyInput}
+                placeholder="Header-Name"
+                value={h.key}
+                onChange={e => updateHeader(i, 'key', e.target.value)}
+                spellCheck={false}
+              />
+              <input
+                type="text"
+                className={styles.headerValueInput}
+                placeholder="value"
+                value={h.value}
+                onChange={e => updateHeader(i, 'value', e.target.value)}
+                spellCheck={false}
+              />
+              <button
+                className={styles.removeHeaderBtn}
+                onClick={() => removeHeader(i)}
+                disabled={reqHeaders.length === 1}
+              >×</button>
+            </div>
+          ))}
+        </div>
+      </div>
+ 
+      {/* ── Request Body ──────────────────────────────────────────── */}
+      {hasBody && (
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionTitle}>Body</span>
+            <div className={styles.contentTypeChips}>
+              {['json', 'form', 'text'].map(ct => (
+                <button
+                  key={ct}
+                  className={contentType === ct ? styles.ctChipActive : styles.ctChip}
+                  onClick={() => setContentType(ct)}
+                >
+                  {ct}
+                </button>
+              ))}
+            </div>
+          </div>
+          <textarea
+            className={styles.bodyTextarea}
+            rows={6}
+            placeholder={
+              contentType === 'json'
+                ? '{\n  "key": "value"\n}'
+                : contentType === 'form'
+                  ? 'key=value&other=123'
+                  : 'Plain text body…'
+            }
+            value={body}
+            onChange={e => setBody(e.target.value)}
+            spellCheck={false}
+          />
+        </div>
+      )}
+ 
+      {/* ── Response ──────────────────────────────────────────────── */}
+      {response && (
+        <div className={styles.responsePanel}>
+ 
+          {response.aborted && (
+            <div className={styles.responseAborted}>Request cancelled.</div>
+          )}
+ 
+          {response.corsLikely && (
+            <div className={styles.corsWarning}>
+              <strong>⚠ CORS or network error</strong>
+              <p>
+                The browser blocked this request. The server at{' '}
+                <code>{url}</code> either doesn't send{' '}
+                <code>Access-Control-Allow-Origin</code> headers, or the URL
+                is unreachable. This tester works for any CORS-enabled
+                endpoint (public APIs, localhost) and fails gracefully on
+                those that don't allow cross-origin requests.
+              </p>
+              <p className={styles.corsDetail}>Raw error: {response.error}</p>
+            </div>
+          )}
+ 
+          {response.error && !response.corsLikely && (
+            <div className={styles.responseError}>
+              <strong>Request failed:</strong> {response.error}
+            </div>
+          )}
+ 
+          {response.status && (
+            <>
+              {/* Status bar */}
+              <div className={styles.statusBar}>
+                <span className={`${styles.statusCode} ${getStatusColor(response.status)}`}>
+                  {response.status} {response.statusText}
+                </span>
+                <span className={styles.responseTime}>{response.elapsed} ms</span>
+              </div>
+ 
+              {/* Response headers */}
+              {Object.keys(response.headers).length > 0 && (
+                <details className={styles.resHeadersAccordion}>
+                  <summary className={styles.resHeadersSummary}>
+                    Response headers ({Object.keys(response.headers).length})
+                  </summary>
+                  <table className={styles.resHeadersTable}>
+                    <tbody>
+                      {Object.entries(response.headers).map(([k, v]) => (
+                        <tr key={k}>
+                          <td className={styles.resHeaderKey}>{k}</td>
+                          <td className={styles.resHeaderVal}>{v}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </details>
+              )}
+ 
+              {/* Response body */}
+              <div className={styles.responseBodyWrap}>
+                <div className={styles.responseBodyHeader}>
+                  <span className={styles.sectionTitle}>Response body</span>
+                  {response.isJson && (
+                    <span className={styles.jsonBadge}>JSON</span>
+                  )}
+                </div>
+                <pre className={styles.responseBody}>{response.body}</pre>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+ 
+      {!response && !sending && (
+        <div className={styles.restPlaceholder}>
+          <span className={styles.restPlaceholderIcon}>⚡</span>
+          <p>Enter a URL and press <strong>Send</strong> to make a request.</p>
+          <p className={styles.restPlaceholderSub}>
+            Requests run directly in your browser. CORS-enabled endpoints
+            (public APIs, localhost) work out of the box.
+          </p>
+        </div>
+      )}
+ 
     </div>
   )
 }

@@ -17,6 +17,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
+/**
+ * Authentication filter — protects all /api/* endpoints.
+ *
+ * Sprint 17 change: also reads the "role" session attribute and sets it
+ * in UserContext so AdminFilter and downstream code can read it without
+ * re-querying the session.
+ *
+ * Filter chain position: 4th (after SameSite, CORS, RateLimit).
+ * Registered in web.xml — do NOT add @WebFilter.
+ */
 public class AuthFilter implements Filter {
 
     private static final Set<String> PUBLIC_PATHS = Set.of(
@@ -43,21 +53,24 @@ public class AuthFilter implements Filter {
             return;
         }
 
-        HttpSession session = request.getSession(false);
-        String username     = (session != null)
-                ? (String) session.getAttribute("username")
-                : null;
+        HttpSession session  = request.getSession(false);
+        String      username = (session != null)
+                ? (String) session.getAttribute("username") : null;
 
         if (username != null && !username.isBlank()) {
-            // Make the authenticated username available to the entire call chain
-            // (DAOs, services) without threading it through every method signature.
+            // ── Sprint 17: read role from session ─────────────────────────
+            String role = (session != null)
+                    ? (String) session.getAttribute("role") : null;
+            if (role == null || role.isBlank()) {
+                role = UserContext.ROLE_USER; // default — handles pre-17 sessions
+            }
+
             UserContext.set(username);
+            UserContext.setRole(role);
             try {
                 chain.doFilter(servletRequest, servletResponse);
             } finally {
-                // Always clear — prevents ThreadLocal leaking between requests
-                // on pooled servlet threads.
-                UserContext.clear();
+                UserContext.clear(); // clears both username and role
             }
             return;
         }

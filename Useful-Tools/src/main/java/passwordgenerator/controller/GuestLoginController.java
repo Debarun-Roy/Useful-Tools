@@ -63,6 +63,7 @@ public class GuestLoginController extends HttpServlet {
             HttpSession session = request.getSession(true);
             String sessionId = session.getId();
             session.setAttribute("username", guestUsername);
+            session.setAttribute("role", "guest");   // Sprint 17
             System.out.println("[GuestLoginController] Created session with ID: " + sessionId);
 
             // ── 3. Manually add JSESSIONID with SameSite=None ────────────────
@@ -91,6 +92,7 @@ public class GuestLoginController extends HttpServlet {
             data.put("username", guestUsername);
             data.put("csrfToken", csrfToken);
             data.put("isGuest", true);
+            data.put("role", "guest");               // Sprint 17
 
             response.setStatus(HttpServletResponse.SC_OK);
             out.print(gson.toJson(ApiResponse.ok(data)));

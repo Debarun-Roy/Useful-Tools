@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { logoutUser }  from '../../api/apiClient'
+import { fetchToolStatus } from '../../api/apiClient'
 import { useAuth }     from '../../auth/useAuth'
 import ThemePicker     from '../../components/ThemePicker/ThemePicker'
 import UserMenu        from '../../components/UserMenu/UserMenu'
@@ -114,7 +115,7 @@ const FEATURES = [
     sprint: 13,
     ready:  true,
     icon:   '🛠️',
-    desc:   'CSS gradients, box-shadows, Flexbox, robots.txt, favicons',
+    desc:   'CSS gradients, box-shadows, Flexbox, robots.txt, favicons, HTTP header viewer, REST tester',
   },
   {
     label:  'Image Tools',
@@ -229,7 +230,8 @@ function moveInArray(arr, from, to) {
 // ── Main component ────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const { username, logout } = useAuth()
+  const { username, logout, role } = useAuth()   // add `role`
+  const isAdmin = role === 'admin'
   const navigate = useNavigate()
   const isGuest  = username === 'Guest User'
 
@@ -250,8 +252,19 @@ export default function DashboardPage() {
   // drop / dragend events — no library needed.
   const [dragFromIndex, setDragFromIndex] = useState(null)
   const [dragOverIndex, setDragOverIndex] = useState(null)
+  const [toolStatuses, setToolStatuses] = useState({})  // { "/calculator": true, ... }
 
   const [localError, setLocalError] = useState('')
+
+  useEffect(() => {
+   fetchToolStatus()
+     .then(({ data }) => {
+       if (data?.success && data.data?.toggles) {
+         setToolStatuses(data.data.toggles)
+       }
+     })
+     .catch(() => {}) // fail silently — all tools default to enabled
+  }, [])
 
   async function handleLogout() {
     try { await logoutUser() } catch { /* ignore network errors */ }
@@ -384,6 +397,11 @@ export default function DashboardPage() {
           <span className={styles.cardLabel}>{feature.label}</span>
           <span className={styles.cardDesc}>{feature.desc}</span>
           <span className={styles.cardBadge}>Sprint {feature.sprint}</span>
+          {toolStatuses[feature.path] === false && (
+           <span className={styles.cardDisabledBadge}>
+             {isAdmin ? '⚡ Disabled (admin bypass)' : '🚫 Disabled'}
+           </span>
+          )}
         </div>
       )
     }
@@ -432,7 +450,11 @@ export default function DashboardPage() {
           role="button"
           tabIndex={0}
           className={styles.card}
-          onClick={() => navigate(feature.path)}
+          onClick={() => {
+            const isEnabled = toolStatuses[feature.path] !== false  // default true
+            if (!isEnabled && !isAdmin) return   // blocked for regular users
+            navigate(feature.path)
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault()
@@ -461,6 +483,14 @@ export default function DashboardPage() {
         </div>
         <div className={styles.userArea}>
           <ThemePicker />
+          {isAdmin && (
+            <button
+              className={styles.adminPanelBtn}
+              onClick={() => navigate('/admin')}
+            >
+              ⚙ Admin
+            </button>
+          )}
           <UserMenu username={username} isGuest={isGuest} variant="dark" />
           <button className={styles.logoutButton} onClick={handleLogout}>
             Sign out

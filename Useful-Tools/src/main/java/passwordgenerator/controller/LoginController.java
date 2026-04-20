@@ -9,6 +9,7 @@ import java.util.UUID;
 import com.google.gson.Gson;
 
 import common.ApiResponse;
+import common.dao.RoleDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.Cookie;
@@ -104,12 +105,14 @@ public class LoginController extends HttpServlet {
 
             // ── 5. Successful auth — reset lockout counter ─────────────────
             UserDAO.resetFailedAttempts(username);
-
+            // ── 5b. Look up role (Sprint 17) ─────────────────────────────────────
+            String userRole = RoleDAO.getRole(username);
             // ── 6. Create/get session ──────────────────────────────────────
             // Call getSession(true) FIRST to get Tomcat's session + ID
             HttpSession session = request.getSession(true);
             String sessionId = session.getId();
             session.setAttribute("username", username);
+            session.setAttribute("role", userRole);   // Sprint 17
             System.out.println("[LoginController] Created session with ID: " + sessionId);
 
             // ── 6b. CRITICAL: Manually add JSESSIONID with SameSite=None ────
@@ -154,7 +157,8 @@ public class LoginController extends HttpServlet {
             data.put("username",  username);
             data.put("csrfToken", csrfToken); // FIX: added for cross-origin support
             data.put("message",   "Login successful.");
-
+            data.put("role", userRole);               // Sprint 17
+            
             response.setStatus(HttpServletResponse.SC_OK);
             out.print(gson.toJson(ApiResponse.ok(data)));
 

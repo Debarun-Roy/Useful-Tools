@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider }       from './auth/AuthContext'
 import ProtectedRoute         from './components/ProtectedRoute'
+import AdminRoute             from './components/AdminRoute/AdminRoute'
 import { ThemeProvider }      from './theme/ThemeContext'
 import LoginPage              from './pages/LoginPage/LoginPage'
 import RegisterPage           from './pages/RegisterPage/RegisterPage'
@@ -18,6 +19,7 @@ import WebDevHelpersPage      from './pages/WebDevHelpersPage/WebDevHelpersPage'
 import ImageToolsPage         from './pages/ImageToolsPage/ImageToolsPage'
 import DevUtilsPage           from './pages/DevUtilsPage/DevUtilsPage'
 import TimeUtilsPage          from './pages/TimeUtilsPage/TimeUtilsPage'
+import AdminPage              from './pages/AdminPage/AdminPage'
 import FeedbackModal          from './components/FeedbackModal/FeedbackModal'
 
 export default function App() {
@@ -68,20 +70,20 @@ export default function App() {
             <Route path="/image-tools" element={
               <ProtectedRoute><ImageToolsPage /></ProtectedRoute>
             } />
-            {/*
-              Sprint 15: DevUtilsPage — Hash Identifier + API Key Generator.
-              Sprint 16 update: +QR Code Generator +Cron Builder (4 tools total).
-            */}
             <Route path="/dev-utils" element={
               <ProtectedRoute><DevUtilsPage /></ProtectedRoute>
             } />
-            {/*
-              Sprint 16 addition: TimeUtilsPage — Timezone Converter +
-              Timestamp ↔ Date converter. Both tools use the native Intl API;
-              no extra packages required.
-            */}
             <Route path="/time-utils" element={
               <ProtectedRoute><TimeUtilsPage /></ProtectedRoute>
+            } />
+
+            {/*
+              Sprint 17: Admin Panel — only accessible to users with role=admin.
+              AdminRoute redirects non-admins to /dashboard and unauthenticated
+              users to /login, so ProtectedRoute is not needed as an outer wrapper.
+            */}
+            <Route path="/admin" element={
+              <AdminRoute><AdminPage /></AdminRoute>
             } />
 
             {/* ── Fallback ──────────────────────────────────────────────── */}
@@ -89,11 +91,6 @@ export default function App() {
 
           </Routes>
 
-          {/*
-            FeedbackModal renders a floating button that is always present
-            in the DOM for authenticated users. It checks isLoggedIn internally
-            and returns null for unauthenticated sessions.
-          */}
           <FeedbackModal />
 
         </ThemeProvider>

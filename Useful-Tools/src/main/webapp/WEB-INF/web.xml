@@ -66,6 +66,14 @@
     <filter-class>common.filter.CsrfFilter</filter-class>
   </filter>
 
+  <!--
+    web.xml — Sprint 17 RBAC patch
+  -->
+  <filter>
+    <filter-name>AdminFilter</filter-name>
+    <filter-class>common.filter.AdminFilter</filter-class>
+  </filter>
+
   <!-- ── Filter mappings (ORDER MATTERS — top to bottom) ─────────────────── -->
 
   <!-- 0. SameSite runs first on ALL requests to add SameSite=None to cookies. -->
@@ -103,7 +111,14 @@
     <dispatcher>REQUEST</dispatcher>
   </filter-mapping>
 
-  <!-- 5. CSRF runs last on all API endpoints (after Auth rejects unauth). -->
+  <!-- 5. AdminFilter: /api/admin/* — admin-only access control (Sprint 17) -->
+  <filter-mapping>
+    <filter-name>AdminFilter</filter-name>
+    <url-pattern>/api/admin/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+
+  <!-- 6. CSRF runs last on all API endpoints (after Auth rejects unauth). -->
   <filter-mapping>
     <filter-name>CsrfFilter</filter-name>
     <url-pattern>/api/*</url-pattern>

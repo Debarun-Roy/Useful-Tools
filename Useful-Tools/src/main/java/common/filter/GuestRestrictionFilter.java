@@ -70,6 +70,22 @@ public class GuestRestrictionFilter implements Filter {
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
         String path = request.getServletPath();
+        
+        // Sprint 17: block guests from all admin endpoints
+        if (path.startsWith("/api/admin/")) {
+            HttpSession session  = request.getSession(false);
+            String      uname    = (session != null)
+                    ? (String) session.getAttribute("username") : null;
+            if (GUEST_USERNAME.equals(uname)) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                response.getWriter().print(gson.toJson(
+                        ApiResponse.fail("Guest users cannot access admin features.",
+                                         "GUEST_RESTRICTED")));
+                return;
+            }
+        }
 
         if (RESTRICTED_PATHS.contains(path)) {
             HttpSession session  = request.getSession(false);
