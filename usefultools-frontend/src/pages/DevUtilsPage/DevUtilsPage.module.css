@@ -570,3 +570,258 @@
   .content { padding: var(--space-md); }
   .keyRow { flex-direction: column; align-items: stretch; gap: 8px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Sprint 16 additions — QR Code Generator + Cron Builder
+   Append these rules to the existing DevUtilsPage.module.css
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Shared: action row, primary/secondary buttons ─────────────────────── */
+/* (already in the file — these are new additions below the existing rules) */
+
+/* ─── Select input ───────────────────────────────────────────────────────── */
+.selectInput {
+  padding: 10px var(--space-md);
+  background: var(--clr-input-bg);
+  border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm); font-family: var(--font);
+  color: var(--clr-text); outline: none; cursor: pointer;
+  transition: border-color 140ms, box-shadow 140ms;
+}
+.selectInput:focus {
+  border-color: var(--clr-accent);
+  box-shadow: 0 0 0 3px rgba(74,144,217,0.12);
+}
+
+/* ─── Error banner ───────────────────────────────────────────────────────── */
+.errorBanner {
+  padding: 12px var(--space-md);
+  background: var(--clr-error-bg);
+  border: 1px solid var(--clr-error-border);
+  border-radius: var(--radius-md);
+  color: var(--clr-error);
+  font-size: var(--fs-sm); font-weight: 600;
+}
+
+/* ─── QR Code Tool ───────────────────────────────────────────────────────── */
+.qrOptionsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+}
+@media (max-width: 600px) { .qrOptionsRow { grid-template-columns: 1fr; } }
+
+.colorRow {
+  display: flex;
+  gap: var(--space-md);
+  align-items: flex-end;
+}
+
+.colorField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.colorInput {
+  width: 48px;
+  height: 36px;
+  padding: 2px;
+  border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  background: var(--clr-input-bg);
+  cursor: pointer;
+}
+.colorInput:focus { outline: 2px solid var(--clr-accent); }
+
+.qrResult {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--clr-input-bg);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  animation: panelIn 200ms ease both;
+}
+
+.qrImageWrap {
+  padding: var(--space-md);
+  background: #fff;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  line-height: 0;
+}
+
+.qrImage {
+  display: block;
+  border-radius: 4px;
+  image-rendering: pixelated;  /* keep QR crisp at small render sizes */
+}
+
+.qrActions {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ─── Cron Builder Tool ──────────────────────────────────────────────────── */
+.presetStrip {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.presetLabel {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--clr-text-muted);
+  white-space: nowrap;
+  padding-top: 6px;
+}
+
+.presetChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cronGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-md);
+}
+@media (max-width: 720px) { .cronGrid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 480px) { .cronGrid { grid-template-columns: repeat(2, 1fr); } }
+
+.cronField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+}
+
+.cronInput {
+  width: 100%;
+  padding: 10px var(--space-md);
+  background: var(--clr-input-bg);
+  border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-md);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--clr-text);
+  outline: none;
+  text-align: center;
+  transition: border-color 140ms, box-shadow 140ms;
+}
+.cronInput:focus {
+  border-color: var(--clr-accent);
+  box-shadow: 0 0 0 3px rgba(74,144,217,0.12);
+}
+.cronInputError {
+  border-color: var(--clr-error) !important;
+}
+
+.cronHint {
+  font-size: 0.68rem;
+  color: var(--clr-text-muted);
+  font-family: var(--font-mono);
+  line-height: 1.3;
+}
+
+.cronError {
+  font-size: var(--fs-xs);
+  color: var(--clr-error);
+  font-weight: 600;
+}
+
+.cronAnyBtn {
+  position: absolute;
+  top: 28px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--clr-border);
+  border-radius: 6px;
+  background: var(--clr-surface);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  transition: background 120ms, color 120ms, border-color 120ms;
+  padding: 0;
+}
+.cronAnyBtn:hover {
+  background: var(--clr-primary);
+  color: #fff;
+  border-color: var(--clr-primary);
+}
+
+.cronOutput {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--clr-dark-surface);
+  border: 1px solid var(--clr-dark-border);
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+}
+
+.cronExpression {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--clr-dark-text);
+  letter-spacing: 0.08em;
+  min-width: 200px;
+}
+
+.cronDescription {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 12px var(--space-md);
+  background: rgba(59,111,212,0.06);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  color: var(--clr-text);
+  line-height: 1.5;
+}
+
+.cronDescIcon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+/* ─── Shared reference accordion ────────────────────────────────────────── */
+/* (referenceAccordion + referenceSummary + referenceTable already exist) */
+/* These additions target new column alignment in the cron table */
+.referenceTable td code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  padding: 2px 5px;
+  background: var(--clr-input-bg);
+  border-radius: 4px;
+}
+
+/* ─── Mono textarea (used in hash + QR tools) ────────────────────────────── */
+/* Already defined in the existing CSS, no changes needed */
+
+/* ─── Slider ─────────────────────────────────────────────────────────────── */
+/* Already defined as input[type=range] in existing CSS */
+/* Ensure .slider class works */
+.slider {
+  width: 100%;
+  accent-color: var(--clr-primary);
+  cursor: pointer;
+}

@@ -37,6 +37,19 @@ import styles          from './DashboardPage.module.css'
  *     • Guests are excluded because there's no meaningful activity log
  *       for a guest session that expires on logout.
  */
+
+/*
+ * DASHBOARD PATCH — Sprint 16
+ *
+ * Replace the FEATURES array in DashboardPage.jsx with this version.
+ * Also add /time-utils to the FEATURES_BY_PATH lookup (it is auto-built
+ * from the FEATURES array so no separate change is needed).
+ *
+ * ── What changed ──────────────────────────────────────────────────────────
+ *   • New entry: Time Utilities → /time-utils  (sprint 16)
+ *   • Dev Utilities description updated to mention QR Code + Cron Builder
+ */
+
 const FEATURES = [
   {
     label:  'Calculator',
@@ -117,7 +130,15 @@ const FEATURES = [
     sprint: 15,
     ready:  true,
     icon:   '🧑‍💻',
-    desc:   'Hash identifier and cryptographically secure API key generator — all client-side',
+    desc:   'Hash identifier, API key generator, QR code generator, and cron expression builder',
+  },
+  {
+    label:  'Time Utilities',
+    path:   '/time-utils',
+    sprint: 16,
+    ready:  true,
+    icon:   '🕐',
+    desc:   'Timezone converter and Unix timestamp ↔ human date — all via the native Intl API',
   },
 ]
 

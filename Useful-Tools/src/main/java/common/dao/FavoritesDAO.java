@@ -40,6 +40,14 @@ import common.DatabaseUtils;
  */
 public class FavoritesDAO {
 
+    /*
+     * FavoritesDAO patch — Sprint 16
+     *
+     * Only the VALID_TOOL_PATHS constant needs to change.
+     * Replace the existing Set definition with the one below.
+     * Everything else in FavoritesDAO.java remains identical.
+     */
+
     public static final java.util.Set<String> VALID_TOOL_PATHS = java.util.Set.of(
             "/calculator",
             "/analyser",
@@ -50,7 +58,8 @@ public class FavoritesDAO {
             "/code-utils",
             "/web-dev",
             "/image-tools",
-            "/dev-utils"
+            "/dev-utils",
+            "/time-utils"   // Sprint 16 addition
     );
 
     // Hard cap — a user pinning every tool still shouldn't have unlimited rows.

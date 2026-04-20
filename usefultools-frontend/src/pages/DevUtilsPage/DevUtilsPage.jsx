@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
@@ -6,61 +6,34 @@ import UserMenu from '../../components/UserMenu/UserMenu'
 import { identifyHash, HASH_ALGORITHMS } from '../../utils/hashIdentifier'
 import { generateKeys, estimateEntropyBits, sanitisePrefix } from '../../utils/keyGenerator'
 import { logActivity } from '../../utils/logActivity'
+import QRCode from 'qrcode'
 import styles from './DevUtilsPage.module.css'
 
 /*
- * DevUtilsPage — Sprint 15's new tool page.
+ * DevUtilsPage — Sprint 16 update.
  *
- * ── What it is ────────────────────────────────────────────────────────────
- * Two developer-focused micro-tools under one roof, both entirely client-side:
+ * ── Tools ─────────────────────────────────────────────────────────────────
+ *   1. Hash Identifier      — paste a hash, get a ranked list of algorithms
+ *   2. API Key Generator    — cryptographically secure keys in 4 formats
+ *   3. QR Code Generator    — encode any text/URL as a QR code (client-side)
+ *                             Requires: npm install qrcode
+ *   4. Cron Builder         — visual cron expression builder + human explainer
  *
- *   1. Hash Identifier — paste a hash, get a ranked list of likely algorithms
- *      (MD5 / SHA-1 / SHA-256 / BCrypt / Argon2 / JWT / LDAP / ...) with
- *      confidence tiers and one-line explanations.
+ * All four tools run entirely in the browser. No data leaves the page.
  *
- *   2. API Key Generator — produce batches of cryptographically secure random
- *      strings in four formats (UUID v4, hex, base62, base64url) with
- *      optional prefix and live entropy estimate.
- *
- * Both tools live on the same page because they share an audience (engineers
- * debugging auth code, poking at tokens) and because neither alone is quite
- * big enough to warrant its own Dashboard slot. A tab bar keeps navigation
- * obvious.
- *
- * ── Activity logging (privacy-critical) ───────────────────────────────────
- * Both tools call logActivity() on successful operations, but the summaries
- * contain ONLY metadata — shape and counts — and the payload NEVER contains
- * the raw hash or the generated key material. Recording those would defeat
- * the point of running this locally in the browser. The exact rules:
- *
- *   Hash Identifier  →  summary: "Identified 32-char hexadecimal as MD5 (+2 others)"
- *                       payload: { length, charset, topCandidate, candidateCount }
- *                       NEVER the raw hash.
- *
- *   API Key Generator → summary: 'Generated 5 BASE62 keys · 32 chars · prefix "sk_live_"'
- *                       payload: { format, length, count, prefixLength }
- *                       NEVER the generated keys.
+ * ── Activity logging ──────────────────────────────────────────────────────
+ *   qrcode.generate  → payload: { length, hasUrl }  — NEVER the encoded text
+ *   cron.build       → payload: { expression }      — expression only (not secret)
  */
 
 // ─── Hash Identifier tab ────────────────────────────────────────────────────
 
 function HashIdentifierTool() {
   const [input, setInput] = useState('')
-
-  // identifyHash is pure and fast — compute synchronously on every render
-  // rather than pushing it through state. useMemo avoids redundant re-runs
-  // when an unrelated state (e.g. the outer tab switch) triggers a re-render.
   const result = useMemo(() => identifyHash(input), [input])
 
-  // ── Log the identification to the activity timeline ──────────────────────
-  //
-  // logActivity debounces per-tool to 1500ms, so rapid keystrokes get
-  // coalesced into ONE log entry reflecting the settled input. We only
-  // log when there's at least one candidate — pure empty input or
-  // unrecognised shapes aren't worth surfacing on the Dashboard.
   useEffect(() => {
     if (!result.normalized || result.candidates.length === 0) return
-
     const top = result.candidates[0]
     const extra = result.candidates.length - 1
     const extraSuffix = extra > 0 ? ` (+${extra} other${extra > 1 ? 's' : ''})` : ''
@@ -69,50 +42,32 @@ function HashIdentifierTool() {
       : result.charset === 'base64' || result.charset === 'base64url'
         ? `${result.length}-char ${result.charset}`
         : `${result.length}-char string`
-
     logActivity(
       'hash.identify',
       `Identified ${shapeLabel} as ${top.name}${extraSuffix}`,
-      {
-        length: result.length,
-        charset: result.charset,
-        topCandidate: top.name,
-        topConfidence: top.confidence,
-        candidateCount: result.candidates.length,
-      }
+      { length: result.length, charset: result.charset, topCandidate: top.name, topConfidence: top.confidence, candidateCount: result.candidates.length }
     )
   }, [result])
 
-  // ── Reference panel data ──────────────────────────────────────────────────
-  // Only the registered algorithms get a row. The order here is the reading
-  // order on the page; grouping by family keeps related entries together.
   const referenceRows = [
-    HASH_ALGORITHMS.md5,
-    HASH_ALGORITHMS.ntlm,
-    HASH_ALGORITHMS.md4,
-    HASH_ALGORITHMS.sha1,
-    HASH_ALGORITHMS.ripemd160,
-    HASH_ALGORITHMS.sha224,
-    HASH_ALGORITHMS.sha256,
-    HASH_ALGORITHMS.sha3_256,
-    HASH_ALGORITHMS.sha384,
-    HASH_ALGORITHMS.sha512,
-    HASH_ALGORITHMS.sha3_512,
-    HASH_ALGORITHMS.crc32,
-    HASH_ALGORITHMS.bcrypt,
-    HASH_ALGORITHMS.argon2,
-    HASH_ALGORITHMS.scrypt,
-    HASH_ALGORITHMS.md5crypt,
-    HASH_ALGORITHMS.sha256crypt,
-    HASH_ALGORITHMS.sha512crypt,
-    HASH_ALGORITHMS.ldap_ssha,
-    HASH_ALGORITHMS.ldap_sha,
-    HASH_ALGORITHMS.jwt,
+    HASH_ALGORITHMS.md5, HASH_ALGORITHMS.ntlm, HASH_ALGORITHMS.md4,
+    HASH_ALGORITHMS.sha1, HASH_ALGORITHMS.ripemd160, HASH_ALGORITHMS.sha224,
+    HASH_ALGORITHMS.sha256, HASH_ALGORITHMS.sha3_256, HASH_ALGORITHMS.sha384,
+    HASH_ALGORITHMS.sha512, HASH_ALGORITHMS.sha3_512, HASH_ALGORITHMS.crc32,
+    HASH_ALGORITHMS.bcrypt, HASH_ALGORITHMS.argon2, HASH_ALGORITHMS.scrypt,
+    HASH_ALGORITHMS.md5crypt, HASH_ALGORITHMS.sha256crypt, HASH_ALGORITHMS.sha512crypt,
+    HASH_ALGORITHMS.ldap_ssha, HASH_ALGORITHMS.ldap_sha, HASH_ALGORITHMS.jwt,
   ]
+
+  const CONFIDENCE_META = {
+    definitive: { label: 'Definitive', cls: styles.confDefinitive },
+    high:       { label: 'High',       cls: styles.confHigh },
+    medium:     { label: 'Medium',     cls: styles.confMedium },
+    low:        { label: 'Low',        cls: styles.confLow },
+  }
 
   return (
     <div className={styles.tabPanel}>
-
       <div className={styles.field}>
         <label className={styles.fieldLabel} htmlFor="hash-input">
           Hash, token, or credential
@@ -126,336 +81,595 @@ function HashIdentifierTool() {
           value={input}
           onChange={e => setInput(e.target.value)}
           spellCheck={false}
-          autoCorrect="off"
           autoCapitalize="off"
+          autoCorrect="off"
         />
-        {input && (
-          <div className={styles.inputMeta}>
-            <span>Length: <strong>{result.length}</strong></span>
-            <span>Charset: <strong>{result.charset}</strong></span>
-          </div>
-        )}
       </div>
 
-      {/* Results */}
-      {!input.trim() && (
-        <div className={styles.placeholderCard}>
-          <p className={styles.placeholderTitle}>No input yet</p>
-          <p className={styles.placeholderBody}>
-            Candidate algorithms will appear here as you type. Detection is
-            based on length, character set, and self-identifying prefixes
-            (<code>$2a$</code>, <code>$argon2id$</code>, <code>{'{SSHA}'}</code>, JWT segments).
-          </p>
+      {result.normalized && (
+        <div className={styles.resultBlock}>
+          <div className={styles.resultMeta}>
+            <span className={styles.metaItem}>Length: <strong>{result.length}</strong></span>
+            <span className={styles.metaItem}>Charset: <strong>{result.charset}</strong></span>
+          </div>
+          {result.candidates.length === 0 ? (
+            <p className={styles.noMatch}>No known algorithm matched this input.</p>
+          ) : (
+            <ul className={styles.candidateList}>
+              {result.candidates.map((c, i) => {
+                const meta = CONFIDENCE_META[c.confidence] ?? CONFIDENCE_META.low
+                return (
+                  <li key={i} className={styles.candidateRow}>
+                    <span className={`${styles.confBadge} ${meta.cls}`}>{meta.label}</span>
+                    <span className={styles.candidateName}>{c.name}</span>
+                    <span className={styles.candidateNote}>{c.note}</span>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </div>
       )}
 
-      {input.trim() && result.candidates.length === 0 && (
-        <div className={styles.warnBanner} role="status">
-          <strong>No confident match.</strong> The input doesn't match any of
-          the common hash / credential shapes. Check for stray whitespace or
-          partial copy-paste, and look at the reference below for what each
-          format typically looks like.
-        </div>
-      )}
-
-      {result.candidates.length > 0 && (
-        <ul className={styles.candidatesList}>
-          {result.candidates.map((cand) => {
-            // Tailor the CSS modifier to the confidence value so the badge
-            // colour reflects certainty at a glance.
-            const badgeCls = `${styles.confidenceBadge} ${styles[`badge_${cand.confidence}`] || ''}`
-            const cardCls  = `${styles.candidateCard} ${styles[`conf_${cand.confidence}`] || ''}`
-            return (
-              <li key={cand.name} className={cardCls}>
-                <div className={styles.candidateHeader}>
-                  <span className={styles.candidateName}>{cand.name}</span>
-                  <span className={badgeCls}>{cand.confidence}</span>
-                </div>
-                <p className={styles.candidateNote}>{cand.note}</p>
-              </li>
-            )
-          })}
-        </ul>
-      )}
-
-      {/* Reference — always shown below the result */}
-      <details className={styles.referenceBlock}>
-        <summary className={styles.referenceSummary}>
-          Reference: {referenceRows.length} known hash / credential formats
-        </summary>
-        <div className={styles.referenceGrid}>
-          {referenceRows.map(row => (
-            <div key={row.name} className={styles.referenceRow}>
-              <span className={styles.referenceName}>{row.name}</span>
-              <span className={styles.referenceNote}>{row.note}</span>
-            </div>
-          ))}
-        </div>
+      <details className={styles.referenceAccordion}>
+        <summary className={styles.referenceSummary}>Algorithm reference</summary>
+        <table className={styles.referenceTable}>
+          <thead>
+            <tr>
+              <th>Algorithm</th><th>Typical length</th><th>Charset</th><th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {referenceRows.map(alg => alg && (
+              <tr key={alg.name}>
+                <td className={styles.monoCell}>{alg.name}</td>
+                <td>{alg.lengths?.join(' / ') ?? '—'}</td>
+                <td>{alg.charset ?? '—'}</td>
+                <td className={styles.noteCell}>{alg.note ?? ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </details>
     </div>
   )
 }
 
-// ─── API Key Generator tab ──────────────────────────────────────────────────
+// ─── API Key Generator tab ───────────────────────────────────────────────────
 
-// Static format options — drives the chip row and the length-slider label.
-const FORMATS = [
-  {
-    id: 'uuid',
-    label: 'UUID v4',
-    hint:  'RFC 4122 v4. Fixed 36-char shape, dashes included.',
-    lengthFixed: true,
-  },
-  {
-    id: 'hex',
-    label: 'Hex',
-    hint:  'Lowercase hex. Byte length → 2× character length.',
-    lengthFixed: false,
-    min: 4,  max: 128, default: 32, step: 2,
-    unit: 'bytes',
-  },
-  {
-    id: 'base62',
-    label: 'Base62',
-    hint:  '[0-9A-Za-z]. Uniform via rejection sampling.',
-    lengthFixed: false,
-    min: 8,  max: 128, default: 32, step: 2,
-    unit: 'chars',
-  },
-  {
-    id: 'base64url',
-    label: 'Base64-url',
-    hint:  'URL-safe. Padding stripped. Byte length → ~1.33× character length.',
-    lengthFixed: false,
-    min: 4,  max: 128, default: 32, step: 2,
-    unit: 'bytes',
-  },
+const FORMAT_OPTIONS = [
+  { id: 'uuid',      label: 'UUID v4',    example: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx' },
+  { id: 'hex',       label: 'Hex',        example: 'a3f8c2...' },
+  { id: 'base62',    label: 'Base62',     example: 'aB3kZ9...' },
+  { id: 'base64url', label: 'Base64url',  example: 'aB3k-Z9...' },
 ]
 
-function CopyButton({ text, label = 'Copy', compact = false }) {
-  const [copied, setCopied] = useState(false)
-  function handleCopy() {
-    navigator.clipboard.writeText(text).catch(() => {})
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }
-  const cls = compact
-    ? (copied ? styles.copyBtnDoneCompact : styles.copyBtnCompact)
-    : (copied ? styles.copyBtnDone         : styles.copyBtn)
-  return (
-    <button
-      type="button"
-      className={cls}
-      onClick={handleCopy}
-      disabled={!text}
-      aria-label={label}
-    >
-      {copied ? '✓ Copied' : label}
-    </button>
-  )
-}
-
 function ApiKeyGeneratorTool() {
-  const [format, setFormat] = useState('uuid')
-  const [length, setLength] = useState(32)
-  const [prefix, setPrefix] = useState('')
-  const [count,  setCount]  = useState(1)
-  const [keys,   setKeys]   = useState([])
-  const [error,  setError]  = useState('')
+  const [format, setFormat]     = useState('uuid')
+  const [length, setLength]     = useState(32)
+  const [count, setCount]       = useState(3)
+  const [prefix, setPrefix]     = useState('')
+  const [keys, setKeys]         = useState([])
+  const [copied, setCopied]     = useState(null)
 
-  // Current format metadata (for slider bounds and labels).
-  const fmt = FORMATS.find(f => f.id === format) || FORMATS[0]
+  const entropy = useMemo(() => estimateEntropyBits(format, length), [format, length])
+  const sanitised = useMemo(() => sanitisePrefix(prefix), [prefix])
 
-  // When the format changes, reset the length to that format's default.
-  // Prevents a slider set to e.g. 8 hex bytes looking weird when switching
-  // to base62 where 8 means chars instead of bytes.
-  function handleFormatChange(newFormat) {
-    setFormat(newFormat)
-    const nf = FORMATS.find(f => f.id === newFormat)
-    if (nf && !nf.lengthFixed) setLength(nf.default)
-    setKeys([])
-    setError('')
+  function generate() {
+    const result = generateKeys({ format, length, count, prefix: sanitised })
+    setKeys(result)
+    logActivity(
+      'keygen.generate',
+      `Generated ${count} ${format.toUpperCase()} key${count > 1 ? 's' : ''} · ${length} chars${sanitised ? ` · prefix "${sanitised}"` : ''}`,
+      { format, length, count, prefixLength: sanitised.length }
+    )
   }
 
-  const entropyBits = useMemo(
-    () => estimateEntropyBits({ format, length }),
-    [format, length]
-  )
-
-  // Human label for the entropy strip — 122+ is safe for session tokens,
-  // below 80 is a red flag for production secrets.
-  const entropyTag = entropyBits >= 122 ? 'Strong'
-                    : entropyBits >= 80  ? 'OK'
-                    : 'Weak'
-
-  function handleGenerate() {
-    setError('')
-    try {
-      const cleanPrefix = sanitisePrefix(prefix)
-      const safeCount = Math.max(1, Math.min(count | 0, 100))
-      const out = generateKeys({
-        format,
-        length: fmt.lengthFixed ? 0 : length,
-        prefix: cleanPrefix,
-        count:  safeCount,
-      })
-      setKeys(out)
-
-      // ── Activity log ─────────────────────────────────────────────────────
-      // Log the *parameters* only. The key bodies stay in local state and
-      // never enter the activity payload. Prefix length (not the prefix
-      // itself) is recorded so we don't leak anything like "sk_live_".
-      const lengthPart = fmt.lengthFixed
-        ? ''
-        : ` · ${length} ${fmt.unit}`
-      const prefixPart = cleanPrefix
-        ? ` · prefix "${cleanPrefix}"`
-        : ''
-      logActivity(
-        'key.generate',
-        `Generated ${safeCount} ${format.toUpperCase()} key${safeCount > 1 ? 's' : ''}${lengthPart}${prefixPart}`,
-        {
-          format,
-          length: fmt.lengthFixed ? null : length,
-          count: safeCount,
-          prefixLength: cleanPrefix.length,
-        }
-      )
-    } catch (e) {
-      setError(e.message || 'Could not generate keys.')
-    }
+  async function copyKey(key, idx) {
+    await navigator.clipboard.writeText(key)
+    setCopied(idx)
+    setTimeout(() => setCopied(null), 1500)
   }
 
-  function handleCopyAll() {
-    if (keys.length === 0) return
-    navigator.clipboard.writeText(keys.join('\n')).catch(() => {})
+  async function copyAll() {
+    await navigator.clipboard.writeText(keys.join('\n'))
+    setCopied('all')
+    setTimeout(() => setCopied(null), 1500)
   }
 
   return (
     <div className={styles.tabPanel}>
-
-      {/* ── Format chips ────────────────────────────────────────────────── */}
-      <div className={styles.field}>
-        <label className={styles.fieldLabel}>Format</label>
-        <div className={styles.formatChips} role="radiogroup" aria-label="Key format">
-          {FORMATS.map(f => (
+      <div className={styles.controlRow}>
+        <div className={styles.formatChips}>
+          {FORMAT_OPTIONS.map(f => (
             <button
               key={f.id}
-              type="button"
-              role="radio"
-              aria-checked={f.id === format}
-              className={f.id === format ? styles.chipActive : styles.chip}
-              onClick={() => handleFormatChange(f.id)}
+              className={format === f.id ? styles.chipActive : styles.chip}
+              onClick={() => setFormat(f.id)}
             >
               {f.label}
             </button>
           ))}
         </div>
-        <p className={styles.formatHint}>{fmt.hint}</p>
       </div>
 
-      {/* ── Length slider (hidden for fixed-length formats like UUID) ───── */}
-      {!fmt.lengthFixed && (
+      {format !== 'uuid' && (
         <div className={styles.field}>
-          <label className={styles.fieldLabel} htmlFor="length-slider">
-            Length <span className={styles.sliderValue}>{length} {fmt.unit}</span>
+          <label className={styles.fieldLabel}>
+            Length: <strong>{length}</strong> chars
           </label>
           <input
-            id="length-slider"
-            type="range"
-            min={fmt.min}
-            max={fmt.max}
-            step={fmt.step}
+            type="range" min={16} max={128} step={8}
             value={length}
             onChange={e => setLength(Number(e.target.value))}
+            className={styles.slider}
           />
-          <div className={styles.sliderMinMax}>
-            <span>{fmt.min} {fmt.unit}</span>
-            <span>{fmt.max} {fmt.unit}</span>
-          </div>
         </div>
       )}
 
-      {/* ── Prefix ─────────────────────────────────────────────────────── */}
-      <div className={styles.controlsGrid}>
-        <div className={styles.field}>
-          <label className={styles.fieldLabel} htmlFor="key-prefix">
-            Prefix <span className={styles.optional}>— optional</span>
-          </label>
-          <input
-            id="key-prefix"
-            type="text"
-            className={styles.textInput}
-            placeholder="sk_live_"
-            value={prefix}
-            onChange={e => setPrefix(e.target.value)}
-            maxLength={64}
-          />
-          <p className={styles.formatHint}>
-            Letters, digits, <code>_</code>, <code>-</code> only. Trimmed to 32 characters.
-          </p>
-        </div>
-
-        <div className={styles.field}>
-          <label className={styles.fieldLabel} htmlFor="key-count">
-            Count <span className={styles.sliderValue}>{count}</span>
-          </label>
-          <input
-            id="key-count"
-            type="number"
-            className={styles.textInput}
-            min={1}
-            max={100}
-            value={count}
-            onChange={e => setCount(Math.max(1, Math.min(Number(e.target.value) || 1, 100)))}
-          />
-        </div>
+      <div className={styles.field}>
+        <label className={styles.fieldLabel} htmlFor="key-prefix">
+          Prefix <span className={styles.optional}>(optional — alphanumeric + _ -)</span>
+        </label>
+        <input
+          id="key-prefix"
+          type="text"
+          className={styles.textInput}
+          placeholder="e.g. sk_live_"
+          value={prefix}
+          onChange={e => setPrefix(e.target.value)}
+          maxLength={24}
+        />
       </div>
 
-      {/* ── Entropy strip ──────────────────────────────────────────────── */}
+      <div className={styles.field}>
+        <label className={styles.fieldLabel}>
+          Count: <strong>{count}</strong>
+        </label>
+        <input
+          type="range" min={1} max={10} step={1}
+          value={count}
+          onChange={e => setCount(Number(e.target.value))}
+          className={styles.slider}
+        />
+      </div>
+
       <div className={styles.entropyStrip}>
-        <span className={styles.entropyIcon} aria-hidden="true">⚡</span>
-        <span>
-          Estimated entropy: <strong>{entropyBits} bits</strong> per key
-        </span>
-        <span className={entropyTag === 'Weak' ? styles.entropyTag : styles.entropyTagMild}>
-          {entropyTag}
+        <span className={styles.entropyLabel}>Entropy</span>
+        <span className={styles.entropyValue}>{entropy} bits</span>
+        <span className={styles.entropyTip}>
+          {entropy >= 128 ? '🟢 Cryptographically strong' : entropy >= 80 ? '🟡 Acceptable' : '🔴 Weak'}
         </span>
       </div>
 
-      {/* ── Action row ─────────────────────────────────────────────────── */}
       <div className={styles.actionRow}>
-        <button className={styles.primaryBtn} onClick={handleGenerate}>
-          Generate {count > 1 ? `${count} keys` : 'key'}
-        </button>
-        {keys.length > 1 && (
-          <button className={styles.secondaryBtn} onClick={handleCopyAll}>
-            Copy all
+        <button className={styles.primaryBtn} onClick={generate}>Generate</button>
+        {keys.length > 0 && (
+          <button className={styles.secondaryBtn} onClick={copyAll}>
+            {copied === 'all' ? '✓ Copied all' : 'Copy all'}
           </button>
         )}
       </div>
 
-      {error && <div className={styles.warnBanner} role="alert">{error}</div>}
-
-      {/* ── Output list ────────────────────────────────────────────────── */}
       {keys.length > 0 && (
-        <ul className={styles.keysList}>
-          {keys.map((k, i) => (
+        <ul className={styles.keyList}>
+          {keys.map((key, i) => (
             <li key={i} className={styles.keyRow}>
-              <code className={styles.keyText}>{k}</code>
-              <CopyButton text={k} compact />
+              <code className={styles.keyCode}>{key}</code>
+              <button className={styles.copyBtn} onClick={() => copyKey(key, i)}>
+                {copied === i ? '✓' : 'Copy'}
+              </button>
             </li>
           ))}
         </ul>
       )}
 
-      {/* ── Security note ──────────────────────────────────────────────── */}
-      <div className={styles.securityNote}>
-        <strong>🔒 Your keys never leave this page.</strong> Generation runs
-        entirely in your browser using <code>crypto.getRandomValues()</code>.
-        The activity log records <em>that you generated keys</em> and the
-        parameters you chose — it never records the key bodies themselves.
+      <p className={styles.securityNote}>
+        Keys are generated using <code>crypto.getRandomValues()</code> — the same
+        source your OS uses. They are never sent anywhere.
+      </p>
+    </div>
+  )
+}
+
+// ─── QR Code Generator tab ───────────────────────────────────────────────────
+
+const QR_ERROR_LEVELS = [
+  { value: 'L', label: 'L — Low (7%)',    desc: 'Most data, least damage tolerance' },
+  { value: 'M', label: 'M — Medium (15%)', desc: 'Good balance' },
+  { value: 'Q', label: 'Q — Quartile (25%)', desc: 'Better for printed labels' },
+  { value: 'H', label: 'H — High (30%)',  desc: 'Best for damaged/dirty environments' },
+]
+
+function QRCodeTool() {
+  const [text, setText]           = useState('')
+  const [errorLevel, setErrorLevel] = useState('M')
+  const [size, setSize]           = useState(256)
+  const [darkColor, setDarkColor] = useState('#000000')
+  const [lightColor, setLightColor] = useState('#ffffff')
+  const [qrDataUrl, setQrDataUrl] = useState(null)
+  const [error, setError]         = useState(null)
+  const [generating, setGenerating] = useState(false)
+
+  async function generate() {
+    if (!text.trim()) return
+    setGenerating(true)
+    setError(null)
+    try {
+      const dataUrl = await QRCode.toDataURL(text.trim(), {
+        errorCorrectionLevel: errorLevel,
+        width: size,
+        margin: 2,
+        color: { dark: darkColor, light: lightColor },
+      })
+      setQrDataUrl(dataUrl)
+      const isUrl = /^https?:\/\//i.test(text.trim())
+      logActivity(
+        'qrcode.generate',
+        `Generated QR code for ${isUrl ? 'URL' : 'text'} (${text.trim().length} chars)`,
+        { length: text.trim().length, hasUrl: isUrl, errorLevel, size }
+      )
+    } catch (err) {
+      setError(err.message ?? 'Failed to generate QR code')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  function download() {
+    if (!qrDataUrl) return
+    const a = document.createElement('a')
+    a.href = qrDataUrl
+    a.download = 'qrcode.png'
+    a.click()
+  }
+
+  async function copyImage() {
+    if (!qrDataUrl) return
+    try {
+      const blob = await (await fetch(qrDataUrl)).blob()
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+    } catch {
+      // fallback: copy the data URL text
+      await navigator.clipboard.writeText(qrDataUrl)
+    }
+  }
+
+  return (
+    <div className={styles.tabPanel}>
+      <div className={styles.field}>
+        <label className={styles.fieldLabel} htmlFor="qr-input">
+          Text or URL to encode
+          <span className={styles.optional}> — generated entirely in your browser</span>
+        </label>
+        <textarea
+          id="qr-input"
+          className={styles.monoTextarea}
+          rows={4}
+          placeholder="https://example.com  or  any text you want to encode…"
+          value={text}
+          onChange={e => { setText(e.target.value); setQrDataUrl(null) }}
+          spellCheck={false}
+        />
       </div>
+
+      <div className={styles.qrOptionsRow}>
+        <div className={styles.field}>
+          <label className={styles.fieldLabel}>Error correction level</label>
+          <select
+            className={styles.selectInput}
+            value={errorLevel}
+            onChange={e => { setErrorLevel(e.target.value); setQrDataUrl(null) }}
+          >
+            {QR_ERROR_LEVELS.map(l => (
+              <option key={l.value} value={l.value}>{l.label}</option>
+            ))}
+          </select>
+          <span className={styles.optional}>
+            {QR_ERROR_LEVELS.find(l => l.value === errorLevel)?.desc}
+          </span>
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.fieldLabel}>
+            Size: <strong>{size}×{size}px</strong>
+          </label>
+          <input
+            type="range" min={128} max={512} step={64}
+            value={size}
+            onChange={e => { setSize(Number(e.target.value)); setQrDataUrl(null) }}
+            className={styles.slider}
+          />
+        </div>
+
+        <div className={styles.colorRow}>
+          <div className={styles.colorField}>
+            <label className={styles.fieldLabel}>Dark colour</label>
+            <input
+              type="color" value={darkColor}
+              onChange={e => { setDarkColor(e.target.value); setQrDataUrl(null) }}
+              className={styles.colorInput}
+            />
+          </div>
+          <div className={styles.colorField}>
+            <label className={styles.fieldLabel}>Light colour</label>
+            <input
+              type="color" value={lightColor}
+              onChange={e => { setLightColor(e.target.value); setQrDataUrl(null) }}
+              className={styles.colorInput}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.actionRow}>
+        <button
+          className={styles.primaryBtn}
+          onClick={generate}
+          disabled={!text.trim() || generating}
+        >
+          {generating ? 'Generating…' : 'Generate QR'}
+        </button>
+      </div>
+
+      {error && (
+        <div className={styles.errorBanner} role="alert">{error}</div>
+      )}
+
+      {qrDataUrl && (
+        <div className={styles.qrResult}>
+          <div className={styles.qrImageWrap}>
+            <img
+              src={qrDataUrl}
+              alt="Generated QR code"
+              className={styles.qrImage}
+              style={{ width: Math.min(size, 320), height: Math.min(size, 320) }}
+            />
+          </div>
+          <div className={styles.qrActions}>
+            <button className={styles.primaryBtn} onClick={download}>
+              ⬇ Download PNG
+            </button>
+            <button className={styles.secondaryBtn} onClick={copyImage}>
+              Copy image
+            </button>
+          </div>
+          <p className={styles.securityNote}>
+            QR codes encode data at up to ~3 KB. For URLs, keep them short.
+            Error correction level {errorLevel} can restore up to{' '}
+            { { L: '7%', M: '15%', Q: '25%', H: '30%' }[errorLevel] } of damaged data.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Cron Builder tab ────────────────────────────────────────────────────────
+
+const CRON_PRESETS = [
+  { label: 'Every minute',         value: '* * * * *' },
+  { label: 'Every 5 minutes',      value: '*/5 * * * *' },
+  { label: 'Every 15 minutes',     value: '*/15 * * * *' },
+  { label: 'Every 30 minutes',     value: '*/30 * * * *' },
+  { label: 'Hourly',               value: '0 * * * *' },
+  { label: 'Daily at midnight',    value: '0 0 * * *' },
+  { label: 'Daily at noon',        value: '0 12 * * *' },
+  { label: 'Weekdays at 9 AM',     value: '0 9 * * 1-5' },
+  { label: 'Weekly (Mon midnight)',value: '0 0 * * 1' },
+  { label: 'Monthly (1st, midnight)', value: '0 0 1 * *' },
+  { label: 'Yearly (Jan 1st)',     value: '0 0 1 1 *' },
+]
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const DAYS_OF_WEEK = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+
+function describeCronField(value, kind) {
+  if (value === '*') return `every ${kind}`
+  if (/^\*\/(\d+)$/.test(value)) {
+    const n = value.match(/^\*\/(\d+)$/)[1]
+    return `every ${n} ${kind}${n > 1 ? 's' : ''}`
+  }
+  if (/^(\d+)-(\d+)$/.test(value)) {
+    const [, a, b] = value.match(/^(\d+)-(\d+)$/)
+    if (kind === 'day of week') return `${DAYS_OF_WEEK[a] ?? a}–${DAYS_OF_WEEK[b] ?? b}`
+    if (kind === 'month') return `${MONTHS[a - 1] ?? a}–${MONTHS[b - 1] ?? b}`
+    return `${kind} ${a}–${b}`
+  }
+  if (/^\d+(,\d+)+$/.test(value)) {
+    const parts = value.split(',')
+    if (kind === 'day of week') return parts.map(p => DAYS_OF_WEEK[p] ?? p).join(', ')
+    if (kind === 'month') return parts.map(p => MONTHS[p - 1] ?? p).join(', ')
+    return `${kind}s ${parts.join(', ')}`
+  }
+  if (/^\d+$/.test(value)) {
+    if (kind === 'day of week') return DAYS_OF_WEEK[value] ?? `day ${value}`
+    if (kind === 'month') return MONTHS[value - 1] ?? `month ${value}`
+    return `${kind} ${value}`
+  }
+  return value
+}
+
+function describeCron(minute, hour, dom, month, dow) {
+  const minuteDesc = describeCronField(minute, 'minute')
+  const hourDesc   = describeCronField(hour,   'hour')
+  const domDesc    = describeCronField(dom,    'day of month')
+  const monthDesc  = describeCronField(month,  'month')
+  const dowDesc    = describeCronField(dow,    'day of week')
+
+  // Compose natural language
+  let timeClause = ''
+  if (minute === '*' && hour === '*') {
+    timeClause = 'every minute'
+  } else if (minute.startsWith('*/') && hour === '*') {
+    timeClause = `${minuteDesc}`
+  } else if (minute === '0' && hour === '*') {
+    timeClause = 'at the start of every hour'
+  } else if (hour === '*') {
+    timeClause = `at ${minuteDesc} past every hour`
+  } else {
+    const h = /^\d+$/.test(hour) ? hour.padStart(2, '0') : hour
+    const m = /^\d+$/.test(minute) ? minute.padStart(2, '0') : minute
+    if (/^\d+$/.test(hour) && /^\d+$/.test(minute)) {
+      const hNum = parseInt(hour, 10)
+      const mNum = parseInt(minute, 10)
+      const ampm = hNum >= 12 ? 'PM' : 'AM'
+      const h12 = hNum % 12 === 0 ? 12 : hNum % 12
+      const mStr = String(mNum).padStart(2, '0')
+      timeClause = `at ${h12}:${mStr} ${ampm}`
+    } else {
+      timeClause = `at ${hourDesc}:${minuteDesc}`
+    }
+  }
+
+  let whenClause = ''
+  const domStar = dom === '*'
+  const dowStar = dow === '*'
+  const monthStar = month === '*'
+
+  if (!domStar && !dowStar) {
+    whenClause = `, on ${domDesc} and ${dowDesc}`
+  } else if (!domStar) {
+    whenClause = `, on the ${domDesc}`
+  } else if (!dowStar) {
+    whenClause = `, on ${dowDesc}`
+  }
+
+  if (!monthStar) {
+    whenClause += ` in ${monthDesc}`
+  }
+
+  const raw = `${minute} ${hour} ${dom} ${month} ${dow}`
+  return { description: `Runs ${timeClause}${whenClause}`, raw }
+}
+
+function validateCronField(value, kind) {
+  if (value === '') return 'Required'
+  if (value === '*') return null
+  if (/^\*\/\d+$/.test(value)) {
+    const n = parseInt(value.split('/')[1], 10)
+    if (kind === 'minute' && (n < 1 || n > 59)) return '1–59'
+    if (kind === 'hour' && (n < 1 || n > 23)) return '1–23'
+    return null
+  }
+  if (/^\d+([-,]\d+)*$/.test(value)) return null
+  return 'Invalid syntax'
+}
+
+function CronBuilderTool() {
+  const [fields, setFields] = useState({ minute: '0', hour: '0', dom: '*', month: '*', dow: '*' })
+  const [copied, setCopied] = useState(false)
+
+  const setField = useCallback((k, v) => setFields(f => ({ ...f, [k]: v })), [])
+
+  const errors = useMemo(() => ({
+    minute: validateCronField(fields.minute, 'minute'),
+    hour:   validateCronField(fields.hour,   'hour'),
+    dom:    validateCronField(fields.dom,    'dom'),
+    month:  validateCronField(fields.month,  'month'),
+    dow:    validateCronField(fields.dow,    'dow'),
+  }), [fields])
+
+  const hasErrors = Object.values(errors).some(Boolean)
+
+  const { description, raw } = useMemo(() =>
+    describeCron(fields.minute, fields.hour, fields.dom, fields.month, fields.dow),
+    [fields]
+  )
+
+  function applyPreset(value) {
+    const [minute, hour, dom, month, dow] = value.split(' ')
+    setFields({ minute, hour, dom, month, dow })
+  }
+
+  async function copy() {
+    await navigator.clipboard.writeText(raw)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+    logActivity('cron.build', `Built cron expression: ${raw}`, { expression: raw })
+  }
+
+  const FIELD_DEFS = [
+    { key: 'minute', label: 'Minute',       hint: '0–59  * */n  n-m  n,m' },
+    { key: 'hour',   label: 'Hour',         hint: '0–23  * */n  n-m  n,m' },
+    { key: 'dom',    label: 'Day of month', hint: '1–31  * */n  n-m  n,m' },
+    { key: 'month',  label: 'Month',        hint: '1–12  * */n  n-m  n,m  (Jan–Dec)' },
+    { key: 'dow',    label: 'Day of week',  hint: '0–6   * n-m  n,m  (0=Sun)' },
+  ]
+
+  return (
+    <div className={styles.tabPanel}>
+
+      {/* Preset strip */}
+      <div className={styles.presetStrip}>
+        <span className={styles.presetLabel}>Presets:</span>
+        <div className={styles.presetChips}>
+          {CRON_PRESETS.map(p => (
+            <button
+              key={p.value}
+              className={styles.chip}
+              onClick={() => applyPreset(p.value)}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Five-field grid */}
+      <div className={styles.cronGrid}>
+        {FIELD_DEFS.map(({ key, label, hint }) => (
+          <div key={key} className={styles.cronField}>
+            <label className={styles.fieldLabel}>{label}</label>
+            <input
+              type="text"
+              className={`${styles.cronInput} ${errors[key] ? styles.cronInputError : ''}`}
+              value={fields[key]}
+              onChange={e => setField(key, e.target.value)}
+              spellCheck={false}
+              autoCapitalize="off"
+            />
+            {errors[key]
+              ? <span className={styles.cronError}>{errors[key]}</span>
+              : <span className={styles.cronHint}>{hint}</span>
+            }
+            <button
+              className={styles.cronAnyBtn}
+              onClick={() => setField(key, '*')}
+              title="Set to * (any)"
+            >*</button>
+          </div>
+        ))}
+      </div>
+
+      {/* Live expression */}
+      <div className={styles.cronOutput}>
+        <code className={styles.cronExpression}>{raw}</code>
+        <button className={styles.copyBtn} onClick={copy} disabled={hasErrors}>
+          {copied ? '✓ Copied' : 'Copy'}
+        </button>
+      </div>
+
+      {/* Human description */}
+      <div className={styles.cronDescription}>
+        <span className={styles.cronDescIcon}>🕐</span>
+        <span>{description}</span>
+      </div>
+
+      {/* Quick-reference table */}
+      <details className={styles.referenceAccordion}>
+        <summary className={styles.referenceSummary}>Cron syntax reference</summary>
+        <table className={styles.referenceTable}>
+          <thead><tr><th>Syntax</th><th>Meaning</th><th>Example</th></tr></thead>
+          <tbody>
+            <tr><td><code>*</code></td><td>Any value</td><td><code>* * * * *</code> — every minute</td></tr>
+            <tr><td><code>*/n</code></td><td>Every n units</td><td><code>*/5 * * * *</code> — every 5 min</td></tr>
+            <tr><td><code>n-m</code></td><td>Range</td><td><code>0 9-17 * * *</code> — hourly, 9am–5pm</td></tr>
+            <tr><td><code>n,m</code></td><td>List</td><td><code>0 0 * * 1,5</code> — Mon &amp; Fri midnight</td></tr>
+            <tr><td><code>n</code></td><td>Exact value</td><td><code>30 6 * * *</code> — 6:30 AM daily</td></tr>
+          </tbody>
+        </table>
+      </details>
     </div>
   )
 }
@@ -465,6 +679,8 @@ function ApiKeyGeneratorTool() {
 const TABS = [
   { id: 'hash',   label: 'Hash Identifier',   icon: '#' },
   { id: 'keygen', label: 'API Key Generator', icon: '🔑' },
+  { id: 'qrcode', label: 'QR Code',           icon: '▣' },
+  { id: 'cron',   label: 'Cron Builder',      icon: '⏰' },
 ]
 
 export default function DevUtilsPage() {
@@ -483,6 +699,8 @@ export default function DevUtilsPage() {
     switch (activeTab) {
       case 'hash':   return <HashIdentifierTool />
       case 'keygen': return <ApiKeyGeneratorTool />
+      case 'qrcode': return <QRCodeTool />
+      case 'cron':   return <CronBuilderTool />
       default:       return <HashIdentifierTool />
     }
   }
@@ -517,9 +735,8 @@ export default function DevUtilsPage() {
             <span className={styles.heroAccent}>Utilities</span>
           </h1>
           <p className={styles.heroSub}>
-            Identify unknown hashes, tokens and credentials, and generate
-            cryptographically secure keys in the formats engineers actually
-            need. Everything runs in your browser — nothing is uploaded.
+            Hash identifier, API key generator, QR code generator, and visual
+            cron expression builder. Everything runs in your browser — nothing is uploaded.
           </p>
         </div>
         <div className={styles.heroStats}>

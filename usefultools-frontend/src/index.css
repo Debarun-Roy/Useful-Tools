@@ -238,6 +238,339 @@
   --tool-hero-accent-gradient: linear-gradient(90deg, #5eead4, #ccfbf1);
 }
 
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Sprint 16 — 6 new themes
+ * Append these blocks to index.css, after the existing :root[data-theme='aurora'] block.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+/* ── Nebula ─────────────────────────────────────────────────────────────────
+   Deep cosmic violet / indigo. Dark surface, purple accent nebula glow.
+   ────────────────────────────────────────────────────────────────────────── */
+:root[data-theme='nebula'] {
+  --clr-primary: #a78bfa;
+  --clr-primary-dark: #6d28d9;
+  --clr-primary-light: #c4b5fd;
+  --clr-accent: #8b5cf6;
+  --clr-accent-bright: #ddd6fe;
+
+  --clr-bg: #0c0a14;
+  --clr-surface: #13101e;
+  --clr-input-bg: #1a1528;
+  --clr-text: #ede9fe;
+  --clr-text-muted: #a78bfa;
+  --clr-border: #2e1f5e;
+
+  --clr-dark-bg: #0c0a14;
+  --clr-dark-surface: #13101e;
+  --clr-dark-surface2: #1a1528;
+  --clr-dark-text: #f5f3ff;
+  --clr-dark-muted: #c4b5fd;
+  --clr-dark-border: #3b2a6e;
+
+  --shadow-glow: 0 0 28px rgba(139, 92, 246, 0.28);
+  --app-header-bg: rgba(12, 10, 20, 0.96);
+  --app-header-border: rgba(139, 92, 246, 0.2);
+  --hero-gradient: radial-gradient(ellipse at 30% 20%, rgba(139, 92, 246, 0.22), transparent 50%), linear-gradient(135deg, #0c0a14 0%, #1c0f3d 55%, #0c0a14 100%);
+  --hero-grid-dot: rgba(196, 181, 253, 0.16);
+  --hero-grid-dot-soft: rgba(196, 181, 253, 0.12);
+  --hero-glow-color: rgba(139, 92, 246, 0.18);
+  --hero-subtext: rgba(221, 214, 254, 0.62);
+  --auth-bg-gradient: radial-gradient(ellipse at top right, rgba(139, 92, 246, 0.22), transparent 40%), linear-gradient(135deg, #0c0a14 0%, #180e38 48%, #0c0a14 100%);
+  --auth-glow-primary: rgba(139, 92, 246, 0.2);
+  --auth-glow-secondary: rgba(167, 139, 250, 0.12);
+  --auth-card-bg: rgba(26, 21, 40, 0.9);
+  --auth-card-border: rgba(139, 92, 246, 0.22);
+  --auth-divider: rgba(139, 92, 246, 0.28);
+  --session-notice-bg: rgba(139, 92, 246, 0.14);
+  --session-notice-border: rgba(167, 139, 250, 0.28);
+  --session-notice-text: #ede9fe;
+  --theme-picker-bg: rgba(139, 92, 246, 0.1);
+  --theme-picker-border: rgba(139, 92, 246, 0.26);
+  --theme-picker-label: rgba(237, 233, 254, 0.65);
+  --theme-picker-text: #f5f3ff;
+  --tool-hero-gradient: radial-gradient(ellipse at 88% 14%, rgba(139, 92, 246, 0.2), transparent 30%), linear-gradient(135deg, #0f0b1c 0%, #231453 56%, #0f0b1c 100%);
+  --tool-hero-shadow: rgba(59, 20, 100, 0.35);
+  --tool-hero-glow: rgba(139, 92, 246, 0.28);
+  --tool-hero-grid-dot: rgba(196, 181, 253, 0.18);
+  --tool-hero-badge-border: rgba(139, 92, 246, 0.3);
+  --tool-hero-badge-bg: rgba(139, 92, 246, 0.12);
+  --tool-hero-accent-gradient: linear-gradient(90deg, #a78bfa, #ddd6fe);
+}
+
+/* ── Midnight ────────────────────────────────────────────────────────────────
+   Near-black navy sky with silver/steel-blue accents. Coldly elegant.
+   ────────────────────────────────────────────────────────────────────────── */
+:root[data-theme='midnight'] {
+  --clr-primary: #93c5fd;
+  --clr-primary-dark: #1e4080;
+  --clr-primary-light: #bae6fd;
+  --clr-accent: #7dd3fc;
+  --clr-accent-bright: #e0f2fe;
+
+  --clr-bg: #020408;
+  --clr-surface: #07101e;
+  --clr-input-bg: #0b1828;
+  --clr-text: #e2e8f0;
+  --clr-text-muted: #64748b;
+  --clr-border: #1e2d45;
+
+  --clr-dark-bg: #020408;
+  --clr-dark-surface: #07101e;
+  --clr-dark-surface2: #0d1d30;
+  --clr-dark-text: #f8fafc;
+  --clr-dark-muted: #94a3b8;
+  --clr-dark-border: #1e3050;
+
+  --shadow-glow: 0 0 28px rgba(147, 197, 253, 0.16);
+  --app-header-bg: rgba(2, 4, 8, 0.97);
+  --app-header-border: rgba(125, 211, 252, 0.14);
+  --hero-gradient: radial-gradient(circle at 50% 0%, rgba(30, 64, 128, 0.3), transparent 60%), linear-gradient(180deg, #020408 0%, #051020 60%, #020408 100%);
+  --hero-grid-dot: rgba(147, 197, 253, 0.12);
+  --hero-grid-dot-soft: rgba(147, 197, 253, 0.09);
+  --hero-glow-color: rgba(125, 211, 252, 0.1);
+  --hero-subtext: rgba(203, 213, 225, 0.55);
+  --auth-bg-gradient: radial-gradient(circle at top right, rgba(30, 64, 128, 0.22), transparent 40%), linear-gradient(135deg, #020408 0%, #071428 50%, #020408 100%);
+  --auth-glow-primary: rgba(147, 197, 253, 0.14);
+  --auth-glow-secondary: rgba(186, 230, 253, 0.08);
+  --auth-card-bg: rgba(7, 16, 30, 0.92);
+  --auth-card-border: rgba(125, 211, 252, 0.16);
+  --auth-divider: rgba(125, 211, 252, 0.2);
+  --session-notice-bg: rgba(147, 197, 253, 0.1);
+  --session-notice-border: rgba(186, 230, 253, 0.22);
+  --session-notice-text: #e0f2fe;
+  --theme-picker-bg: rgba(125, 211, 252, 0.06);
+  --theme-picker-border: rgba(125, 211, 252, 0.18);
+  --theme-picker-label: rgba(224, 242, 254, 0.56);
+  --theme-picker-text: #f8fafc;
+  --tool-hero-gradient: radial-gradient(circle at 85% 15%, rgba(125, 211, 252, 0.1), transparent 30%), linear-gradient(135deg, #020612 0%, #071530 56%, #020612 100%);
+  --tool-hero-shadow: rgba(2, 6, 18, 0.5);
+  --tool-hero-glow: rgba(125, 211, 252, 0.18);
+  --tool-hero-grid-dot: rgba(186, 230, 253, 0.14);
+  --tool-hero-badge-border: rgba(125, 211, 252, 0.22);
+  --tool-hero-badge-bg: rgba(125, 211, 252, 0.08);
+  --tool-hero-accent-gradient: linear-gradient(90deg, #93c5fd, #e0f2fe);
+}
+
+/* ── Solstice ────────────────────────────────────────────────────────────────
+   Warm amber, burnt gold, and deep ochre on a dark espresso background.
+   Feels like the last light of a long summer day.
+   ────────────────────────────────────────────────────────────────────────── */
+:root[data-theme='solstice'] {
+  --clr-primary: #f59e0b;
+  --clr-primary-dark: #92400e;
+  --clr-primary-light: #fcd34d;
+  --clr-accent: #d97706;
+  --clr-accent-bright: #fde68a;
+
+  --clr-bg: #0f0900;
+  --clr-surface: #1a1000;
+  --clr-input-bg: #231600;
+  --clr-text: #fef3c7;
+  --clr-text-muted: #d97706;
+  --clr-border: #3d2400;
+
+  --clr-dark-bg: #0f0900;
+  --clr-dark-surface: #1a1000;
+  --clr-dark-surface2: #261900;
+  --clr-dark-text: #fffbeb;
+  --clr-dark-muted: #fcd34d;
+  --clr-dark-border: #4d2f00;
+
+  --shadow-glow: 0 0 28px rgba(245, 158, 11, 0.22);
+  --app-header-bg: rgba(15, 9, 0, 0.96);
+  --app-header-border: rgba(217, 119, 6, 0.2);
+  --hero-gradient: radial-gradient(circle at 20% 30%, rgba(245, 158, 11, 0.2), transparent 45%), linear-gradient(135deg, #0f0900 0%, #321b00 55%, #0f0900 100%);
+  --hero-grid-dot: rgba(253, 230, 138, 0.14);
+  --hero-grid-dot-soft: rgba(253, 230, 138, 0.1);
+  --hero-glow-color: rgba(245, 158, 11, 0.16);
+  --hero-subtext: rgba(254, 243, 199, 0.58);
+  --auth-bg-gradient: radial-gradient(circle at top right, rgba(245, 158, 11, 0.18), transparent 40%), linear-gradient(135deg, #0f0900 0%, #2e1800 48%, #0f0900 100%);
+  --auth-glow-primary: rgba(245, 158, 11, 0.18);
+  --auth-glow-secondary: rgba(252, 211, 77, 0.1);
+  --auth-card-bg: rgba(26, 16, 0, 0.9);
+  --auth-card-border: rgba(245, 158, 11, 0.2);
+  --auth-divider: rgba(245, 158, 11, 0.26);
+  --session-notice-bg: rgba(245, 158, 11, 0.12);
+  --session-notice-border: rgba(252, 211, 77, 0.26);
+  --session-notice-text: #fef3c7;
+  --theme-picker-bg: rgba(245, 158, 11, 0.08);
+  --theme-picker-border: rgba(245, 158, 11, 0.22);
+  --theme-picker-label: rgba(254, 243, 199, 0.62);
+  --theme-picker-text: #fffbeb;
+  --tool-hero-gradient: radial-gradient(circle at 86% 12%, rgba(245, 158, 11, 0.18), transparent 28%), linear-gradient(135deg, #180c00 0%, #3d2100 56%, #180c00 100%);
+  --tool-hero-shadow: rgba(61, 33, 0, 0.4);
+  --tool-hero-glow: rgba(245, 158, 11, 0.26);
+  --tool-hero-grid-dot: rgba(253, 230, 138, 0.16);
+  --tool-hero-badge-border: rgba(245, 158, 11, 0.28);
+  --tool-hero-badge-bg: rgba(245, 158, 11, 0.1);
+  --tool-hero-accent-gradient: linear-gradient(90deg, #f59e0b, #fde68a);
+}
+
+/* ── Glacier ─────────────────────────────────────────────────────────────────
+   Crisp icy whites, pale cyan, frosted glass. Light theme, very clean.
+   ────────────────────────────────────────────────────────────────────────── */
+:root[data-theme='glacier'] {
+  --clr-primary: #0891b2;
+  --clr-primary-dark: #0e7490;
+  --clr-primary-light: #22d3ee;
+  --clr-accent: #06b6d4;
+  --clr-accent-bright: #a5f3fc;
+
+  --clr-bg: #f0fbff;
+  --clr-surface: #ffffff;
+  --clr-input-bg: #f5fbff;
+  --clr-text: #083344;
+  --clr-text-muted: #155e75;
+  --clr-border: #bae6fd;
+
+  --clr-dark-bg: #012532;
+  --clr-dark-surface: #043d52;
+  --clr-dark-surface2: #075268;
+  --clr-dark-text: #ecfeff;
+  --clr-dark-muted: #a5f3fc;
+  --clr-dark-border: #0e7490;
+
+  --shadow-glow: 0 0 28px rgba(6, 182, 212, 0.18);
+  --app-header-bg: rgba(1, 37, 50, 0.96);
+  --app-header-border: rgba(6, 182, 212, 0.18);
+  --hero-gradient: radial-gradient(circle at 30% 20%, rgba(6, 182, 212, 0.16), transparent 40%), linear-gradient(135deg, #012532 0%, #064d64 55%, #012532 100%);
+  --hero-grid-dot: rgba(165, 243, 252, 0.18);
+  --hero-grid-dot-soft: rgba(165, 243, 252, 0.14);
+  --hero-glow-color: rgba(6, 182, 212, 0.14);
+  --hero-subtext: rgba(207, 250, 254, 0.7);
+  --auth-bg-gradient: radial-gradient(circle at top right, rgba(6, 182, 212, 0.16), transparent 36%), linear-gradient(135deg, #012532 0%, #063e52 50%, #012532 100%);
+  --auth-glow-primary: rgba(6, 182, 212, 0.16);
+  --auth-glow-secondary: rgba(34, 211, 238, 0.1);
+  --auth-card-bg: rgba(4, 61, 82, 0.88);
+  --auth-card-border: rgba(6, 182, 212, 0.2);
+  --auth-divider: rgba(6, 182, 212, 0.26);
+  --session-notice-bg: rgba(6, 182, 212, 0.12);
+  --session-notice-border: rgba(34, 211, 238, 0.26);
+  --session-notice-text: #ecfeff;
+  --theme-picker-bg: rgba(6, 182, 212, 0.07);
+  --theme-picker-border: rgba(6, 182, 212, 0.22);
+  --theme-picker-label: rgba(207, 250, 254, 0.65);
+  --theme-picker-text: #ecfeff;
+  --tool-hero-gradient: radial-gradient(circle at 88% 16%, rgba(6, 182, 212, 0.16), transparent 26%), linear-gradient(135deg, #033248 0%, #075270 56%, #033248 100%);
+  --tool-hero-shadow: rgba(3, 50, 72, 0.32);
+  --tool-hero-glow: rgba(6, 182, 212, 0.24);
+  --tool-hero-grid-dot: rgba(165, 243, 252, 0.18);
+  --tool-hero-badge-border: rgba(6, 182, 212, 0.28);
+  --tool-hero-badge-bg: rgba(6, 182, 212, 0.1);
+  --tool-hero-accent-gradient: linear-gradient(90deg, #22d3ee, #a5f3fc);
+}
+
+/* ── Crimson Dusk ────────────────────────────────────────────────────────────
+   Deep burgundy/crimson with rust accents. Like the last light before dark.
+   ────────────────────────────────────────────────────────────────────────── */
+:root[data-theme='crimson-dusk'] {
+  --clr-primary: #f43f5e;
+  --clr-primary-dark: #9f1239;
+  --clr-primary-light: #fb7185;
+  --clr-accent: #e11d48;
+  --clr-accent-bright: #fda4af;
+
+  --clr-bg: #0f020a;
+  --clr-surface: #1a040e;
+  --clr-input-bg: #240618;
+  --clr-text: #ffe4e6;
+  --clr-text-muted: #f43f5e;
+  --clr-border: #4c0519;
+
+  --clr-dark-bg: #0f020a;
+  --clr-dark-surface: #1a040e;
+  --clr-dark-surface2: #260618;
+  --clr-dark-text: #fff1f2;
+  --clr-dark-muted: #fda4af;
+  --clr-dark-border: #5e0b20;
+
+  --shadow-glow: 0 0 28px rgba(244, 63, 94, 0.24);
+  --app-header-bg: rgba(15, 2, 10, 0.97);
+  --app-header-border: rgba(225, 29, 72, 0.2);
+  --hero-gradient: radial-gradient(circle at 15% 25%, rgba(244, 63, 94, 0.2), transparent 45%), linear-gradient(135deg, #0f020a 0%, #3b051c 55%, #0f020a 100%);
+  --hero-grid-dot: rgba(253, 164, 175, 0.14);
+  --hero-grid-dot-soft: rgba(253, 164, 175, 0.1);
+  --hero-glow-color: rgba(244, 63, 94, 0.16);
+  --hero-subtext: rgba(255, 228, 230, 0.58);
+  --auth-bg-gradient: radial-gradient(circle at top right, rgba(244, 63, 94, 0.2), transparent 40%), linear-gradient(135deg, #0f020a 0%, #350418 48%, #0f020a 100%);
+  --auth-glow-primary: rgba(244, 63, 94, 0.2);
+  --auth-glow-secondary: rgba(251, 113, 133, 0.12);
+  --auth-card-bg: rgba(26, 4, 14, 0.9);
+  --auth-card-border: rgba(244, 63, 94, 0.22);
+  --auth-divider: rgba(244, 63, 94, 0.28);
+  --session-notice-bg: rgba(244, 63, 94, 0.12);
+  --session-notice-border: rgba(251, 113, 133, 0.26);
+  --session-notice-text: #ffe4e6;
+  --theme-picker-bg: rgba(244, 63, 94, 0.08);
+  --theme-picker-border: rgba(244, 63, 94, 0.24);
+  --theme-picker-label: rgba(255, 228, 230, 0.62);
+  --theme-picker-text: #fff1f2;
+  --tool-hero-gradient: radial-gradient(circle at 88% 12%, rgba(244, 63, 94, 0.18), transparent 28%), linear-gradient(135deg, #170310 0%, #4c0720 56%, #170310 100%);
+  --tool-hero-shadow: rgba(60, 5, 24, 0.4);
+  --tool-hero-glow: rgba(244, 63, 94, 0.28);
+  --tool-hero-grid-dot: rgba(253, 164, 175, 0.16);
+  --tool-hero-badge-border: rgba(244, 63, 94, 0.3);
+  --tool-hero-badge-bg: rgba(244, 63, 94, 0.1);
+  --tool-hero-accent-gradient: linear-gradient(90deg, #f43f5e, #fda4af);
+}
+
+/* ── Synthwave ───────────────────────────────────────────────────────────────
+   80s retro: neon magenta and electric cyan on near-black. Feels like
+   a grid horizon at dusk in a lo-fi music video.
+   ────────────────────────────────────────────────────────────────────────── */
+:root[data-theme='synthwave'] {
+  --clr-primary: #e879f9;
+  --clr-primary-dark: #a21caf;
+  --clr-primary-light: #f0abfc;
+  --clr-accent: #22d3ee;
+  --clr-accent-bright: #a5f3fc;
+
+  --clr-bg: #07021a;
+  --clr-surface: #0e0626;
+  --clr-input-bg: #160b32;
+  --clr-text: #fae8ff;
+  --clr-text-muted: #d946ef;
+  --clr-border: #2d1060;
+
+  --clr-dark-bg: #07021a;
+  --clr-dark-surface: #0e0626;
+  --clr-dark-surface2: #160b32;
+  --clr-dark-text: #fdf4ff;
+  --clr-dark-muted: #f0abfc;
+  --clr-dark-border: #3b1480;
+
+  --shadow-glow: 0 0 32px rgba(232, 121, 249, 0.28);
+  --app-header-bg: rgba(7, 2, 26, 0.97);
+  --app-header-border: rgba(34, 211, 238, 0.2);
+  --hero-gradient: radial-gradient(circle at 70% 20%, rgba(232, 121, 249, 0.22), transparent 40%), radial-gradient(circle at 25% 70%, rgba(34, 211, 238, 0.16), transparent 40%), linear-gradient(135deg, #07021a 0%, #1a0840 55%, #07021a 100%);
+  --hero-grid-dot: rgba(240, 171, 252, 0.16);
+  --hero-grid-dot-soft: rgba(165, 243, 252, 0.12);
+  --hero-glow-color: rgba(232, 121, 249, 0.18);
+  --hero-subtext: rgba(250, 232, 255, 0.6);
+  --auth-bg-gradient: radial-gradient(circle at top right, rgba(232, 121, 249, 0.2), transparent 35%), radial-gradient(circle at bottom left, rgba(34, 211, 238, 0.14), transparent 35%), linear-gradient(135deg, #07021a 0%, #180740 50%, #07021a 100%);
+  --auth-glow-primary: rgba(232, 121, 249, 0.2);
+  --auth-glow-secondary: rgba(34, 211, 238, 0.12);
+  --auth-card-bg: rgba(14, 6, 38, 0.9);
+  --auth-card-border: rgba(232, 121, 249, 0.22);
+  --auth-divider: rgba(34, 211, 238, 0.28);
+  --session-notice-bg: rgba(232, 121, 249, 0.12);
+  --session-notice-border: rgba(240, 171, 252, 0.28);
+  --session-notice-text: #fae8ff;
+  --theme-picker-bg: rgba(232, 121, 249, 0.08);
+  --theme-picker-border: rgba(34, 211, 238, 0.24);
+  --theme-picker-label: rgba(250, 232, 255, 0.62);
+  --theme-picker-text: #fdf4ff;
+  --tool-hero-gradient: radial-gradient(circle at 82% 14%, rgba(232, 121, 249, 0.2), transparent 30%), radial-gradient(circle at 18% 80%, rgba(34, 211, 238, 0.14), transparent 30%), linear-gradient(135deg, #0a031e 0%, #220c4e 56%, #0a031e 100%);
+  --tool-hero-shadow: rgba(26, 8, 64, 0.42);
+  --tool-hero-glow: rgba(232, 121, 249, 0.3);
+  --tool-hero-grid-dot: rgba(240, 171, 252, 0.18);
+  --tool-hero-badge-border: rgba(34, 211, 238, 0.3);
+  --tool-hero-badge-bg: rgba(34, 211, 238, 0.1);
+  --tool-hero-accent-gradient: linear-gradient(90deg, #e879f9, #22d3ee);
+}
+
 html {
   background: var(--clr-bg);
 }

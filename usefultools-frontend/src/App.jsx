@@ -17,6 +17,7 @@ import CodeUtilitiesPage      from './pages/CodeUtilitiesPage/CodeUtilitiesPage'
 import WebDevHelpersPage      from './pages/WebDevHelpersPage/WebDevHelpersPage'
 import ImageToolsPage         from './pages/ImageToolsPage/ImageToolsPage'
 import DevUtilsPage           from './pages/DevUtilsPage/DevUtilsPage'
+import TimeUtilsPage          from './pages/TimeUtilsPage/TimeUtilsPage'
 import FeedbackModal          from './components/FeedbackModal/FeedbackModal'
 
 export default function App() {
@@ -68,15 +69,19 @@ export default function App() {
               <ProtectedRoute><ImageToolsPage /></ProtectedRoute>
             } />
             {/*
-              Sprint 15 addition: DevUtilsPage hosts two new tools
-              (Hash Identifier + API Key Generator) behind one route.
-              Both tools run entirely client-side; no new backend
-              endpoint is needed for their core functionality. The only
-              server-side interaction is the activity log (fire-and-forget
-              POST /api/activity/log via logActivity.js).
+              Sprint 15: DevUtilsPage — Hash Identifier + API Key Generator.
+              Sprint 16 update: +QR Code Generator +Cron Builder (4 tools total).
             */}
             <Route path="/dev-utils" element={
               <ProtectedRoute><DevUtilsPage /></ProtectedRoute>
+            } />
+            {/*
+              Sprint 16 addition: TimeUtilsPage — Timezone Converter +
+              Timestamp ↔ Date converter. Both tools use the native Intl API;
+              no extra packages required.
+            */}
+            <Route path="/time-utils" element={
+              <ProtectedRoute><TimeUtilsPage /></ProtectedRoute>
             } />
 
             {/* ── Fallback ──────────────────────────────────────────────── */}
@@ -87,9 +92,7 @@ export default function App() {
           {/*
             FeedbackModal renders a floating button that is always present
             in the DOM for authenticated users. It checks isLoggedIn internally
-            and returns null for unauthenticated sessions, so it is safe to
-            mount it here outside the route tree — it will not appear on the
-            login or register pages.
+            and returns null for unauthenticated sessions.
           */}
           <FeedbackModal />
 

@@ -64,6 +64,38 @@ public class ActivityDAO {
     // Adding a new tool? Just add its stable machine id here and wire the
     // frontend to call logActivity(). Rejecting an unknown tool at the
     // controller layer keeps the table free of junk rows.
+
+    /*
+     * ActivityDAO patch — Sprint 16
+     *
+     * Add these tool names to the allow-list comment in ActivityDAO.java.
+     * The allow-list is enforced in the servlet/controller layer, not in the DAO itself,
+     * but the comment in ActivityDAO is the canonical reference.
+     *
+     * New tool IDs (add alongside the existing ones):
+     *
+     *   "qrcode.generate"  — QR Code Generator (DevUtilsPage)
+     *   "cron.build"       — Cron Expression Builder (DevUtilsPage)
+     *   "time.convert"     — Timezone Converter (TimeUtilsPage)
+     *   "time.timestamp"   — Timestamp ↔ Date (TimeUtilsPage)
+     *
+     * If ActivityDAO has a hard-coded Set<String> ALLOWED_TOOL_NAMES (check the
+     * full file), add those four strings to it.
+     *
+     * Example (if using a static Set):
+     *
+     *   private static final Set<String> ALLOWED_TOOL_NAMES = Set.of(
+     *       // ... existing entries ...
+     *       "hash.identify",
+     *       "key.generate",
+     *       // Sprint 16 additions:
+     *       "qrcode.generate",
+     *       "cron.build",
+     *       "time.convert",
+     *       "time.timestamp"
+     *   );
+     */
+    
     public static final java.util.Set<String> VALID_TOOL_NAMES = java.util.Set.of(
             "analyzer.classify",   // Number Analyser
             "converter.convert",   // Unit Converter
@@ -73,7 +105,11 @@ public class ActivityDAO {
             "webdev.generate",     // Web Dev Helpers
             "image.process",       // Image Tools  (log params only, never file content)
             "hash.identify",       // Dev Utilities – Hash Identifier (new)
-            "key.generate"         // Dev Utilities – API Key Generator (new)
+            // Sprint 16 additions:
+            "qrcode.generate",
+            "cron.build",
+            "time.convert",
+            "time.timestamp"
     );
 
     // ── Maximum payload size (TEXT column, keep sane to avoid abuse) ────────
