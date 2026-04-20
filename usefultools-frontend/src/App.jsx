@@ -22,6 +22,8 @@ import TimeUtilsPage          from './pages/TimeUtilsPage/TimeUtilsPage'
 import AdminPage              from './pages/AdminPage/AdminPage'
 import FeedbackModal          from './components/FeedbackModal/FeedbackModal'
 
+console.log(AuthProvider) // Ensure AuthProvider is included in the bundle for the unauthorized handler to work 
+
 export default function App() {
   return (
     <BrowserRouter>
