@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
 import styles from './TextUtilitiesPage.module.css'
+import { trackTool } from '../../utils/logMetric'
 
 const TABS = [
   { id: 'counter', label: 'Counter',        icon: '#'  },
@@ -175,7 +176,12 @@ function CaseConverter() {
   const [input, setInput] = useState('')
   const [copied, setCopied] = useState(null)
 
-  function handleCopy(id, result) {
+  // Sprint 18: instrument the discrete user action (copy). We re-run the
+  // case function inside trackTool so the captured duration reflects
+  // a real conversion, not a no-op. The duplicate work is negligible —
+  // case conversions are all microsecond-scale string manipulations.
+  function handleCopy(id, conv) {
+    const result = trackTool('text.transform', () => conv.fn(input))
     navigator.clipboard.writeText(result).catch(() => {})
     setCopied(id)
     setTimeout(() => setCopied(null), 2000)
@@ -199,7 +205,7 @@ function CaseConverter() {
                 <span className={styles.caseLabel}>{conv.label}</span>
                 <button
                   className={copied === conv.id ? styles.copyBtnDone : styles.copyBtn}
-                  onClick={() => handleCopy(conv.id, result)}
+                  onClick={() => handleCopy(conv.id, conv)}
                   disabled={!input}
                 >
                   {copied === conv.id ? '✓' : 'Copy'}
@@ -263,6 +269,7 @@ function TextDiff() {
     () => (diffReady ? computeLineDiff(text1, text2) : []),
     [text1, text2, diffReady],
   )
+  // const diff = trackTool('text.transform', () => computeDiff(left, right))
 
   const stats = useMemo(() => ({
     added:   diff.filter(d => d.type === 'added').length,
@@ -270,7 +277,14 @@ function TextDiff() {
     same:    diff.filter(d => d.type === 'same').length,
   }), [diff])
 
-  function handleCompare() { setDiffReady(true) }
+  function handleCompare() {
+    // Sprint 18: track the diff invocation. The actual compute happens
+    // in the useMemo that observes diffReady — we record the click here
+    // because that's the user-meaningful action; the captured duration
+    // is near-zero, but the count is what matters for this tool.
+    trackTool('text.transform', () => null)
+    setDiffReady(true)
+  }
   function handleClear()   { setText1(''); setText2(''); setDiffReady(false) }
 
   return (
@@ -347,7 +361,7 @@ function RegexTester() {
 
   const flagStr = Object.entries(flags).filter(([, v]) => v).map(([k]) => k).join('')
 
-  const result = useMemo(() => {
+  const result = useMemo(() => trackTool('text.transform', () => {
     if (!pattern) return null
     try {
       const re = new RegExp(pattern, flagStr)
@@ -383,7 +397,7 @@ function RegexTester() {
     } catch (e) {
       return { matches: [], error: e.message }
     }
-  }, [pattern, flagStr, testStr])
+  }), [pattern, flagStr, testStr])
 
   const highlighted = useMemo(() => {
     if (!result || result.error || result.matches.length === 0 || !testStr) return null
@@ -493,7 +507,7 @@ function SlugGenerator() {
   const [lowercase, setLowercase] = useState(true)
   const [maxLength, setMaxLength] = useState('')
 
-  const slug = useMemo(() => {
+  const slug = useMemo(() => trackTool('text.transform', () => {
     let s = input
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')           // strip diacritics
@@ -510,7 +524,7 @@ function SlugGenerator() {
     }
 
     return s
-  }, [input, separator, lowercase, maxLength])
+  }), [input, separator, lowercase, maxLength])
 
   const SEPS = [
     { value: '-', label: 'Hyphen (-)' },
@@ -621,10 +635,13 @@ function LoremIpsum() {
   const [output,      setOutput]      = useState('')
 
   function generate() {
-    const paras = Array.from({ length: paragraphs }, (_, i) =>
-      i === 0 && startClassic ? CLASSIC : genParagraph(sentences)
-    )
-    setOutput(paras.join('\n\n'))
+    const out = trackTool('text.transform', () => {
+      const paras = Array.from({ length: paragraphs }, (_, i) =>
+        i === 0 && startClassic ? CLASSIC : genParagraph(sentences)
+      )
+      return paras.join('\n\n')
+    })
+    setOutput(out)
   }
 
   return (

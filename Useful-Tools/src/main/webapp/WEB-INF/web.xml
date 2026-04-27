@@ -74,6 +74,19 @@
     <filter-class>common.filter.AdminFilter</filter-class>
   </filter>
 
+  <!--
+    MetricsFilter (Sprint 18): auto-records per-invocation metrics for
+    server-side tool endpoints (calculator, analyser, vault). Recorded rows
+    power the admin analytics dashboard. Placed LAST in the chain so the
+    filter only sees requests that have already passed authentication,
+    rate-limiting, guest/admin enforcement, and CSRF validation. Failed
+    requests rejected by earlier filters do not generate metric rows.
+  -->
+  <filter>
+    <filter-name>MetricsFilter</filter-name>
+    <filter-class>common.filter.MetricsFilter</filter-class>
+  </filter>
+
   <!-- ── Filter mappings (ORDER MATTERS — top to bottom) ─────────────────── -->
 
   <!-- 0. SameSite runs first on ALL requests to add SameSite=None to cookies. -->
@@ -118,9 +131,17 @@
     <dispatcher>REQUEST</dispatcher>
   </filter-mapping>
 
-  <!-- 6. CSRF runs last on all API endpoints (after Auth rejects unauth). -->
+  <!-- 6. CSRF runs after Auth/Guest/Admin on all API endpoints. -->
   <filter-mapping>
     <filter-name>CsrfFilter</filter-name>
+    <url-pattern>/api/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+
+  <!-- 7. MetricsFilter (Sprint 18): last in the chain, records metrics for
+       server-side tool endpoints that have passed every earlier filter. -->
+  <filter-mapping>
+    <filter-name>MetricsFilter</filter-name>
     <url-pattern>/api/*</url-pattern>
     <dispatcher>REQUEST</dispatcher>
   </filter-mapping>

@@ -8,6 +8,7 @@ import { generateKeys, estimateEntropyBits, sanitisePrefix } from '../../utils/k
 import { logActivity } from '../../utils/logActivity'
 import QRCode from 'qrcode'
 import styles from './DevUtilsPage.module.css'
+import { trackTool } from '../../utils/logMetric'
 
 /*
  * DevUtilsPage — Sprint 16 update.
@@ -30,7 +31,10 @@ import styles from './DevUtilsPage.module.css'
 
 function HashIdentifierTool() {
   const [input, setInput] = useState('')
-  const result = useMemo(() => identifyHash(input), [input])
+  const result = useMemo(
+    () => trackTool('hash.identify', () => identifyHash(input)),
+    [input]
+  )
 
   useEffect(() => {
     if (!result.normalized || result.candidates.length === 0) return
@@ -156,7 +160,9 @@ function ApiKeyGeneratorTool() {
   const sanitised = useMemo(() => sanitisePrefix(prefix), [prefix])
 
   function generate() {
-    const result = generateKeys({ format, length, count, prefix: sanitised })
+    const result = trackTool('key.generate', () =>
+      generateKeys({ format, length, count, prefix: sanitised })
+    )
     setKeys(result)
     logActivity(
       'keygen.generate',
@@ -296,12 +302,14 @@ function QRCodeTool() {
     setGenerating(true)
     setError(null)
     try {
-      const dataUrl = await QRCode.toDataURL(text.trim(), {
-        errorCorrectionLevel: errorLevel,
-        width: size,
-        margin: 2,
-        color: { dark: darkColor, light: lightColor },
-      })
+      const dataUrl = await trackTool('qrcode.generate', () =>
+        QRCode.toDataURL(text.trim(), {
+          errorCorrectionLevel: errorLevel,
+          width: size,
+          margin: 2,
+          color: { dark: darkColor, light: lightColor },
+        })
+      )
       setQrDataUrl(dataUrl)
       const isUrl = /^https?:\/\//i.test(text.trim())
       logActivity(
@@ -583,6 +591,7 @@ function CronBuilderTool() {
   }
 
   async function copy() {
+    trackTool('cron.build', () => raw)  // Sprint 18: count invocation
     await navigator.clipboard.writeText(raw)
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)

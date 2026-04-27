@@ -10,6 +10,7 @@ import {
   updateToolToggle,
 } from '../../api/apiClient'
 import styles from './AdminPage.module.css'
+import AnalyticsTab from './AnalyticsTab'
 
 /*
  * AdminPage — Sprint 17 RBAC.
@@ -388,8 +389,9 @@ function ToolTogglesTab() {
 // ── Page shell ────────────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: 'users',   label: 'Users',        icon: '👥' },
-  { id: 'toggles', label: 'Tool Toggles', icon: '⚡' },
+  { id: 'users',     label: 'Users',        icon: '👥' },
+  { id: 'toggles',   label: 'Tool Toggles', icon: '⚡' },
+  { id: 'analytics', label: 'Analytics',    icon: '📊' },   // ← Sprint 18
 ]
 
 export default function AdminPage() {
@@ -473,6 +475,7 @@ export default function AdminPage() {
             ? <UsersTab currentUsername={username} />
             : <ToolTogglesTab />
           }
+          { activeTab === 'analytics' && <AnalyticsTab /> }
         </div>
       </main>
     </div>

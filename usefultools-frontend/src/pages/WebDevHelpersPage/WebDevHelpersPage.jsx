@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
 import styles from './WebDevHelpersPage.module.css'
+import { trackTool } from '../../utils/logMetric'
 
 const TABS = [
   { id: 'gradient', label: 'CSS Gradient',  icon: '∇' },
@@ -819,36 +820,40 @@ function RestTesterTool() {
     }
  
     try {
-      const res = await fetch(target, {
-        method,
-        headers: headerObj,
-        body: hasBody && body.trim() ? body : undefined,
-        signal: ctrl.signal,
-        // Do NOT include credentials:'include' — this is not an internal request
+      // Sprint 18: track the full request lifecycle including fetch + parse.
+      // trackTool is promise-aware so the timing reflects the round-trip.
+      await trackTool('webdev.generate', async () => {
+        const res = await fetch(target, {
+          method,
+          headers: headerObj,
+          body: hasBody && body.trim() ? body : undefined,
+          signal: ctrl.signal,
+          // Do NOT include credentials:'include' — this is not an internal request
+        })
+   
+        const elapsed = Math.round(performance.now() - start)
+   
+        // Collect response headers
+        const resHeaders = {}
+        res.headers.forEach((v, k) => { resHeaders[k] = v })
+   
+        // Read body
+        let rawBody = ''
+        try { rawBody = await res.text() } catch { rawBody = '[Could not read response body]' }
+   
+        // Pretty-print JSON if possible
+        let displayBody = rawBody
+        let isJson = false
+        const ct = res.headers.get('content-type') || ''
+        if (ct.includes('json') || (rawBody.trimStart().startsWith('{') || rawBody.trimStart().startsWith('['))) {
+          try {
+            displayBody = JSON.stringify(JSON.parse(rawBody), null, 2)
+            isJson = true
+          } catch { /* not valid JSON */ }
+        }
+   
+        setResponse({ status: res.status, statusText: res.statusText, headers: resHeaders, body: displayBody, isJson, elapsed })
       })
- 
-      const elapsed = Math.round(performance.now() - start)
- 
-      // Collect response headers
-      const resHeaders = {}
-      res.headers.forEach((v, k) => { resHeaders[k] = v })
- 
-      // Read body
-      let rawBody = ''
-      try { rawBody = await res.text() } catch { rawBody = '[Could not read response body]' }
- 
-      // Pretty-print JSON if possible
-      let displayBody = rawBody
-      let isJson = false
-      const ct = res.headers.get('content-type') || ''
-      if (ct.includes('json') || (rawBody.trimStart().startsWith('{') || rawBody.trimStart().startsWith('['))) {
-        try {
-          displayBody = JSON.stringify(JSON.parse(rawBody), null, 2)
-          isJson = true
-        } catch { /* not valid JSON */ }
-      }
- 
-      setResponse({ status: res.status, statusText: res.statusText, headers: resHeaders, body: displayBody, isJson, elapsed })
  
     } catch (err) {
       const elapsed = Math.round(performance.now() - start)

@@ -614,3 +614,46 @@ export const submitFeedback =
       isJson: true,
       body: feedbackData
     })
+
+    // ─────────────────────────────────────────────────────────────
+// METRICS LOG (SPRINT 18)
+// ─────────────────────────────────────────────────────────────
+ 
+/**
+ * Fire-and-forget single metric record.
+ *
+ * @param {object} payload
+ *   toolName         {string}            required; one of MetricsDAO.VALID_TOOL_NAMES
+ *   executionTimeMs  {number}            required; wall-clock duration
+ *   memoryBytes      {number|null}       optional; used JS heap delta on Chromium
+ *   latencyMs        {number|null}       optional; usually null for client-side
+ *   success          {boolean}           optional; defaults to true
+ *   errorCode        {string|null}       optional; opaque machine-readable label
+ *
+ * @returns {Promise<{status:number, data:object}>}
+ *   Caller typically does not await this. Errors are swallowed by the
+ *   logMetric utility in utils/logMetric.js.
+ */
+export const logMetric = (payload) =>
+  request('/metrics/log', {
+    method: 'POST',
+    isJson: true,
+    body:   payload,
+  })
+ 
+ 
+// ─────────────────────────────────────────────────────────────
+// ADMIN ANALYTICS (SPRINT 18)
+// ─────────────────────────────────────────────────────────────
+ 
+/**
+ * Fetch the aggregated admin analytics dashboard.
+ *
+ * @param {string} [window='7d']  One of '24h', '7d', '30d', 'all'.
+ *   Unknown values are coerced server-side to '7d'.
+ *
+ * @returns {Promise<{status:number, data:object}>}
+ *   data.data shape: { window, overall, topSlow, mostFailing, mostPopular, perTool }
+ */
+export const fetchAdminAnalytics = (window = '7d') =>
+  request(`/admin/analytics?window=${encodeURIComponent(window)}`)

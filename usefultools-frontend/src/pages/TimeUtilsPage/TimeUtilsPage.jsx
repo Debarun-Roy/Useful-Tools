@@ -5,6 +5,7 @@ import { logoutUser } from '../../api/apiClient'
 import UserMenu from '../../components/UserMenu/UserMenu'
 import { logActivity } from '../../utils/logActivity'
 import styles from './TimeUtilsPage.module.css'
+import { trackTool } from '../../utils/logMetric'
 
 /*
  * TimeUtilsPage — Sprint 16
@@ -217,14 +218,14 @@ function TimezoneConverterTool() {
     )
   }
 
-  const results = useMemo(() => {
+  const results = useMemo(() => trackTool('time.convert', () => {
     if (!parsedDate) return []
     return targetTZs.map(tz => ({
       tz,
       formatted: formatInTZ(parsedDate, tz),
       offset: getUtcOffset(tz, parsedDate),
     }))
-  }, [parsedDate, targetTZs])
+  }), [parsedDate, targetTZs])
 
   return (
     <div className={styles.tabPanel}>
@@ -350,7 +351,7 @@ function TimestampTool() {
   const [displayTZ, setDisplayTZ] = useState(LOCAL_TZ)
 
   // Timestamp → date
-  const tsResult = useMemo(() => {
+  const tsResult = useMemo(() => trackTool('time.timestamp', () => {
     const raw = tsInput.trim()
     if (!raw) return null
     let n = Number(raw)
@@ -369,17 +370,17 @@ function TimestampTool() {
       utcFormatted: formatInTZ(date, 'UTC'),
       relative: relativeTime(date),
     }
-  }, [tsInput, displayTZ])
+  }), [tsInput, displayTZ])
 
   // Date → timestamp
-  const dateResult = useMemo(() => {
+  const dateResult = useMemo(() => trackTool('time.timestamp', () => {
     if (!dateInput) return null
     const date = new Date(dateInput)
     if (isNaN(date)) return { error: 'Invalid date string' }
     const s = Math.floor(date.getTime() / 1000)
     const ms = date.getTime()
     return { seconds: s, millis: ms, iso: date.toISOString() }
-  }, [dateInput])
+  }), [dateInput])
 
   function relativeTime(date) {
     const diffMs = date - new Date()

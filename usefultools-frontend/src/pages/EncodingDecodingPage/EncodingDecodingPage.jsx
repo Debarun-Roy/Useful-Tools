@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
 import styles from './EncodingDecodingPage.module.css'
+import { trackTool } from '../../utils/logMetric'
 
 const TABS = [
   { id: 'base64', label: 'Base64',     icon: 'B64' },
@@ -40,9 +41,8 @@ function Base64Tool() {
   const [mode, setMode] = useState('encode')
 
   const output = input
-    ? mode === 'encode'
-      ? btoa(input)
-      : atob(input)
+    ? trackTool('encoding.transform', () =>
+        mode === 'encode' ? btoa(input) : atob(input))
     : ''
 
   return (
@@ -85,9 +85,8 @@ function URLTool() {
   const [mode, setMode] = useState('encode')
 
   const output = input
-    ? mode === 'encode'
-      ? encodeURIComponent(input)
-      : decodeURIComponent(input)
+    ? trackTool('encoding.transform', () =>
+        mode === 'encode' ? encodeURIComponent(input) : decodeURIComponent(input))
     : ''
 
   return (
@@ -130,19 +129,20 @@ function HTMLTool() {
   const [mode, setMode] = useState('encode')
 
   const output = input
-    ? mode === 'encode'
-      ? input
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;')
-      : input
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
-          .replace(/&amp;/g, '&')
+    ? trackTool('encoding.transform', () =>
+        mode === 'encode'
+          ? input
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;')
+          : input
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/&quot;/g, '"')
+              .replace(/&#39;/g, "'")
+              .replace(/&amp;/g, '&'))
     : ''
 
   return (
@@ -192,17 +192,22 @@ function JWTTool() {
       return
     }
     try {
-      const parts = input.split('.')
-      if (parts.length !== 3) throw new Error('Invalid JWT format')
-      const header = JSON.parse(atob(parts[0].replace(/-/g, '+').replace(/_/g, '/')))
-      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
-      setDecoded({ header, payload, signature: parts[2] })
+      const result = trackTool('encoding.transform', () => {
+        const parts = input.split('.')
+        if (parts.length !== 3) throw new Error('Invalid JWT format')
+        const header = JSON.parse(atob(parts[0].replace(/-/g, '+').replace(/_/g, '/')))
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+        return { header, payload, signature: parts[2] }
+      })
+      setDecoded(result)
       setError('')
     } catch (e) {
       setDecoded(null)
       setError(e.message)
     }
   }
+  
+  // const output = trackTool('encoding.transform', () => decodeJwt())
 
   return (
     <div className={styles.tabPanel}>
@@ -249,40 +254,42 @@ function BinaryHexTool() {
   const output = (() => {
     if (!input) return ''
     try {
-      let bytes
-      switch (inputType) {
-        case 'text': {
-          bytes = new TextEncoder().encode(input)
-          break
+      return trackTool('encoding.transform', () => {
+        let bytes
+        switch (inputType) {
+          case 'text': {
+            bytes = new TextEncoder().encode(input)
+            break
+          }
+          case 'hex': {
+            if (!/^[0-9a-fA-F\s]+$/.test(input)) throw new Error('Invalid hex')
+            bytes = new Uint8Array(input.replace(/\s/g, '').match(/.{1,2}/g).map(h => parseInt(h, 16)))
+            break
+          }
+          case 'binary': {
+            if (!/^[01\s]+$/.test(input)) throw new Error('Invalid binary')
+            const binStr = input.replace(/\s/g, '')
+            if (binStr.length % 8 !== 0) throw new Error('Binary length must be multiple of 8')
+            bytes = new Uint8Array(binStr.match(/.{8}/g).map(b => parseInt(b, 2)))
+            break
+          }
+          default:
+            return ''
         }
-        case 'hex': {
-          if (!/^[0-9a-fA-F\s]+$/.test(input)) throw new Error('Invalid hex')
-          bytes = new Uint8Array(input.replace(/\s/g, '').match(/.{1,2}/g).map(h => parseInt(h, 16)))
-          break
+        switch (outputType) {
+          case 'text': {
+            return new TextDecoder().decode(bytes)
+          }
+          case 'hex': {
+            return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ')
+          }
+          case 'binary': {
+            return Array.from(bytes).map(b => b.toString(2).padStart(8, '0')).join(' ')
+          }
+          default:
+            return ''
         }
-        case 'binary': {
-          if (!/^[01\s]+$/.test(input)) throw new Error('Invalid binary')
-          const binStr = input.replace(/\s/g, '')
-          if (binStr.length % 8 !== 0) throw new Error('Binary length must be multiple of 8')
-          bytes = new Uint8Array(binStr.match(/.{8}/g).map(b => parseInt(b, 2)))
-          break
-        }
-        default:
-          return ''
-      }
-      switch (outputType) {
-        case 'text': {
-          return new TextDecoder().decode(bytes)
-        }
-        case 'hex': {
-          return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ')
-        }
-        case 'binary': {
-          return Array.from(bytes).map(b => b.toString(2).padStart(8, '0')).join(' ')
-        }
-        default:
-          return ''
-      }
+      })
     } catch (e) {
       return `Error: ${e.message}`
     }
@@ -333,10 +340,11 @@ function ROTTool() {
   const [shift, setShift] = useState(13)
 
   const output = input
-    ? input.replace(/[a-zA-Z]/g, c => {
-        const base = c <= 'Z' ? 65 : 97
-        return String.fromCharCode(((c.charCodeAt(0) - base + shift) % 26) + base)
-      })
+    ? trackTool('encoding.transform', () =>
+        input.replace(/[a-zA-Z]/g, c => {
+          const base = c <= 'Z' ? 65 : 97
+          return String.fromCharCode(((c.charCodeAt(0) - base + shift) % 26) + base)
+        }))
     : ''
 
   return (

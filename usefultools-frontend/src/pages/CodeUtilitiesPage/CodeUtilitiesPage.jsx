@@ -5,6 +5,7 @@ import { logoutUser } from '../../api/apiClient'
 import yaml from 'js-yaml'
 import Papa from 'papaparse'
 import styles from './CodeUtilitiesPage.module.css'
+import { trackTool } from '../../utils/logMetric'
 
 const TABS = [
   { id: 'json', label: 'JSON', icon: '{}' },
@@ -47,8 +48,11 @@ function JSONTool() {
       return
     }
     try {
-      const parsed = JSON.parse(input)
-      setOutput(JSON.stringify(parsed, null, spaces))
+      const formatted = trackTool('code.format', () => {
+        const parsed = JSON.parse(input)
+        return JSON.stringify(parsed, null, spaces)
+      })
+      setOutput(formatted)
       setError('')
     } catch (e) {
       setOutput('')
@@ -63,8 +67,11 @@ function JSONTool() {
       return
     }
     try {
-      const parsed = JSON.parse(input)
-      setOutput(JSON.stringify(parsed))
+      const minified = trackTool('code.format', () => {
+        const parsed = JSON.parse(input)
+        return JSON.stringify(parsed)
+      })
+      setOutput(minified)
       setError('')
     } catch (e) {
       setOutput('')
@@ -128,13 +135,16 @@ function YAMLTool() {
       return
     }
     try {
-      if (mode === 'yaml-to-json') {
-        const parsed = yaml.load(input)
-        setOutput(JSON.stringify(parsed, null, 2))
-      } else {
-        const parsed = JSON.parse(input)
-        setOutput(yaml.dump(parsed))
-      }
+      const result = trackTool('code.format', () => {
+        if (mode === 'yaml-to-json') {
+          const parsed = yaml.load(input)
+          return JSON.stringify(parsed, null, 2)
+        } else {
+          const parsed = JSON.parse(input)
+          return yaml.dump(parsed)
+        }
+      })
+      setOutput(result)
       setError('')
     } catch (e) {
       setOutput('')
@@ -210,15 +220,17 @@ function CSVTool() {
       return
     }
     try {
-      if (mode === 'csv-to-json') {
-        const parsed = Papa.parse(input, { header: true, skipEmptyLines: true })
-        if (parsed.errors.length > 0) throw new Error(parsed.errors[0].message)
-        setOutput(JSON.stringify(parsed.data, null, 2))
-      } else {
-        const parsed = JSON.parse(input)
-        const csv = Papa.unparse(parsed)
-        setOutput(csv)
-      }
+      const result = trackTool('code.format', () => {
+        if (mode === 'csv-to-json') {
+          const parsed = Papa.parse(input, { header: true, skipEmptyLines: true })
+          if (parsed.errors.length > 0) throw new Error(parsed.errors[0].message)
+          return JSON.stringify(parsed.data, null, 2)
+        } else {
+          const parsed = JSON.parse(input)
+          return Papa.unparse(parsed)
+        }
+      })
+      setOutput(result)
       setError('')
     } catch (e) {
       setOutput('')
@@ -286,19 +298,21 @@ function MarkdownTool() {
   const [output, setOutput] = useState('')
 
   function renderMarkdown() {
-    // Simple markdown renderer
-    let html = input
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
-      .replace(/\*(.*)\*/gim, '<em>$1</em>')
-      .replace(/!\[([^\]]*)\]\(([^)]*)\)/gim, '<img alt="$1" src="$2" />')
-      .replace(/\[([^\]]*)\]\(([^)]*)\)/gim, '<a href="$2">$1</a>')
-      .replace(/`([^`]*)`/gim, '<code>$1</code>')
-      .replace(/\n\n/gim, '</p><p>')
-      .replace(/\n/gim, '<br>')
-    html = '<p>' + html + '</p>'
+    const html = trackTool('code.format', () => {
+      // Simple markdown renderer
+      let h = input
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+        .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+        .replace(/\*(.*)\*/gim, '<em>$1</em>')
+        .replace(/!\[([^\]]*)\]\(([^)]*)\)/gim, '<img alt="$1" src="$2" />')
+        .replace(/\[([^\]]*)\]\(([^)]*)\)/gim, '<a href="$2">$1</a>')
+        .replace(/`([^`]*)`/gim, '<code>$1</code>')
+        .replace(/\n\n/gim, '</p><p>')
+        .replace(/\n/gim, '<br>')
+      return '<p>' + h + '</p>'
+    })
     setOutput(html)
   }
 

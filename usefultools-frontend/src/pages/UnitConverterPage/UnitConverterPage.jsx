@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
 import styles from './UnitConverterPage.module.css'
+import { trackTool } from '../../utils/logMetric'
 
 // ── Conversion data ───────────────────────────────────────────────────────────
 // factor = "how many SI base units in 1 unit of this type"
@@ -155,7 +156,10 @@ export default function UnitConverterPage() {
   }
 
   const numericInput = parseFloat(inputVal)
-  const resultValue  = convert(numericInput, fromUnit, toUnit, category)
+  const resultValue  = trackTool(
+    'converter.convert',
+    () => convert(numericInput, fromUnit, toUnit, category)
+  )
   const resultStr    = formatResult(resultValue)
   const fromSymbol   = catData.units[fromUnit]?.symbol ?? fromUnit
   const toSymbol     = catData.units[toUnit]?.symbol   ?? toUnit

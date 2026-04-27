@@ -5,6 +5,7 @@ import { logoutUser } from '../../api/apiClient'
 import UserMenu from '../../components/UserMenu/UserMenu'
 import { logActivity } from '../../utils/logActivity'
 import styles from './ImageToolsPage.module.css'
+import { trackTool } from '../../utils/logMetric'
 
 /*
  * ImageToolsPage
@@ -253,8 +254,11 @@ function ResizeTool() {
     if (!source) { setError('Please choose an image first.'); return }
     const w = Number(width), h = Number(height)
     if (!Number.isFinite(w) || !Number.isFinite(h) || w < 1 || h < 1) {
-      setError('Width and height must be positive numbers.'); return
+      setError('Width and height must be positive numbers.')
+      return
     }
+    // Sprint 18: track the discrete resize-and-download invocation.
+    trackTool('image.process', () => null)
     if (w > 16384 || h > 16384) {
       setError('Dimensions are limited to 16384 × 16384 px.'); return
     }
@@ -371,6 +375,7 @@ function ConvertTool() {
 
   async function handleConvert() {
     if (!source) { setError('Please choose an image first.'); return }
+    trackTool('image.process', () => null)  // Sprint 18: count invocation
     setWorking(true); setError('')
     try {
       const { img } = source
@@ -484,6 +489,7 @@ function CompressTool() {
 
   async function handleCompress() {
     if (!source) { setError('Please choose an image first.'); return }
+    trackTool('image.process', () => null)  // Sprint 18: count invocation
     setWorking(true); setError(''); setResult(null)
     try {
       let blob, usedQuality
@@ -643,6 +649,7 @@ function CropTool() {
     if (x + w > img.naturalWidth || y + h > img.naturalHeight) {
       setError('Crop rectangle extends beyond the image.'); return
     }
+    trackTool('image.process', () => null)  // Sprint 18: count invocation
     setWorking(true); setError('')
     try {
       const canvas = canvasFromImage(img, w, h, (ctx) => {
@@ -797,6 +804,7 @@ function RotateTool() {
 
   async function handleDownload() {
     if (!source) { setError('Please choose an image first.'); return }
+    trackTool('image.process', () => null)  // Sprint 18: count invocation
     setWorking(true); setError('')
     try {
       const canvas = document.createElement('canvas')
@@ -925,6 +933,7 @@ function FiltersTool() {
 
   async function handleDownload() {
     if (!source) { setError('Please choose an image first.'); return }
+    trackTool('image.process', () => null)  // Sprint 18: count invocation
     setWorking(true); setError('')
     try {
       const canvas = document.createElement('canvas')
