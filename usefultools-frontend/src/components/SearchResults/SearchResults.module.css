@@ -1,0 +1,316 @@
+/* ─── SearchResults.module.css ──────────────────────────────────────────── */
+/*
+ * Styles for the SearchResults component.
+ * Provides styling for search input, results list, and various states.
+ */
+
+.container {
+  position: relative;
+  width: 100%;
+}
+
+.container.compact {
+  max-width: 400px;
+}
+
+/* ─── Search Input ─────────────────────────────────────────────────────── */
+
+.searchBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 10px 12px;
+  padding-right: 32px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: all 200ms ease;
+}
+
+.searchInput:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.searchInput:focus {
+  border-color: rgba(100, 200, 255, 0.6);
+  background: rgba(100, 200, 255, 0.05);
+  box-shadow: 0 0 0 3px rgba(100, 200, 255, 0.1);
+}
+
+.searchInput::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.clearBtn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: rgba(255, 100, 100, 0.2);
+  color: rgba(255, 100, 100, 0.8);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 150ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clearBtn:hover {
+  background: rgba(255, 100, 100, 0.4);
+  color: rgba(255, 100, 100, 1);
+}
+
+.clearBtn:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+/* ─── Results Container ────────────────────────────────────────────────── */
+
+.resultsContainer {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  background: rgba(10, 10, 20, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+}
+
+.resultsList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.resultItem {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  transition: background 150ms ease;
+}
+
+.resultItem:last-child {
+  border-bottom: none;
+}
+
+.resultItem:hover {
+  background: rgba(100, 200, 255, 0.08);
+}
+
+.resultButton {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 150ms ease;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.resultButton:hover,
+.resultButton:focus {
+  background: rgba(100, 200, 255, 0.12);
+  outline: none;
+  padding-left: 20px;
+}
+
+.resultIcon {
+  flex-shrink: 0;
+  font-size: 20px;
+}
+
+.resultContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.resultName {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resultDesc {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.relevanceBadge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  transition: all 150ms ease;
+}
+
+.relevanceHigh {
+  background: rgba(100, 255, 150, 0.2);
+  color: rgba(100, 255, 150, 0.9);
+}
+
+.relevanceMedium {
+  background: rgba(255, 200, 100, 0.2);
+  color: rgba(255, 200, 100, 0.9);
+}
+
+.relevanceLow {
+  background: rgba(200, 150, 255, 0.2);
+  color: rgba(200, 150, 255, 0.9);
+}
+
+/* ─── States ────────────────────────────────────────────────────────────── */
+
+.loadingState {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+.spinner {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.errorState {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 100, 100, 0.8);
+  background: rgba(255, 100, 100, 0.1);
+  border-left: 3px solid rgba(255, 100, 100, 0.4);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.errorIcon {
+  flex-shrink: 0;
+  font-size: 18px;
+}
+
+.noResults {
+  padding: 24px 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.noResultsIcon {
+  font-size: 32px;
+  opacity: 0.6;
+}
+
+.noResultsText {
+  margin: 0;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.noResultsHint {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.helperText {
+  margin-top: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.3);
+  text-align: center;
+}
+
+/* ─── Scrollbar Styling ────────────────────────────────────────────────── */
+
+.resultsContainer::-webkit-scrollbar {
+  width: 6px;
+}
+
+.resultsContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.resultsContainer::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.resultsContainer::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .resultsContainer {
+    max-height: 300px;
+  }
+
+  .resultButton {
+    padding: 10px 12px;
+  }
+
+  .resultButton:hover {
+    padding-left: 16px;
+  }
+
+  .resultDesc {
+    font-size: 11px;
+  }
+}
