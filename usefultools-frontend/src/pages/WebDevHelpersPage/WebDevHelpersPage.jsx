@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { fetchRequestHeaders } from '../../api/apiClient'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
 import styles from './WebDevHelpersPage.module.css'
 import { trackTool } from '../../utils/logMetric'
+import { logActivity } from '../../utils/logActivity'
 
 const TABS = [
   { id: 'gradient', label: 'CSS Gradient',  icon: '∇' },
@@ -52,6 +53,19 @@ function GradientTool() {
       return `background: radial-gradient(${direction}, ${colorStops});`
     }
   })()
+
+  // Debounced log: settles after the user finishes tweaking. logActivity
+  // coalesces rapid changes into a single entry per 1500 ms. Skip the
+  // initial mount so just opening the page doesn't record an entry.
+  const didMount = useRef(false)
+  useEffect(() => {
+    if (!didMount.current) { didMount.current = true; return }
+    logActivity(
+      'webdev.generate',
+      `Built ${type} gradient with ${colors.length} colors`,
+      { tool: 'gradient', type, colorCount: colors.length }
+    )
+  }, [type, direction, colors, stops])
 
   function addColor() {
     setColors([...colors, '#ffffff'])

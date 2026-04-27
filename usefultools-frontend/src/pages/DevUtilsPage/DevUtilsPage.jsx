@@ -165,7 +165,7 @@ function ApiKeyGeneratorTool() {
     )
     setKeys(result)
     logActivity(
-      'keygen.generate',
+      'key.generate',
       `Generated ${count} ${format.toUpperCase()} key${count > 1 ? 's' : ''} · ${length} chars${sanitised ? ` · prefix "${sanitised}"` : ''}`,
       { format, length, count, prefixLength: sanitised.length }
     )

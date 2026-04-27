@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
 import styles from './UnitConverterPage.module.css'
 import { trackTool } from '../../utils/logMetric'
+import { logActivity } from '../../utils/logActivity'
 
 // ── Conversion data ───────────────────────────────────────────────────────────
 // factor = "how many SI base units in 1 unit of this type"
@@ -163,6 +164,22 @@ export default function UnitConverterPage() {
   const resultStr    = formatResult(resultValue)
   const fromSymbol   = catData.units[fromUnit]?.symbol ?? fromUnit
   const toSymbol     = catData.units[toUnit]?.symbol   ?? toUnit
+
+  // Log activity once the user has settled on a real conversion. logActivity
+  // is debounced per-tool (1500 ms) so rapid input changes coalesce into one
+  // entry capturing the LAST settled state. Skip the initial mount so just
+  // opening the page doesn't record an entry.
+  const didMount = useRef(false)
+  useEffect(() => {
+    if (!didMount.current) { didMount.current = true; return }
+    if (!isFinite(resultValue) || isNaN(resultValue)) return
+    if (!isFinite(numericInput)) return
+    logActivity(
+      'converter.convert',
+      `Converted ${inputVal} ${fromSymbol} → ${resultStr} ${toSymbol} (${catData.label})`,
+      { category, fromUnit, toUnit }
+    )
+  }, [inputVal, fromUnit, toUnit, category, resultValue, resultStr, fromSymbol, toSymbol, catData.label, numericInput])
 
   async function handleLogout() {
     try { await logoutUser() } catch { /* ignore */ }

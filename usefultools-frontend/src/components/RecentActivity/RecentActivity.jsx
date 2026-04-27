@@ -40,15 +40,20 @@ const LIMIT = 5
 // Metadata per tool name — drives the row icon, label, and click target.
 // The tool_name values here MUST match ActivityDAO.VALID_TOOL_NAMES.
 const TOOL_META = {
-  'analyzer.classify':  { icon: '🔢', label: 'Number Analyser',     path: '/analyser'   },
-  'converter.convert':  { icon: '🔄', label: 'Unit Converter',      path: '/converter'  },
-  'text.transform':     { icon: '📝', label: 'Text Utilities',      path: '/text-utils' },
-  'encoding.transform': { icon: '🔧', label: 'Encoding & Decoding', path: '/encoding'   },
-  'code.format':        { icon: '💻', label: 'Code Utilities',      path: '/code-utils' },
-  'webdev.generate':    { icon: '🛠️', label: 'Web Dev Helpers',     path: '/web-dev'    },
-  'image.process':      { icon: '🖼️', label: 'Image Tools',         path: '/image-tools'},
-  'hash.identify':      { icon: '#',  label: 'Hash Identifier',     path: '/dev-utils'  },
-  'key.generate':       { icon: '🔑', label: 'API Key Generator',   path: '/dev-utils'  },
+  'analyzer.classify':  { icon: '🔢', label: 'Number Analyser',       path: '/analyser'   },
+  'converter.convert':  { icon: '🔄', label: 'Unit Converter',        path: '/converter'  },
+  'text.transform':     { icon: '📝', label: 'Text Utilities',        path: '/text-utils' },
+  'encoding.transform': { icon: '🔧', label: 'Encoding & Decoding',   path: '/encoding'   },
+  'code.format':        { icon: '💻', label: 'Code Utilities',        path: '/code-utils' },
+  'webdev.generate':    { icon: '🛠️', label: 'Web Dev Helpers',       path: '/web-dev'    },
+  'image.process':      { icon: '🖼️', label: 'Image Tools',           path: '/image-tools'},
+  'hash.identify':      { icon: '#',  label: 'Hash Identifier',       path: '/dev-utils'  },
+  'key.generate':       { icon: '🔑', label: 'API Key Generator',     path: '/dev-utils'  },
+  // Sprint 16 additions:
+  'qrcode.generate':    { icon: '🔳', label: 'QR Code Generator',     path: '/dev-utils'  },
+  'cron.build':         { icon: '⏲',  label: 'Cron Expression Builder', path: '/dev-utils' },
+  'time.convert':       { icon: '🕐', label: 'Timezone Converter',    path: '/time-utils' },
+  'time.timestamp':     { icon: '🕐', label: 'Timestamp ↔ Date',      path: '/time-utils' },
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────

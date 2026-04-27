@@ -9,6 +9,7 @@ import {
   performBaseArithmetic,
 } from '../../api/apiClient'
 import { useAuth } from '../../auth/useAuth'
+import { logActivity } from '../../utils/logActivity'
 import SeriesChart from './SeriesChart'
 import styles from './NumberAnalyzerPage.module.css'
 
@@ -346,6 +347,11 @@ export default function NumberAnalyserPage() {
       if (data.success) {
         setClassifyTime(Math.round(performance.now() - t0))
         startTransition(() => setClassifyResult(data.data))
+        logActivity(
+          'analyzer.classify',
+          `Classified number ${classifyInput.trim()}`,
+          { length: classifyInput.trim().length }
+        )
       } else {
         setClassifyError(data.error || 'Could not analyse the supplied number.')
       }
@@ -368,8 +374,16 @@ export default function NumberAnalyserPage() {
 
     try {
       const { data } = await fetchBaseRepresentation(baseInput.trim(), baseChoice)
-      if (data.success) startTransition(() => setBaseResult(data.data))
-      else setBaseError(data.error || 'Could not fetch the requested base representation.')
+      if (data.success) {
+        startTransition(() => setBaseResult(data.data))
+        logActivity(
+          'analyzer.classify',
+          `Computed ${baseChoice} representation for ${baseInput.trim()}`,
+          { mode: baseChoice, length: baseInput.trim().length }
+        )
+      } else {
+        setBaseError(data.error || 'Could not fetch the requested base representation.')
+      }
     } catch {
       setBaseError('Could not reach the server. Please check that Tomcat is running.')
     } finally {
@@ -394,8 +408,16 @@ export default function NumberAnalyserPage() {
 
     try {
       const { data } = await performBaseArithmetic(n1, n2, arithBase, arithOp)
-      if (data.success) startTransition(() => setArithResult(data.data))
-      else setArithError(data.error || 'Calculation failed. Check your inputs.')
+      if (data.success) {
+        startTransition(() => setArithResult(data.data))
+        logActivity(
+          'analyzer.classify',
+          `Base-${arithBase} ${arithOp}`,
+          { base: arithBase, op: arithOp }
+        )
+      } else {
+        setArithError(data.error || 'Calculation failed. Check your inputs.')
+      }
     } catch {
       setArithError('Could not reach the server. Please check that Tomcat is running.')
     } finally {
@@ -442,8 +464,19 @@ export default function NumberAnalyserPage() {
         ? fetchAllSeries(Number(seriesTerms.trim()))
         : fetchSelectedSeries(Number(seriesTerms.trim()), choiceMap)
       const { data } = await req
-      if (data.success) startTransition(() => setSeriesResult(data.data))
-      else setSeriesError(data.error || 'Could not generate the requested series.')
+      if (data.success) {
+        startTransition(() => setSeriesResult(data.data))
+        const seriesCount = seriesMode === 'all'
+          ? 'all'
+          : Object.values(choiceMap).reduce((n, vs) => n + vs.length, 0)
+        logActivity(
+          'analyzer.classify',
+          `Generated ${seriesCount} series · ${seriesTerms.trim()} terms`,
+          { mode: seriesMode, terms: Number(seriesTerms.trim()) }
+        )
+      } else {
+        setSeriesError(data.error || 'Could not generate the requested series.')
+      }
     } catch {
       setSeriesError('Could not reach the server. Please check that Tomcat is running.')
     } finally {
