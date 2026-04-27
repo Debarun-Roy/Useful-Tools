@@ -6,6 +6,7 @@ import yaml from 'js-yaml'
 import Papa from 'papaparse'
 import styles from './CodeUtilitiesPage.module.css'
 import { trackTool } from '../../utils/logMetric'
+import { logActivity } from '../../utils/logActivity'
 
 const TABS = [
   { id: 'json', label: 'JSON', icon: '{}' },
@@ -54,6 +55,11 @@ function JSONTool() {
       })
       setOutput(formatted)
       setError('')
+      logActivity(
+        'code.format',
+        `Prettified JSON (${input.length} → ${formatted.length} chars, ${spaces}-space indent)`,
+        { tool: 'json', mode: 'prettify', spaces, inputLength: input.length }
+      )
     } catch (e) {
       setOutput('')
       setError(e.message)
@@ -73,6 +79,11 @@ function JSONTool() {
       })
       setOutput(minified)
       setError('')
+      logActivity(
+        'code.format',
+        `Minified JSON (${input.length} → ${minified.length} chars)`,
+        { tool: 'json', mode: 'minify', inputLength: input.length }
+      )
     } catch (e) {
       setOutput('')
       setError(e.message)
@@ -146,6 +157,11 @@ function YAMLTool() {
       })
       setOutput(result)
       setError('')
+      logActivity(
+        'code.format',
+        `Converted ${mode === 'yaml-to-json' ? 'YAML → JSON' : 'JSON → YAML'} (${input.length} chars)`,
+        { tool: 'yaml', mode, inputLength: input.length }
+      )
     } catch (e) {
       setOutput('')
       setError(e.message)
@@ -232,6 +248,11 @@ function CSVTool() {
       })
       setOutput(result)
       setError('')
+      logActivity(
+        'code.format',
+        `Converted ${mode === 'csv-to-json' ? 'CSV → JSON' : 'JSON → CSV'} (${input.length} chars)`,
+        { tool: 'csv', mode, inputLength: input.length }
+      )
     } catch (e) {
       setOutput('')
       setError(e.message)
@@ -314,6 +335,13 @@ function MarkdownTool() {
       return '<p>' + h + '</p>'
     })
     setOutput(html)
+    if (input.trim()) {
+      logActivity(
+        'code.format',
+        `Rendered Markdown (${input.length} chars)`,
+        { tool: 'markdown', inputLength: input.length }
+      )
+    }
   }
 
   return (

@@ -58,6 +58,11 @@ const VALID_TOOL_NAMES = new Set([
   'image.process',
   'hash.identify',
   'key.generate',
+  // Sprint 16 additions (DevUtils QR + Cron, TimeUtils convert/timestamp).
+  'qrcode.generate',
+  'cron.build',
+  'time.convert',
+  'time.timestamp',
 ])
 
 // ── Internal: the actual send ───────────────────────────────────────────────

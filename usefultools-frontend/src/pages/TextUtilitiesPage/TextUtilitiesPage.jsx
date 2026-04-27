@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
 import styles from './TextUtilitiesPage.module.css'
 import { trackTool } from '../../utils/logMetric'
+import { logActivity } from '../../utils/logActivity'
 
 const TABS = [
   { id: 'counter', label: 'Counter',        icon: '#'  },
@@ -62,6 +63,17 @@ function WordCounter() {
 
     return { chars, charsNoSpaces, words, uniqueWords, sentences, paragraphs, lines, readingLabel }
   }, [text])
+
+  // Debounced via logActivity (1500 ms per tool); rapid keystrokes coalesce
+  // into a single entry capturing the user's settled input.
+  useEffect(() => {
+    if (!text.trim()) return
+    logActivity(
+      'text.transform',
+      `Counted ${stats.words} words · ${stats.chars} chars`,
+      { tool: 'counter', words: stats.words, chars: stats.chars }
+    )
+  }, [text, stats.words, stats.chars])
 
   const METRICS = [
     { label: 'Characters',   value: stats.chars,         icon: 'C'  },
@@ -185,6 +197,11 @@ function CaseConverter() {
     navigator.clipboard.writeText(result).catch(() => {})
     setCopied(id)
     setTimeout(() => setCopied(null), 2000)
+    logActivity(
+      'text.transform',
+      `Converted text to ${conv.label} (${input.length} chars)`,
+      { tool: 'case', mode: id, length: input.length }
+    )
   }
 
   return (

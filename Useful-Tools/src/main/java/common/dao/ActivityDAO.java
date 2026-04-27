@@ -105,6 +105,7 @@ public class ActivityDAO {
             "webdev.generate",     // Web Dev Helpers
             "image.process",       // Image Tools  (log params only, never file content)
             "hash.identify",       // Dev Utilities – Hash Identifier (new)
+            "key.generate",        // Dev Utilities – API Key Generator (log params only, never key bodies)
             // Sprint 16 additions:
             "qrcode.generate",
             "cron.build",

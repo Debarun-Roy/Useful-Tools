@@ -50,7 +50,8 @@ export default function LoginPage() {
         // it in sessionStorage.  In cross-origin deployments (Vercel → Railway)
         // the XSRF-TOKEN cookie cannot be read from document.cookie, so the
         // token must come via the response body instead.
-        login(data.data.username, data.data.csrfToken, data.role)
+        // Role lives inside the data envelope (data.data.role) — Sprint 17.
+        login(data.data.username, data.data.csrfToken, data.data.role)
         navigate('/dashboard')
       } else {
         setError(getErrorMessage(data.errorCode, data.error))
@@ -71,8 +72,8 @@ export default function LoginPage() {
 
       if (data.success) {
         // Guest login returns the same format as regular login:
-        // username (guest_<UUID>) and csrfToken
-        login(data.data.username, data.data.csrfToken, data.role || 'guest')
+        // username (guest_<UUID>) and csrfToken. Role is inside data.data.
+        login(data.data.username, data.data.csrfToken, data.data.role || 'guest')
         navigate('/dashboard')
       } else {
         setError(data.error || 'Failed to start guest session.')

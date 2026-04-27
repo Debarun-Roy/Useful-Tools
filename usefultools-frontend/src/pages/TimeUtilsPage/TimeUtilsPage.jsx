@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
@@ -381,6 +381,27 @@ function TimestampTool() {
     const ms = date.getTime()
     return { seconds: s, millis: ms, iso: date.toISOString() }
   }), [dateInput])
+
+  // Debounced log: capture a single entry per settled input.
+  useEffect(() => {
+    if (tsResult && !tsResult.error) {
+      logActivity(
+        'time.timestamp',
+        `Timestamp → date in ${displayTZ}`,
+        { mode: 'ts-to-date', tz: displayTZ }
+      )
+    }
+  }, [tsResult, displayTZ])
+
+  useEffect(() => {
+    if (dateResult && !dateResult.error) {
+      logActivity(
+        'time.timestamp',
+        `Date → Unix timestamp (${dateResult.seconds}s)`,
+        { mode: 'date-to-ts' }
+      )
+    }
+  }, [dateResult])
 
   function relativeTime(date) {
     const diffMs = date - new Date()
