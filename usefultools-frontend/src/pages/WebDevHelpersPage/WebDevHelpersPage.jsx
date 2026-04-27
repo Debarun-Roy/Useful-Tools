@@ -6,6 +6,7 @@ import { logoutUser } from '../../api/apiClient'
 import styles from './WebDevHelpersPage.module.css'
 import { trackTool } from '../../utils/logMetric'
 import { logActivity } from '../../utils/logActivity'
+import useRestCollection from '../../hooks/useRestCollection'
 
 const TABS = [
   { id: 'gradient', label: 'CSS Gradient',  icon: '∇' },
@@ -783,7 +784,149 @@ function HttpHeadersTool() {
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
 const NO_BODY_METHODS = ['GET', 'HEAD', 'OPTIONS']
  
+function fmtRestTime(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  const sec = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000))
+  if (sec < 60)        return 'just now'
+  if (sec < 3600)      return Math.floor(sec / 60)   + 'm ago'
+  if (sec < 86400)     return Math.floor(sec / 3600) + 'h ago'
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
+
+function methodColor(m) {
+  switch (m) {
+    case 'GET':    return styles.methodGet
+    case 'POST':   return styles.methodPost
+    case 'PUT':    return styles.methodPut
+    case 'PATCH':  return styles.methodPatch
+    case 'DELETE': return styles.methodDelete
+    default:       return styles.methodOther
+  }
+}
+
+function RestSavedPanel({ items, activeId, onLoad, onDelete }) {
+  const [confirm, setConfirm] = useState(null)
+  if (!items || items.length === 0) {
+    return (
+      <div className={styles.restSidePanel}>
+        <p className={styles.restPanelEmpty}>
+          No saved requests yet. Build a request, then click <strong>💾 Save</strong>.
+        </p>
+      </div>
+    )
+  }
+  return (
+    <div className={styles.restSidePanel}>
+      <ul className={styles.restList}>
+        {items.map(r => (
+          <li
+            key={r.id}
+            className={r.id === activeId ? styles.restListItemActive : styles.restListItem}
+          >
+            <button
+              type="button"
+              className={styles.restListBody}
+              onClick={() => onLoad(r)}
+              title="Load this request"
+            >
+              <span className={`${styles.restMethod} ${methodColor(r.method)}`}>
+                {r.method}
+              </span>
+              <span className={styles.restName}>{r.name}</span>
+              <span className={styles.restUrl}>{r.url || '(no URL)'}</span>
+            </button>
+            <button
+              type="button"
+              className={confirm === r.id ? styles.restDeleteArmed : styles.restDelete}
+              onClick={() => {
+                if (confirm === r.id) {
+                  onDelete(r.id)
+                  setConfirm(null)
+                } else {
+                  setConfirm(r.id)
+                  setTimeout(() => setConfirm(c => c === r.id ? null : c), 4000)
+                }
+              }}
+              title={confirm === r.id ? 'Click again to confirm' : 'Delete this request'}
+            >
+              {confirm === r.id ? '⚠' : '🗑'}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function RestHistoryPanel({ items, onResend, onClear }) {
+  const [confirm, setConfirm] = useState(false)
+  if (!items || items.length === 0) {
+    return (
+      <div className={styles.restSidePanel}>
+        <p className={styles.restPanelEmpty}>
+          No history yet — every request you send appears here, last 30 retained.
+        </p>
+      </div>
+    )
+  }
+  return (
+    <div className={styles.restSidePanel}>
+      <div className={styles.restPanelHeader}>
+        <span className={styles.restPanelHeaderLabel}>Last {items.length} request{items.length !== 1 ? 's' : ''}</span>
+        <button
+          type="button"
+          className={confirm ? styles.restClearArmed : styles.restClearBtn}
+          onClick={() => {
+            if (confirm) { onClear(); setConfirm(false) }
+            else { setConfirm(true); setTimeout(() => setConfirm(false), 4000) }
+          }}
+        >
+          {confirm ? 'Click again to clear' : 'Clear'}
+        </button>
+      </div>
+      <ul className={styles.restList}>
+        {items.map(h => {
+          const ok = h.ok === true
+          return (
+            <li key={h.id} className={styles.restListItem}>
+              <button
+                type="button"
+                className={styles.restListBody}
+                onClick={() => onResend(h)}
+                title="Load URL + method into the editor"
+              >
+                <span className={`${styles.restMethod} ${methodColor(h.method)}`}>
+                  {h.method}
+                </span>
+                <span className={styles.restHistStatus}>
+                  {h.error
+                    ? <span className={styles.restHistFail}>ERR</span>
+                    : <span className={ok ? styles.restHistOk : styles.restHistBad}>
+                        {h.status || '—'}
+                      </span>
+                  }
+                </span>
+                <span className={styles.restUrl}>{h.url}</span>
+                <span className={styles.restHistMeta}>
+                  {h.elapsed != null ? `${h.elapsed} ms` : ''}
+                  {' · '}
+                  {fmtRestTime(h.sentAt)}
+                </span>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
 function RestTesterTool() {
+  const { username } = useAuth()
+  const collection   = useRestCollection(username)
+
   const [url,         setUrl]         = React.useState('')
   const [method,      setMethod]      = React.useState('GET')
   const [reqHeaders,  setReqHeaders]  = React.useState([{ key: '', value: '' }])
@@ -792,7 +935,13 @@ function RestTesterTool() {
   const [response,    setResponse]    = React.useState(null)
   const [sending,     setSending]     = React.useState(false)
   const [abortCtrl,   setAbortCtrl]   = React.useState(null)
- 
+
+  // Postman-like state
+  const [activeId,    setActiveId]    = React.useState(null)  // currently-loaded saved request id
+  const [showSaveModal, setShowSaveModal] = React.useState(false)
+  const [saveName,    setSaveName]    = React.useState('')
+  const [sidePanel,   setSidePanel]   = React.useState('saved') // 'saved' | 'history'
+
   const hasBody = !NO_BODY_METHODS.includes(method)
  
   function addHeader() {
@@ -844,17 +993,17 @@ function RestTesterTool() {
           signal: ctrl.signal,
           // Do NOT include credentials:'include' — this is not an internal request
         })
-   
+
         const elapsed = Math.round(performance.now() - start)
-   
+
         // Collect response headers
         const resHeaders = {}
         res.headers.forEach((v, k) => { resHeaders[k] = v })
-   
+
         // Read body
         let rawBody = ''
         try { rawBody = await res.text() } catch { rawBody = '[Could not read response body]' }
-   
+
         // Pretty-print JSON if possible
         let displayBody = rawBody
         let isJson = false
@@ -865,10 +1014,19 @@ function RestTesterTool() {
             isJson = true
           } catch { /* not valid JSON */ }
         }
-   
+
         setResponse({ status: res.status, statusText: res.statusText, headers: resHeaders, body: displayBody, isJson, elapsed })
+
+        // Auto-record to history. Body is intentionally NOT persisted here
+        // (privacy + storage cap) — the URL + status line are enough for
+        // the user to recognise + replay the request via "Resend".
+        collection.recordHistory({
+          method, url: target,
+          status: res.status, statusText: res.statusText,
+          ok: res.ok, elapsed,
+        })
       })
- 
+
     } catch (err) {
       const elapsed = Math.round(performance.now() - start)
       if (err.name === 'AbortError') {
@@ -880,15 +1038,74 @@ function RestTesterTool() {
           corsLikely: isTypeerror,
           elapsed,
         })
+        collection.recordHistory({
+          method, url: target,
+          status: null, statusText: '',
+          ok: false, elapsed,
+          error: err.message || 'Request failed',
+        })
       }
     } finally {
       setSending(false)
       setAbortCtrl(null)
     }
   }
- 
+
   function abort() {
     abortCtrl?.abort()
+  }
+
+  // ── Save / load handlers ──────────────────────────────────────────────────
+
+  function loadRequest(req) {
+    if (!req) return
+    setUrl(req.url || '')
+    setMethod(req.method || 'GET')
+    setReqHeaders(
+      Array.isArray(req.headers) && req.headers.length > 0
+        ? req.headers
+        : [{ key: '', value: '' }]
+    )
+    setBody(req.body || '')
+    setContentType(req.contentType || 'json')
+    setActiveId(req.id || null)
+    setSaveName(req.name || '')
+    setResponse(null)
+  }
+
+  function openSaveModal() {
+    setSaveName(prev => {
+      if (prev) return prev
+      // Sensible default: "METHOD /path"
+      try {
+        const u = new URL(url || 'http://x/')
+        return `${method} ${u.pathname || '/'}`
+      } catch {
+        return `${method} ${url.slice(0, 40) || 'request'}`
+      }
+    })
+    setShowSaveModal(true)
+  }
+
+  function commitSave(asNew) {
+    const persisted = collection.saveRequest({
+      id:          asNew ? undefined : activeId,
+      name:        saveName,
+      method, url, headers: reqHeaders, body, contentType,
+    })
+    setActiveId(persisted.id)
+    setShowSaveModal(false)
+  }
+
+  function handleNewRequest() {
+    setActiveId(null)
+    setSaveName('')
+    setUrl('')
+    setMethod('GET')
+    setReqHeaders([{ key: '', value: '' }])
+    setBody('')
+    setContentType('json')
+    setResponse(null)
   }
  
   function getStatusColor(status) {
@@ -900,7 +1117,122 @@ function RestTesterTool() {
  
   return (
     <div className={styles.tabPanel}>
- 
+
+      {/* ── Postman-like collection toolbar ─────────────────────── */}
+      <div className={styles.restToolbar}>
+        <div className={styles.restToolbarLeft}>
+          <button
+            type="button"
+            className={styles.restNewBtn}
+            onClick={handleNewRequest}
+            title="Start a fresh request"
+          >
+            ✚ New
+          </button>
+          <button
+            type="button"
+            className={styles.restSaveBtn}
+            onClick={openSaveModal}
+            disabled={!url.trim()}
+            title={activeId ? 'Update saved request' : 'Save this request'}
+          >
+            💾 {activeId ? 'Update' : 'Save'}
+          </button>
+          {activeId && (
+            <span className={styles.restActiveBadge} title="Linked to a saved request">
+              {collection.saved.find(r => r.id === activeId)?.name || 'saved'}
+            </span>
+          )}
+        </div>
+        <div className={styles.restToolbarRight}>
+          <button
+            type="button"
+            className={sidePanel === 'saved' ? styles.restPanelTabActive : styles.restPanelTab}
+            onClick={() => setSidePanel(p => p === 'saved' ? null : 'saved')}
+          >
+            📁 Saved <span className={styles.restCountChip}>{collection.saved.length}</span>
+          </button>
+          <button
+            type="button"
+            className={sidePanel === 'history' ? styles.restPanelTabActive : styles.restPanelTab}
+            onClick={() => setSidePanel(p => p === 'history' ? null : 'history')}
+          >
+            🕐 History <span className={styles.restCountChip}>{collection.history.length}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── Side panel: Saved or History ─────────────────────────── */}
+      {sidePanel === 'saved' && (
+        <RestSavedPanel
+          items={collection.saved}
+          activeId={activeId}
+          onLoad={loadRequest}
+          onDelete={collection.deleteRequest}
+        />
+      )}
+      {sidePanel === 'history' && (
+        <RestHistoryPanel
+          items={collection.history}
+          onResend={(h) => {
+            setUrl(h.url)
+            setMethod(h.method)
+            setActiveId(null)
+            setResponse(null)
+          }}
+          onClear={collection.clearHistory}
+        />
+      )}
+
+      {/* ── Save modal ───────────────────────────────────────────── */}
+      {showSaveModal && (
+        <div className={styles.restModalOverlay} onClick={() => setShowSaveModal(false)}>
+          <div className={styles.restModal} onClick={e => e.stopPropagation()}>
+            <h3 className={styles.restModalTitle}>
+              {activeId ? 'Update saved request' : 'Save request'}
+            </h3>
+            <label className={styles.restModalLabel} htmlFor="rest-save-name">Name</label>
+            <input
+              id="rest-save-name"
+              className={styles.restModalInput}
+              value={saveName}
+              onChange={e => setSaveName(e.target.value)}
+              placeholder="e.g. Get user profile"
+              autoFocus
+            />
+            <p className={styles.restModalMeta}>
+              {method} <code>{url}</code>
+            </p>
+            <div className={styles.restModalActions}>
+              <button
+                type="button"
+                className={styles.restModalCancel}
+                onClick={() => setShowSaveModal(false)}
+              >
+                Cancel
+              </button>
+              {activeId && (
+                <button
+                  type="button"
+                  className={styles.restModalSecondary}
+                  onClick={() => commitSave(true)}
+                >
+                  Save as new
+                </button>
+              )}
+              <button
+                type="button"
+                className={styles.restModalPrimary}
+                onClick={() => commitSave(false)}
+                disabled={!saveName.trim()}
+              >
+                {activeId ? 'Update' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── URL + Method ──────────────────────────────────────────── */}
       <div className={styles.requestBar}>
         <select

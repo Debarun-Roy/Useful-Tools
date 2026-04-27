@@ -507,3 +507,263 @@
   .loremOptions { flex-direction: column; align-items: flex-start; }
   .content { padding: var(--space-md); }
 }
+
+/* ── Save-to-notes button + per-tool footer ─────────────────────────────── */
+
+.toolFooter {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-sm, 0.75rem);
+}
+
+.caseCardActions {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.saveNoteBtn,
+.saveNoteBtnDone {
+  background: transparent;
+  border: 1px solid var(--clr-border, rgba(255,255,255,0.18));
+  color: var(--clr-text, #e5e7eb);
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: border-color 120ms, color 120ms, background 120ms;
+}
+
+.saveNoteBtn:hover:not(:disabled) {
+  border-color: var(--clr-accent, #6366f1);
+  color: var(--clr-accent, #6366f1);
+}
+
+.saveNoteBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.saveNoteBtnDone {
+  border-color: #10b981;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.08);
+}
+
+/* ── Notes panel (collapsible drawer above the tabs) ───────────────────── */
+
+.notesPanel {
+  margin-bottom: var(--space-md, 1rem);
+  background: var(--clr-surface-elevated, rgba(255,255,255,0.02));
+  border: 1px solid var(--clr-border, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.notesPanelToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--clr-text, #e5e7eb);
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+}
+
+.notesPanelToggle:hover { background: rgba(255,255,255,0.03); }
+
+.notesPanelToggleIcon {
+  display: inline-block;
+  width: 1rem;
+  text-align: center;
+  color: var(--clr-text-muted, #9ca3af);
+}
+
+.notesPanelToggleLabel { flex: 1; }
+
+.notesPanelCount {
+  background: var(--clr-accent, #6366f1);
+  color: white;
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.notesPanelBody {
+  border-top: 1px solid var(--clr-border, rgba(255,255,255,0.08));
+  padding: 0.75rem 1rem 1rem;
+}
+
+.notesPanelControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.notesFilterRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.notesPill,
+.notesPillActive {
+  background: transparent;
+  border: 1px solid var(--clr-border, rgba(255,255,255,0.18));
+  color: var(--clr-text, #e5e7eb);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.notesPill:disabled { opacity: 0.4; cursor: not-allowed; }
+.notesPill:hover:not(:disabled) { border-color: var(--clr-accent, #6366f1); }
+
+.notesPillActive {
+  background: var(--clr-accent, #6366f1);
+  border-color: var(--clr-accent, #6366f1);
+  color: white;
+}
+
+.notesPillCount {
+  background: rgba(0,0,0,0.2);
+  border-radius: 999px;
+  padding: 0 0.45rem;
+  font-size: 0.7rem;
+  min-width: 1.2rem;
+  text-align: center;
+}
+
+.notesPillActive .notesPillCount {
+  background: rgba(255,255,255,0.25);
+}
+
+.notesClearBtn,
+.notesClearArmed {
+  background: transparent;
+  border: 1px solid var(--clr-border, rgba(255,255,255,0.18));
+  color: var(--clr-text-muted, #9ca3af);
+  border-radius: 8px;
+  padding: 0.3rem 0.75rem;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.notesClearBtn:hover { border-color: #ef4444; color: #ef4444; }
+.notesClearArmed     { border-color: #ef4444; color: white; background: #ef4444; }
+
+.notesEmpty {
+  color: var(--clr-text-muted, #9ca3af);
+  font-size: 0.9rem;
+  margin: 0.25rem 0;
+}
+
+.notesList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.noteItem {
+  background: var(--clr-surface, rgba(255,255,255,0.04));
+  border: 1px solid var(--clr-border, rgba(255,255,255,0.08));
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.noteHead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.noteToolBadge {
+  background: rgba(99, 102, 241, 0.18);
+  color: var(--clr-accent, #6366f1);
+  border-radius: 999px;
+  padding: 0.05rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.noteTitle {
+  font-weight: 500;
+  color: var(--clr-text, #e5e7eb);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.noteDate {
+  font-size: 0.75rem;
+  color: var(--clr-text-muted, #9ca3af);
+}
+
+.noteBody {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  margin: 0;
+  background: rgba(0,0,0,0.18);
+  padding: 0.5rem 0.65rem;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--clr-text, #e5e7eb);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.noteActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.noteActionBtn,
+.noteDeleteBtn {
+  background: transparent;
+  border: 1px solid var(--clr-border, rgba(255,255,255,0.18));
+  color: var(--clr-text, #e5e7eb);
+  border-radius: 6px;
+  padding: 0.25rem 0.65rem;
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.noteActionBtn:hover { border-color: var(--clr-accent, #6366f1); color: var(--clr-accent, #6366f1); }
+
+.noteDeleteBtn { color: #f87171; }
+.noteDeleteBtn:hover { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }

@@ -486,3 +486,214 @@
     font-size: 1.5rem;
   }
 }
+
+/* ── Feedback view ─────────────────────────────────────────────────────────
+   Reuses summaryCard / rankBarTrack / rankBar primitives from above, only
+   adding what's specific to the feedback layout. */
+
+.starsRow {
+  display: inline-flex;
+  gap: 1px;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  color: #f59e0b;
+}
+
+.starsMuted {
+  color: var(--clr-text-muted, #6b7280);
+}
+
+.feedbackDistCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--clr-surface-elevated, rgba(255,255,255,0.03));
+  border: 1px solid var(--clr-border, rgba(255,255,255,0.08));
+  border-radius: 12px;
+}
+
+.feedbackDistribution {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+
+.distRow {
+  display: grid;
+  grid-template-columns: 2.25rem 1fr 2.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.distLabel {
+  color: var(--clr-text-muted, #9ca3af);
+  font-variant-numeric: tabular-nums;
+}
+
+.distCount {
+  text-align: right;
+  color: var(--clr-text, #e5e7eb);
+  font-variant-numeric: tabular-nums;
+}
+
+.feedbackFilterBar {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0 0.75rem;
+  flex-wrap: wrap;
+}
+
+.feedbackFilterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 12rem;
+}
+
+.feedbackFilterLabel {
+  font-size: 0.75rem;
+  color: var(--clr-text-muted, #9ca3af);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.feedbackFilterSelect,
+.feedbackFilterInput {
+  background: var(--clr-surface, rgba(255,255,255,0.04));
+  border: 1px solid var(--clr-border, rgba(255,255,255,0.12));
+  color: var(--clr-text, #e5e7eb);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+}
+
+.feedbackFilterInput:focus,
+.feedbackFilterSelect:focus {
+  outline: 2px solid var(--clr-accent, #f43f5e);
+  outline-offset: 1px;
+}
+
+.feedbackList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.feedbackCard {
+  background: var(--clr-surface-elevated, rgba(255,255,255,0.03));
+  border: 1px solid var(--clr-border, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+
+.feedbackCardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.feedbackCardWho {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.feedbackUser {
+  font-weight: 600;
+  color: var(--clr-text, #e5e7eb);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feedbackDate {
+  font-size: 0.8rem;
+  color: var(--clr-text-muted, #9ca3af);
+}
+
+.feedbackBody {
+  margin: 0.25rem 0 0.5rem;
+  color: var(--clr-text, #e5e7eb);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.feedbackExpandBtn {
+  background: transparent;
+  border: none;
+  color: var(--clr-accent, #f43f5e);
+  cursor: pointer;
+  padding: 0.25rem 0;
+  font: inherit;
+  text-align: left;
+}
+
+.feedbackExpandBtn:hover { text-decoration: underline; }
+
+.feedbackFeatures {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  border-top: 1px dashed var(--clr-border, rgba(255,255,255,0.08));
+  padding-top: 0.5rem;
+}
+
+.feedbackFeatureItem {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) auto;
+  gap: 0.5rem 1rem;
+  align-items: center;
+}
+
+.feedbackFeatureName {
+  color: var(--clr-text, #e5e7eb);
+  font-weight: 500;
+}
+
+.feedbackFeatureComment {
+  grid-column: 1 / -1;
+  color: var(--clr-text-muted, #9ca3af);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.feedbackPager {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.feedbackPagerBtn {
+  background: var(--clr-surface, rgba(255,255,255,0.04));
+  border: 1px solid var(--clr-border, rgba(255,255,255,0.12));
+  color: var(--clr-text, #e5e7eb);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.feedbackPagerBtn:hover:not(:disabled) {
+  border-color: var(--clr-accent, #f43f5e);
+  color: var(--clr-accent, #f43f5e);
+}
+
+.feedbackPagerBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.feedbackPagerInfo {
+  color: var(--clr-text-muted, #9ca3af);
+  font-variant-numeric: tabular-nums;
+}

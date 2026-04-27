@@ -5,6 +5,9 @@ import { logoutUser } from '../../api/apiClient'
 import styles from './TextUtilitiesPage.module.css'
 import { trackTool } from '../../utils/logMetric'
 import { logActivity } from '../../utils/logActivity'
+import { NotesProvider } from './NotesContext'
+import NotesPanel from './NotesPanel'
+import SaveNoteButton from './SaveNoteButton'
 
 const TABS = [
   { id: 'counter', label: 'Counter',        icon: '#'  },
@@ -86,6 +89,21 @@ function WordCounter() {
     { label: 'Read Time',    value: stats.readingLabel,  icon: '⏱'  },
   ]
 
+  // Build a snapshot of metrics + the input itself for the saved note.
+  const noteContent = text.trim()
+    ? `${text}\n\n──\nWord-counter snapshot:\n` +
+      `  Characters:   ${stats.chars}\n` +
+      `  No spaces:    ${stats.charsNoSpaces}\n` +
+      `  Words:        ${stats.words}\n` +
+      `  Unique words: ${stats.uniqueWords}\n` +
+      `  Sentences:    ${stats.sentences}\n` +
+      `  Paragraphs:   ${stats.paragraphs}\n` +
+      `  Lines:        ${stats.lines}\n` +
+      `  Read time:    ${stats.readingLabel}`
+    : ''
+
+  const noteTitle = `${stats.words} word${stats.words !== 1 ? 's' : ''} — counter`
+
   return (
     <div className={styles.tabPanel}>
       <div className={styles.metricsGrid}>
@@ -104,6 +122,9 @@ function WordCounter() {
         placeholder="Type or paste your text here to analyse it…"
         rows={12}
       />
+      <div className={styles.toolFooter}>
+        <SaveNoteButton tool="counter" title={noteTitle} content={noteContent} />
+      </div>
     </div>
   )
 }
@@ -220,13 +241,21 @@ function CaseConverter() {
             <div key={conv.id} className={styles.caseCard}>
               <div className={styles.caseCardHeader}>
                 <span className={styles.caseLabel}>{conv.label}</span>
-                <button
-                  className={copied === conv.id ? styles.copyBtnDone : styles.copyBtn}
-                  onClick={() => handleCopy(conv.id, conv)}
-                  disabled={!input}
-                >
-                  {copied === conv.id ? '✓' : 'Copy'}
-                </button>
+                <div className={styles.caseCardActions}>
+                  <SaveNoteButton
+                    tool="case"
+                    title={`${conv.label} — case`}
+                    content={result}
+                    disabled={!result}
+                  />
+                  <button
+                    className={copied === conv.id ? styles.copyBtnDone : styles.copyBtn}
+                    onClick={() => handleCopy(conv.id, conv)}
+                    disabled={!input}
+                  >
+                    {copied === conv.id ? '✓' : 'Copy'}
+                  </button>
+                </div>
               </div>
               <code className={styles.caseResult}>
                 {result || <span className={styles.placeholder}>—</span>}
@@ -362,6 +391,19 @@ function TextDiff() {
                 <span className={styles.diffText}>{line.text || '\u00a0'}</span>
               </div>
             ))}
+          </div>
+          <div className={styles.toolFooter}>
+            <SaveNoteButton
+              tool="diff"
+              title={`Diff: +${stats.added}/-${stats.removed}`}
+              content={diff.map(line => {
+                const marker = line.type === 'added' ? '+ '
+                  : line.type === 'removed' ? '- '
+                  : line.type === 'info'    ? '! '
+                  : '  '
+                return marker + (line.text || '')
+              }).join('\n')}
+            />
           </div>
         </>
       )}
@@ -512,6 +554,25 @@ function RegexTester() {
           )}
         </div>
       )}
+
+      {result && !result.error && testStr && (
+        <div className={styles.toolFooter}>
+          <SaveNoteButton
+            tool="regex"
+            title={`/${pattern || '(empty)'}/${flagStr} — ${result.matches.length} match${result.matches.length !== 1 ? 'es' : ''}`}
+            content={
+              `Pattern: /${pattern}/${flagStr}\n` +
+              `Test string:\n${testStr}\n\n` +
+              `Matches (${result.matches.length}):\n` +
+              result.matches.slice(0, 100).map((m, i) =>
+                `  #${i + 1} ${JSON.stringify(m.match)} @ ${m.index}-${m.end}` +
+                (m.groups.length ? ` · groups: ${m.groups.map(g => JSON.stringify(g)).join(', ')}` : '')
+              ).join('\n')
+            }
+            disabled={result.matches.length === 0}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -607,6 +668,16 @@ function SlugGenerator() {
 
       {slug && (
         <p className={styles.slugMeta}>{slug.length} characters</p>
+      )}
+
+      {slug && (
+        <div className={styles.toolFooter}>
+          <SaveNoteButton
+            tool="slug"
+            title={`Slug: ${slug.slice(0, 40)}`}
+            content={`Source: ${input}\nSlug:   ${slug}\nLength: ${slug.length} chars\nSeparator: "${separator}"  Lowercase: ${lowercase}`}
+          />
+        </div>
       )}
     </div>
   )
@@ -707,6 +778,16 @@ function LoremIpsum() {
           rows={14}
         />
       )}
+
+      {output && (
+        <div className={styles.toolFooter}>
+          <SaveNoteButton
+            tool="lorem"
+            title={`Lorem: ${paragraphs}p × ${sentences}s`}
+            content={output}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -737,6 +818,7 @@ export default function TextUtilitiesPage() {
   }
 
   return (
+    <NotesProvider username={username}>
     <div className={styles.page}>
 
       {/* ── Header ──────────────────────────────────────────────────── */}
@@ -788,6 +870,9 @@ export default function TextUtilitiesPage() {
 
       <main className={styles.main}>
 
+        {/* ── Saved notes panel (collapsible) ─────────────────────── */}
+        <NotesPanel />
+
         {/* ── Tab bar ─────────────────────────────────────────────── */}
         <nav className={styles.tabBar} aria-label="Text utilities">
           {TABS.map(tab => (
@@ -807,5 +892,6 @@ export default function TextUtilitiesPage() {
         </div>
       </main>
     </div>
+    </NotesProvider>
   )
 }

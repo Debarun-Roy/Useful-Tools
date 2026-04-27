@@ -11,6 +11,7 @@ import {
 } from '../../api/apiClient'
 import styles from './AdminPage.module.css'
 import AnalyticsTab from './AnalyticsTab'
+import FeedbackTab  from './FeedbackTab'
 
 /*
  * AdminPage — Sprint 17 RBAC.
@@ -392,6 +393,7 @@ const TABS = [
   { id: 'users',     label: 'Users',        icon: '👥' },
   { id: 'toggles',   label: 'Tool Toggles', icon: '⚡' },
   { id: 'analytics', label: 'Analytics',    icon: '📊' },   // ← Sprint 18
+  { id: 'feedback',  label: 'Feedback',     icon: '💬' },
 ]
 
 export default function AdminPage() {
@@ -471,11 +473,10 @@ export default function AdminPage() {
         </nav>
 
         <div className={styles.content}>
-          {activeTab === 'users'
-            ? <UsersTab currentUsername={username} />
-            : <ToolTogglesTab />
-          }
-          { activeTab === 'analytics' && <AnalyticsTab /> }
+          {activeTab === 'users'    && <UsersTab currentUsername={username} />}
+          {activeTab === 'toggles'  && <ToolTogglesTab />}
+          {activeTab === 'analytics'&& <AnalyticsTab />}
+          {activeTab === 'feedback' && <FeedbackTab />}
         </div>
       </main>
     </div>

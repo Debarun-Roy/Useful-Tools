@@ -657,3 +657,24 @@ export const logMetric = (payload) =>
  */
 export const fetchAdminAnalytics = (window = '7d') =>
   request(`/admin/analytics?window=${encodeURIComponent(window)}`)
+
+// ─────────────────────────────────────────────────────────────
+// ADMIN FEEDBACK (read-only listing for admins)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Fetch a page of submitted feedback for the admin Feedback view.
+ *
+ * @param {object} [params]
+ * @param {number} [params.limit=25]   Page size, server caps at 200.
+ * @param {number} [params.offset=0]   Row offset (newest-first ordering).
+ *
+ * @returns {Promise<{status:number, data:object}>}
+ *   data.data shape: { summary, limit, offset, total, entries[] }
+ */
+export const fetchAdminFeedback = ({ limit = 25, offset = 0 } = {}) => {
+  const params = new URLSearchParams()
+  params.append('limit',  limit)
+  params.append('offset', offset)
+  return request(`/admin/feedback?${params}`)
+}
