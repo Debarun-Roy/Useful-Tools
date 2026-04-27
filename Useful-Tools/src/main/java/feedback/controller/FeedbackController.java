@@ -48,6 +48,13 @@ public class FeedbackController extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private final Gson gson = new Gson();
 
+    // Size caps — reject abusive payloads early so we don't store them or
+    // pay the DB write cost. Numbers chosen to cover any realistic legitimate
+    // feedback comfortably while ruling out scripted spam blobs.
+    private static final int MAX_COMMENT_LEN = 4_000;
+    private static final int MAX_FEATURE_FB  = 25;
+    private static final int MAX_FEATURE_NAME_LEN = 80;
+
     // ── Inner request model classes used by Gson ──────────────────────────────
 
     private static class FeatureFeedbackRequest {
@@ -114,9 +121,18 @@ public class FeedbackController extends HttpServlet {
                 return;
             }
 
+            // Cap generalComment length to prevent DB bloat / abusive payloads.
+            // Truncation is silent — the user got their message across in
+            // any reasonable feedback. We don't surface "too long" because
+            // that's a footgun for users who paste big logs by mistake.
+            String safeComment = body.generalComment;
+            if (safeComment != null && safeComment.length() > MAX_COMMENT_LEN) {
+                safeComment = safeComment.substring(0, MAX_COMMENT_LEN);
+            }
+
             // ── 4. Persist top-level feedback row ──────────────────────────────
             long feedbackId = FeedbackDAO.saveFeedback(
-                    username, body.overallRating, body.generalComment);
+                    username, body.overallRating, safeComment);
 
             if (feedbackId < 0) {
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -128,7 +144,9 @@ public class FeedbackController extends HttpServlet {
 
             // ── 5. Persist per-feature feedback rows ───────────────────────────
             if (body.featureFeedback != null) {
+                int processed = 0;
                 for (FeatureFeedbackRequest ff : body.featureFeedback) {
+                    if (processed >= MAX_FEATURE_FB) break; // hard cap, ignore rest
                     if (ff == null || ff.featureName == null || ff.featureName.isBlank()) {
                         continue; // skip malformed entries silently
                     }
@@ -137,8 +155,17 @@ public class FeedbackController extends HttpServlet {
                     if (featureRating != null && (featureRating < 1 || featureRating > 5)) {
                         featureRating = null;
                     }
+                    String safeName = ff.featureName.trim();
+                    if (safeName.length() > MAX_FEATURE_NAME_LEN) {
+                        safeName = safeName.substring(0, MAX_FEATURE_NAME_LEN);
+                    }
+                    String safeFeatureComment = ff.comment;
+                    if (safeFeatureComment != null && safeFeatureComment.length() > MAX_COMMENT_LEN) {
+                        safeFeatureComment = safeFeatureComment.substring(0, MAX_COMMENT_LEN);
+                    }
                     FeedbackDAO.saveFeatureFeedback(
-                            feedbackId, ff.featureName.trim(), featureRating, ff.comment);
+                            feedbackId, safeName, featureRating, safeFeatureComment);
+                    processed++;
                 }
             }
 

@@ -700,3 +700,330 @@ details[open] .resHeadersSummary::before { content: '▼ '; }
 .restPlaceholderIcon { font-size: 2.5rem; }
 .restPlaceholder p { font-size: var(--fs-sm); color: var(--clr-text); }
 .restPlaceholderSub { color: var(--clr-text-muted) !important; font-size: var(--fs-xs) !important; max-width: 380px; }
+
+/* ── Postman-like REST tester collection UI ─────────────────────────────── */
+
+.restToolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--clr-border, rgba(255,255,255,0.08));
+  border-radius: 10px;
+}
+
+.restToolbarLeft,
+.restToolbarRight {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.restNewBtn,
+.restSaveBtn,
+.restPanelTab,
+.restPanelTabActive {
+  background: transparent;
+  border: 1px solid var(--clr-border, rgba(255,255,255,0.18));
+  color: var(--clr-text, #e5e7eb);
+  border-radius: 8px;
+  padding: 0.4rem 0.85rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.restNewBtn:hover:not(:disabled),
+.restSaveBtn:hover:not(:disabled),
+.restPanelTab:hover:not(:disabled) {
+  border-color: var(--clr-accent, #6366f1);
+  color: var(--clr-accent, #6366f1);
+}
+
+.restSaveBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.restPanelTabActive {
+  background: var(--clr-accent, #6366f1);
+  border-color: var(--clr-accent, #6366f1);
+  color: white;
+}
+
+.restCountChip {
+  background: rgba(0,0,0,0.2);
+  border-radius: 999px;
+  padding: 0 0.5rem;
+  font-size: 0.7rem;
+  min-width: 1.25rem;
+  text-align: center;
+}
+
+.restPanelTabActive .restCountChip { background: rgba(255,255,255,0.25); }
+
+.restActiveBadge {
+  background: rgba(99,102,241,0.18);
+  color: var(--clr-accent, #6366f1);
+  border-radius: 999px;
+  padding: 0.1rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Side panel (Saved or History list) ─────────────────────────────────── */
+
+.restSidePanel {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--clr-border, rgba(255,255,255,0.08));
+  border-radius: 10px;
+  padding: 0.5rem;
+  margin-bottom: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.restPanelEmpty {
+  color: var(--clr-text-muted, #9ca3af);
+  font-size: 0.9rem;
+  margin: 0.5rem;
+  text-align: center;
+}
+
+.restPanelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border-bottom: 1px solid var(--clr-border, rgba(255,255,255,0.06));
+  margin-bottom: 0.4rem;
+}
+
+.restPanelHeaderLabel {
+  color: var(--clr-text-muted, #9ca3af);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.restClearBtn,
+.restClearArmed {
+  background: transparent;
+  border: 1px solid var(--clr-border, rgba(255,255,255,0.18));
+  color: var(--clr-text-muted, #9ca3af);
+  border-radius: 6px;
+  padding: 0.2rem 0.6rem;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.restClearBtn:hover { border-color: #ef4444; color: #ef4444; }
+.restClearArmed     { border-color: #ef4444; background: #ef4444; color: white; }
+
+.restList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.restListItem,
+.restListItemActive {
+  display: flex;
+  align-items: stretch;
+  gap: 0.25rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+
+.restListItem:hover { background: rgba(255,255,255,0.03); }
+
+.restListItemActive {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.restListBody {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 4rem auto 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--clr-text, #e5e7eb);
+  text-align: left;
+  cursor: pointer;
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  font-size: 0.85rem;
+  min-width: 0;
+}
+
+.restMethod {
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-align: center;
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  letter-spacing: 0.04em;
+}
+
+.methodGet    { background: rgba(34,197,94,0.18);  color: #4ade80; }
+.methodPost   { background: rgba(245,158,11,0.18); color: #fbbf24; }
+.methodPut    { background: rgba(59,130,246,0.18); color: #60a5fa; }
+.methodPatch  { background: rgba(168,85,247,0.18); color: #c084fc; }
+.methodDelete { background: rgba(239,68,68,0.18);  color: #f87171; }
+.methodOther  { background: rgba(156,163,175,0.18);color: #d1d5db; }
+
+.restName {
+  font-weight: 500;
+  color: var(--clr-text, #e5e7eb);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.restUrl {
+  color: var(--clr-text-muted, #9ca3af);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.restHistStatus { font-weight: 700; font-size: 0.78rem; }
+.restHistOk     { color: #4ade80; }
+.restHistBad    { color: #fbbf24; }
+.restHistFail   { color: #f87171; }
+
+.restHistMeta {
+  color: var(--clr-text-muted, #9ca3af);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.restDelete,
+.restDeleteArmed {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--clr-text-muted, #9ca3af);
+  width: 2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.restDelete:hover    { color: #f87171; border-color: #f87171; }
+.restDeleteArmed     { color: white; background: #ef4444; border-color: #ef4444; }
+
+/* ── Save modal ─────────────────────────────────────────────────────────── */
+
+.restModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.restModal {
+  background: var(--clr-surface, #1f2937);
+  border: 1px solid var(--clr-border, rgba(255,255,255,0.12));
+  border-radius: 12px;
+  padding: 1.25rem;
+  min-width: min(420px, 100%);
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.restModalTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--clr-text, #e5e7eb);
+}
+
+.restModalLabel {
+  font-size: 0.8rem;
+  color: var(--clr-text-muted, #9ca3af);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.restModalInput {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--clr-border, rgba(255,255,255,0.18));
+  color: var(--clr-text, #e5e7eb);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+}
+
+.restModalInput:focus {
+  outline: 2px solid var(--clr-accent, #6366f1);
+  outline-offset: 1px;
+}
+
+.restModalMeta {
+  font-size: 0.85rem;
+  color: var(--clr-text-muted, #9ca3af);
+  word-break: break-all;
+  margin: 0;
+}
+
+.restModalMeta code {
+  background: rgba(255,255,255,0.05);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.restModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.restModalCancel,
+.restModalSecondary,
+.restModalPrimary {
+  background: transparent;
+  border: 1px solid var(--clr-border, rgba(255,255,255,0.18));
+  color: var(--clr-text, #e5e7eb);
+  border-radius: 8px;
+  padding: 0.45rem 1rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.restModalCancel:hover    { border-color: #f87171; color: #f87171; }
+.restModalSecondary:hover { border-color: var(--clr-accent, #6366f1); color: var(--clr-accent, #6366f1); }
+
+.restModalPrimary {
+  background: var(--clr-accent, #6366f1);
+  border-color: var(--clr-accent, #6366f1);
+  color: white;
+}
+
+.restModalPrimary:hover:not(:disabled) { filter: brightness(1.1); }
+.restModalPrimary:disabled             { opacity: 0.5; cursor: not-allowed; }

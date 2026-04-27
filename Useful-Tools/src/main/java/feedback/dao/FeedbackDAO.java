@@ -7,6 +7,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import common.DatabaseUtils;
 
@@ -131,5 +135,148 @@ public class FeedbackDAO {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    // ── Read methods (admin-only) ─────────────────────────────────────────────
+
+    /**
+     * Lists feedback rows newest first, with each row's per-feature breakdown
+     * embedded under "features". Capped via limit/offset for pagination.
+     *
+     * @param limit   Page size; clamped to [1, 200].
+     * @param offset  Row offset; clamped to >= 0.
+     * @return Ordered list of feedback rows. Each row contains:
+     *           id, username, overallRating, generalComment, submittedAt,
+     *           features = [ { featureName, rating, comment }, ... ]
+     */
+    public static List<Map<String, Object>> listAll(int limit, int offset) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        int safeLimit  = Math.max(1, Math.min(limit, 200));
+        int safeOffset = Math.max(0, offset);
+
+        try (Connection conn = DatabaseUtils.getSQLite3Connection()) {
+            ensureSchema(conn);
+
+            // First pass — fetch the parent feedback rows in the page.
+            try (PreparedStatement pst = conn.prepareStatement(
+                    "SELECT id, username, overall_rating, general_comment, submitted_at "
+                    + "FROM feedback "
+                    + "ORDER BY id DESC "
+                    + "LIMIT ? OFFSET ?;")) {
+
+                pst.setInt(1, safeLimit);
+                pst.setInt(2, safeOffset);
+
+                try (ResultSet rs = pst.executeQuery()) {
+                    while (rs.next()) {
+                        Map<String, Object> row = new LinkedHashMap<>();
+                        row.put("id",             rs.getLong("id"));
+                        row.put("username",       rs.getString("username"));
+                        row.put("overallRating",  rs.getInt("overall_rating"));
+                        row.put("generalComment", rs.getString("general_comment"));
+                        row.put("submittedAt",    rs.getString("submitted_at"));
+                        row.put("features",       new ArrayList<Map<String, Object>>());
+                        rows.add(row);
+                    }
+                }
+            }
+
+            if (rows.isEmpty()) return rows;
+
+            // Second pass — fetch all per-feature rows for the page in one query
+            // and merge them into the parent rows by id. Keeps the round-trips
+            // bounded regardless of how many features each feedback row has.
+            StringBuilder placeholders = new StringBuilder();
+            for (int i = 0; i < rows.size(); i++) {
+                if (i > 0) placeholders.append(",");
+                placeholders.append("?");
+            }
+            String sql =
+                "SELECT feedback_id, feature_name, feature_rating, feature_comment "
+                + "FROM feedback_features "
+                + "WHERE feedback_id IN (" + placeholders + ") "
+                + "ORDER BY id ASC;";
+
+            Map<Long, List<Map<String, Object>>> byId = new LinkedHashMap<>();
+            for (Map<String, Object> row : rows) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> feats = (List<Map<String, Object>>) row.get("features");
+                byId.put((Long) row.get("id"), feats);
+            }
+
+            try (PreparedStatement pst = conn.prepareStatement(sql)) {
+                int idx = 1;
+                for (Map<String, Object> row : rows) {
+                    pst.setLong(idx++, (Long) row.get("id"));
+                }
+                try (ResultSet rs = pst.executeQuery()) {
+                    while (rs.next()) {
+                        long fid = rs.getLong("feedback_id");
+                        Map<String, Object> feat = new LinkedHashMap<>();
+                        feat.put("featureName", rs.getString("feature_name"));
+                        int rating = rs.getInt("feature_rating");
+                        feat.put("rating", rs.wasNull() ? null : rating);
+                        feat.put("comment", rs.getString("feature_comment"));
+                        List<Map<String, Object>> bucket = byId.get(fid);
+                        if (bucket != null) bucket.add(feat);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return rows;
+    }
+
+    /** Total feedback row count (used for pagination metadata). */
+    public static long count() {
+        try (Connection conn = DatabaseUtils.getSQLite3Connection()) {
+            ensureSchema(conn);
+            try (PreparedStatement pst = conn.prepareStatement(
+                    "SELECT COUNT(*) FROM feedback;");
+                 ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) return rs.getLong(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    /**
+     * Aggregate roll-up for the admin dashboard — total count, average overall
+     * rating, and a 1–5 distribution histogram. Cheap single-query pass.
+     */
+    public static Map<String, Object> summary() {
+        Map<String, Object> out = new LinkedHashMap<>();
+        long total = 0;
+        double avg = 0;
+        int[] hist = new int[5]; // index 0 = rating 1, index 4 = rating 5
+
+        try (Connection conn = DatabaseUtils.getSQLite3Connection()) {
+            ensureSchema(conn);
+            try (PreparedStatement pst = conn.prepareStatement(
+                    "SELECT overall_rating, COUNT(*) AS c "
+                    + "FROM feedback GROUP BY overall_rating;");
+                 ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    int r = rs.getInt(1);
+                    int c = rs.getInt(2);
+                    if (r >= 1 && r <= 5) hist[r - 1] = c;
+                    total += c;
+                    avg   += (double) r * c;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        out.put("total", total);
+        out.put("avgOverallRating", total > 0 ? avg / total : 0.0);
+        Map<String, Integer> dist = new LinkedHashMap<>();
+        for (int i = 1; i <= 5; i++) dist.put(String.valueOf(i), hist[i - 1]);
+        out.put("distribution", dist);
+        return out;
     }
 }

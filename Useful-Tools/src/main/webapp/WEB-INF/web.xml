@@ -24,6 +24,17 @@
     <filter-class>common.filter.SameSiteFilter</filter-class>
   </filter>
 
+  <!--
+    SecurityHeadersFilter: sets defensive HTTP response headers on every
+    response — CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy,
+    Permissions-Policy, and HSTS (only on HTTPS). Runs before any other
+    filter so even short-circuit 4xx responses carry the headers.
+  -->
+  <filter>
+    <filter-name>SecurityHeadersFilter</filter-name>
+    <filter-class>common.filter.SecurityHeadersFilter</filter-class>
+  </filter>
+
   <filter>
     <filter-name>CorsFilter</filter-name>
     <filter-class>common.filter.CorsFilter</filter-class>
@@ -96,6 +107,15 @@
     <dispatcher>REQUEST</dispatcher>
   </filter-mapping>
 
+  <!-- 0b. SecurityHeaders runs immediately after SameSite so every response
+       (including 4xx/5xx short-circuits from later filters) carries the
+       defensive HTTP headers. -->
+  <filter-mapping>
+    <filter-name>SecurityHeadersFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+
   <!-- 1. CORS runs second on every request. -->
   <filter-mapping>
     <filter-name>CorsFilter</filter-name>
@@ -107,6 +127,15 @@
   <filter-mapping>
     <filter-name>RateLimitFilter</filter-name>
     <url-pattern>/api/auth/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+
+  <!-- 2b. Rate-limit feedback submissions too (per-IP) — deters spam from
+       compromised guest sessions and abusive scripts. Same filter, separate
+       url-pattern so the existing /api/auth/* mapping is untouched. -->
+  <filter-mapping>
+    <filter-name>RateLimitFilter</filter-name>
+    <url-pattern>/api/feedback/*</url-pattern>
     <dispatcher>REQUEST</dispatcher>
   </filter-mapping>
 
