@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { apiBaseURL } from '../api/apiClient'
+import { request } from '../api/apiClient'
 
 /**
  * useSearch — Hook for tool discovery and search functionality.
@@ -48,17 +48,9 @@ export function useSearch(username) {
 
       try {
         const params = new URLSearchParams({ q: query.trim() })
-        const response = await fetch(
-          `${apiBaseURL}/api/search/tools?${params.toString()}`,
-          {
-            method: 'GET',
-            credentials: 'include',
-          }
-        )
+        const { status, data: json } = await request(`/search/tools?${params.toString()}`)
 
-        const json = await response.json()
-
-        if (!response.ok) {
+        if (status !== 200) {
           throw new Error(json.error || 'Search failed')
         }
 
@@ -90,24 +82,12 @@ export function useSearch(username) {
 
       try {
         const params = new URLSearchParams()
-        if (username) {
-          params.append('username', username)
-        }
-        if (limit) {
-          params.append('limit', Math.min(Math.max(limit, 1), 20))
-        }
+        if (username) params.append('username', username)
+        if (limit) params.append('limit', Math.min(Math.max(limit, 1), 20))
 
-        const response = await fetch(
-          `${apiBaseURL}/api/search/recommendations?${params.toString()}`,
-          {
-            method: 'GET',
-            credentials: 'include',
-          }
-        )
+        const { status, data: json } = await request(`/search/recommendations?${params.toString()}`)
 
-        const json = await response.json()
-
-        if (!response.ok) {
+        if (status !== 200) {
           throw new Error(json.error || 'Failed to fetch recommendations')
         }
 
@@ -140,29 +120,19 @@ export function useSearch(username) {
       }
 
       try {
-        const payload = {
-          toolPath,
-          toolName: toolName || toolPath,
-        }
-
-        const response = await fetch(`${apiBaseURL}/api/search/record-usage`, {
+        const { status, data: json } = await request('/search/record-usage', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          credentials: 'include',
+          isJson: true,
+          body: { toolPath, toolName: toolName || toolPath },
         })
 
-        const json = await response.json()
-
-        if (!response.ok) {
-          // Silently fail — usage recording is non-critical
+        if (status !== 200) {
           console.warn('Failed to record usage:', json.error)
           return null
         }
 
         return json.data
       } catch (err) {
-        // Silently fail — usage recording is non-critical
         console.warn('Failed to record usage:', err)
         return null
       }
