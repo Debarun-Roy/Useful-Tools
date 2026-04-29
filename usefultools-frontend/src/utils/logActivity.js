@@ -63,6 +63,8 @@ const VALID_TOOL_NAMES = new Set([
   'cron.build',
   'time.convert',
   'time.timestamp',
+  // Sprint 21 additions (API Formatter).
+  'formatter.format',
 ])
 
 // ── Internal: the actual send ───────────────────────────────────────────────

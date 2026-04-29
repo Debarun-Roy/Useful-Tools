@@ -18,15 +18,22 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * FormatterController — Provides JSON formatting and minification endpoints.
+ * FormatterController — Provides formatting and minification endpoints for JSON and XML.
  *
  * ── Endpoints ────────────────────────────────────────────────────────────
- * POST /api/formatter/format   — Pretty-print JSON
- * POST /api/formatter/minify   — Minify JSON (remove whitespace)
- * POST /api/formatter/validate — Validate JSON syntax
+ * POST /api/formatter/format   — Pretty-print JSON or XML
+ * POST /api/formatter/minify   — Minify JSON or XML
+ * POST /api/formatter/validate — Validate JSON or XML syntax
  * POST /api/formatter/stats    — Get formatting statistics
+ *
+ * ── Request body ─────────────────────────────────────────────────────────
+ * { "content": "...", "format": "json" | "xml" }
+ *
+ * Legacy form still accepted:
+ * { "json": "..." }  → treated as format=json
  */
-@WebServlet({"/api/formatter/format", "/api/formatter/minify", "/api/formatter/validate", "/api/formatter/stats"})
+@WebServlet({"/api/formatter/format", "/api/formatter/minify",
+             "/api/formatter/validate", "/api/formatter/stats"})
 public class FormatterController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
@@ -34,7 +41,17 @@ public class FormatterController extends HttpServlet {
     private final FormatterService formatterService = new FormatterService();
 
     private static class FormatRequest {
-        String json;
+        String json;      // legacy field — kept for backward compatibility
+        String content;   // preferred field (Sprint 21+)
+        String format;    // "json" | "xml" (default: "json")
+    }
+
+    private String resolveContent(FormatRequest body) {
+        return body.content != null ? body.content : body.json;
+    }
+
+    private String resolveFormat(FormatRequest body) {
+        return body.format != null ? body.format.toLowerCase() : "json";
     }
 
     @Override
@@ -48,28 +65,36 @@ public class FormatterController extends HttpServlet {
         PrintWriter out = response.getWriter();
 
         try {
-            // Parse request body
             FormatRequest body = gson.fromJson(request.getReader(), FormatRequest.class);
 
-            if (body == null || body.json == null || body.json.isBlank()) {
+            if (body == null) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 out.print(gson.toJson(ApiResponse.fail(
-                        "Request body must contain a non-empty 'json' field.",
-                        "MISSING_JSON")));
+                        "Request body is required.",
+                        "MISSING_BODY")));
                 return;
             }
 
-            String jsonInput = body.json.trim();
+            String content = resolveContent(body);
+            if (content == null || content.isBlank()) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Request body must contain a non-empty 'content' (or 'json') field.",
+                        "MISSING_CONTENT")));
+                return;
+            }
 
-            // Route to appropriate handler
+            String trimmedContent = content.trim();
+            String format = resolveFormat(body);
+
             if (servletPath.equals("/api/formatter/format")) {
-                handleFormat(jsonInput, out, response);
+                handleFormat(trimmedContent, format, out, response);
             } else if (servletPath.equals("/api/formatter/minify")) {
-                handleMinify(jsonInput, out, response);
+                handleMinify(trimmedContent, format, out, response);
             } else if (servletPath.equals("/api/formatter/validate")) {
-                handleValidate(jsonInput, out, response);
+                handleValidate(trimmedContent, format, out, response);
             } else if (servletPath.equals("/api/formatter/stats")) {
-                handleStats(jsonInput, out, response);
+                handleStats(trimmedContent, format, out, response);
             }
 
         } catch (JsonSyntaxException jse) {
@@ -86,61 +111,62 @@ public class FormatterController extends HttpServlet {
         }
     }
 
-    /**
-     * Handler for /api/formatter/format — Pretty-print JSON.
-     */
-    private void handleFormat(String jsonInput, PrintWriter out, HttpServletResponse response) {
+    private void handleFormat(String content, String format, PrintWriter out,
+                              HttpServletResponse response) {
         try {
-            String formatted = formatterService.formatJson(jsonInput);
+            String formatted = "xml".equals(format)
+                    ? formatterService.formatXml(content)
+                    : formatterService.formatJson(content);
 
             LinkedHashMap<String, Object> data = new LinkedHashMap<>();
-            data.put("input", jsonInput);
             data.put("output", formatted);
+            data.put("format", format);
             data.put("characterCount", formatted.length());
 
             response.setStatus(HttpServletResponse.SC_OK);
             out.print(gson.toJson(ApiResponse.ok(data)));
 
-        } catch (JsonSyntaxException e) {
+        } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             out.print(gson.toJson(ApiResponse.fail(
-                    "Invalid JSON: " + e.getMessage(),
-                    "INVALID_JSON")));
+                    "Invalid " + format.toUpperCase() + ": " + e.getMessage(),
+                    "INVALID_CONTENT")));
         }
     }
 
-    /**
-     * Handler for /api/formatter/minify — Minify JSON.
-     */
-    private void handleMinify(String jsonInput, PrintWriter out, HttpServletResponse response) {
+    private void handleMinify(String content, String format, PrintWriter out,
+                              HttpServletResponse response) {
         try {
-            String minified = formatterService.minifyJson(jsonInput);
+            String minified = "xml".equals(format)
+                    ? formatterService.minifyXml(content)
+                    : formatterService.minifyJson(content);
 
             LinkedHashMap<String, Object> data = new LinkedHashMap<>();
-            data.put("input", jsonInput);
             data.put("output", minified);
-            data.put("originalSize", jsonInput.length());
+            data.put("format", format);
+            data.put("originalSize", content.length());
             data.put("minifiedSize", minified.length());
 
             response.setStatus(HttpServletResponse.SC_OK);
             out.print(gson.toJson(ApiResponse.ok(data)));
 
-        } catch (JsonSyntaxException e) {
+        } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             out.print(gson.toJson(ApiResponse.fail(
-                    "Invalid JSON: " + e.getMessage(),
-                    "INVALID_JSON")));
+                    "Invalid " + format.toUpperCase() + ": " + e.getMessage(),
+                    "INVALID_CONTENT")));
         }
     }
 
-    /**
-     * Handler for /api/formatter/validate — Validate JSON.
-     */
-    private void handleValidate(String jsonInput, PrintWriter out, HttpServletResponse response) {
-        ValidationResult result = formatterService.validateJsonDetailed(jsonInput);
+    private void handleValidate(String content, String format, PrintWriter out,
+                                HttpServletResponse response) {
+        ValidationResult result = "xml".equals(format)
+                ? formatterService.validateXmlDetailed(content)
+                : formatterService.validateJsonDetailed(content);
 
         LinkedHashMap<String, Object> data = new LinkedHashMap<>();
         data.put("isValid", result.isValid);
+        data.put("format", format);
         if (!result.isValid) {
             data.put("error", result.errorMessage);
         }
@@ -149,27 +175,28 @@ public class FormatterController extends HttpServlet {
         out.print(gson.toJson(ApiResponse.ok(data)));
     }
 
-    /**
-     * Handler for /api/formatter/stats — Get formatting statistics.
-     */
-    private void handleStats(String jsonInput, PrintWriter out, HttpServletResponse response) {
+    private void handleStats(String content, String format, PrintWriter out,
+                             HttpServletResponse response) {
         try {
-            FormattingStats stats = formatterService.getFormattingStats(jsonInput);
+            FormattingStats stats = "xml".equals(format)
+                    ? formatterService.getXmlFormattingStats(content)
+                    : formatterService.getFormattingStats(content);
 
             LinkedHashMap<String, Object> data = new LinkedHashMap<>();
+            data.put("format", format);
             data.put("originalSize", stats.originalSize);
             data.put("minifiedSize", stats.minifiedSize);
-            data.put("compressionRatio", Math.round(stats.compressionRatio * 100.0) / 100.0); // Round to 2 decimals
+            data.put("compressionRatio", Math.round(stats.compressionRatio * 100.0) / 100.0);
             data.put("charactersSaved", stats.originalSize - stats.minifiedSize);
 
             response.setStatus(HttpServletResponse.SC_OK);
             out.print(gson.toJson(ApiResponse.ok(data)));
 
-        } catch (JsonSyntaxException e) {
+        } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             out.print(gson.toJson(ApiResponse.fail(
-                    "Invalid JSON: " + e.getMessage(),
-                    "INVALID_JSON")));
+                    "Invalid " + format.toUpperCase() + ": " + e.getMessage(),
+                    "INVALID_CONTENT")));
         }
     }
 }

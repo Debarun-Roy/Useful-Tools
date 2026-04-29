@@ -141,6 +141,14 @@ const FEATURES = [
     icon:   '🕐',
     desc:   'Timezone converter and Unix timestamp ↔ human date — all via the native Intl API',
   },
+  {
+    label:  'API Formatter',
+    path:   '/formatter',
+    sprint: 21,
+    ready:  true,
+    icon:   '⚡',
+    desc:   'Format, validate, minify and analyse JSON, XML, and YAML — with JSON Schema support',
+  },
 ]
 
 // Quick lookup by path for rendering a favorite's corresponding feature card.

@@ -110,7 +110,9 @@ public class ActivityDAO {
             "qrcode.generate",
             "cron.build",
             "time.convert",
-            "time.timestamp"
+            "time.timestamp",
+            // Sprint 21 additions:
+            "formatter.format"
     );
 
     // ── Maximum payload size (TEXT column, keep sane to avoid abuse) ────────

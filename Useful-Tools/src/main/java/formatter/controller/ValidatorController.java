@@ -4,12 +4,14 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonSyntaxException;
 
 import common.ApiResponse;
+import common.cache.ToolCache;
 import common.dao.FormatterDAO;
 import formatter.service.ValidatorService;
 import formatter.service.ValidatorService.ValidationReport;
@@ -34,6 +36,9 @@ import jakarta.servlet.http.HttpServletResponse;
 public class ValidatorController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
+    private static final String CACHE_TEMPLATES_PREFIX = "templates:list:";
+    private static final long   CACHE_TEMPLATES_TTL    = 300L; // 5 minutes
+
     private final Gson gson = new Gson();
     private final ValidatorService validatorService = new ValidatorService();
     private final FormatterDAO formatterDAO = new FormatterDAO();
@@ -193,12 +198,21 @@ public class ValidatorController extends HttpServlet {
 
     /**
      * Handler for GET /api/validator/templates — List schema templates.
+     * Results are cached per category for 5 minutes; schema templates change
+     * rarely and this avoids a DB round-trip on every schema-picker open.
      */
     private void handleListTemplates(HttpServletRequest request, PrintWriter out,
                                     HttpServletResponse response) throws Exception {
         String category = request.getParameter("category");
+        String cacheKey = CACHE_TEMPLATES_PREFIX + (category != null ? category : "all");
 
-        var templates = formatterDAO.listSchemaTemplates(category);
+        ToolCache cache = ToolCache.getInstance();
+        List<Map<String, Object>> templates = cache.get(cacheKey);
+
+        if (templates == null) {
+            templates = formatterDAO.listSchemaTemplates(category);
+            cache.put(cacheKey, templates, CACHE_TEMPLATES_TTL);
+        }
 
         LinkedHashMap<String, Object> data = new LinkedHashMap<>();
         data.put("templates", templates);

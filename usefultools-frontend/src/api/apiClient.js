@@ -678,3 +678,53 @@ export const fetchAdminFeedback = ({ limit = 25, offset = 0 } = {}) => {
   params.append('offset', offset)
   return request(`/admin/feedback?${params}`)
 }
+
+
+// ─────────────────────────────────────────────────────────────
+// API FORMATTER (SPRINT 21)
+// ─────────────────────────────────────────────────────────────
+
+export const formatContent = (content, format) =>
+  request('/formatter/format', {
+    method: 'POST',
+    isJson: true,
+    body: { content, format },
+  })
+
+export const minifyContent = (content, format) =>
+  request('/formatter/minify', {
+    method: 'POST',
+    isJson: true,
+    body: { content, format },
+  })
+
+export const validateContent = (content, format) =>
+  request('/formatter/validate', {
+    method: 'POST',
+    isJson: true,
+    body: { content, format },
+  })
+
+export const getContentStats = (content, format) =>
+  request('/formatter/stats', {
+    method: 'POST',
+    isJson: true,
+    body: { content, format },
+  })
+
+export const validateAgainstSchema = (json, schema) =>
+  request('/validator/schema', {
+    method: 'POST',
+    isJson: true,
+    body: { json, schema },
+  })
+
+export const getSchemaTemplates = (category) => {
+  const path = category
+    ? `/validator/templates?category=${encodeURIComponent(category)}`
+    : '/validator/templates'
+  return request(path)
+}
+
+export const getSchemaTemplate = (name) =>
+  request(`/validator/template/${encodeURIComponent(name)}`)

@@ -9,10 +9,10 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
 import common.ApiResponse;
+import common.cache.ToolCache;
 import common.dao.FormatterDAO;
 import formatter.service.PatternService;
 import formatter.service.PatternService.MatchResult;
-import formatter.service.PatternService.PatternDefinition;
 import formatter.service.PatternService.SplitResult;
 import formatter.service.PatternService.ValidationResult;
 import jakarta.servlet.ServletException;
@@ -240,15 +240,24 @@ public class PatternController extends HttpServlet {
         out.print(gson.toJson(ApiResponse.ok(data)));
     }
 
+    private static final String CACHE_KEY_COMMON = "patterns:common";
+
     /**
      * Handler for GET /api/pattern/common — Get common patterns library.
+     * Result is cached forever: the library is derived from static code and
+     * never changes at runtime.
      */
     private void handleGetCommon(PrintWriter out, HttpServletResponse response) {
-        var commonPatterns = PatternService.getCommonPatterns();
+        ToolCache cache = ToolCache.getInstance();
 
-        LinkedHashMap<String, Object> data = new LinkedHashMap<>();
-        data.put("patterns", commonPatterns);
-        data.put("categoryCount", commonPatterns.size());
+        LinkedHashMap<String, Object> data = cache.get(CACHE_KEY_COMMON);
+        if (data == null) {
+            var commonPatterns = PatternService.getCommonPatterns();
+            data = new LinkedHashMap<>();
+            data.put("patterns", commonPatterns);
+            data.put("categoryCount", commonPatterns.size());
+            cache.put(CACHE_KEY_COMMON, data, -1); // -1 = never expires
+        }
 
         response.setStatus(HttpServletResponse.SC_OK);
         out.print(gson.toJson(ApiResponse.ok(data)));

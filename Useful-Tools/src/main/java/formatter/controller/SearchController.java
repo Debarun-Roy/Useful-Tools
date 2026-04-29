@@ -11,6 +11,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
 import common.ApiResponse;
+import common.cache.ToolCache;
 import common.dao.FormatterDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -30,6 +31,9 @@ import jakarta.servlet.http.HttpServletResponse;
 public class SearchController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
+    private static final String CACHE_SEARCH_PREFIX = "search:";
+    private static final long   CACHE_SEARCH_TTL    = 120L; // 2 minutes
+
     private final Gson gson = new Gson();
     private final FormatterDAO formatterDAO = new FormatterDAO();
 
@@ -56,7 +60,9 @@ public class SearchController extends HttpServlet {
             new ToolInfo("/dev-utils", "Dev Utilities", "🧑‍💻",
                     "Hash identifier, API key generator, QR code generator, and cron expression builder"),
             new ToolInfo("/time-utils", "Time Utilities", "🕐",
-                    "Timezone converter and Unix timestamp conversion")
+                    "Timezone converter and Unix timestamp conversion"),
+            new ToolInfo("/formatter", "API Formatter", "⚡",
+                    "Format, validate, minify and analyse JSON, XML, and YAML — with JSON Schema support")
     );
 
     private static class RecordUsageRequest {
@@ -134,6 +140,17 @@ public class SearchController extends HttpServlet {
         }
 
         query = query.toLowerCase().trim();
+
+        // Check cache first — search results are deterministic for a static tool list.
+        ToolCache cache = ToolCache.getInstance();
+        String cacheKey = CACHE_SEARCH_PREFIX + query;
+        LinkedHashMap<String, Object> cached = cache.get(cacheKey);
+        if (cached != null) {
+            response.setStatus(HttpServletResponse.SC_OK);
+            out.print(gson.toJson(ApiResponse.ok(cached)));
+            return;
+        }
+
         List<ToolSearchResult> results = new ArrayList<>();
 
         // Fuzzy match against tool names and descriptions
@@ -164,6 +181,8 @@ public class SearchController extends HttpServlet {
                 ))
                 .toList());
         data.put("count", results.size());
+
+        cache.put(cacheKey, data, CACHE_SEARCH_TTL);
 
         response.setStatus(HttpServletResponse.SC_OK);
         out.print(gson.toJson(ApiResponse.ok(data)));
