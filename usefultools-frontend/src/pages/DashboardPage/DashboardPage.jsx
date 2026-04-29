@@ -499,10 +499,7 @@ export default function DashboardPage() {
               ⚙ Admin
             </button>
           )}
-          <UserMenu username={username} isGuest={isGuest} variant="dark" />
-          <button className={styles.logoutButton} onClick={handleLogout}>
-            Sign out
-          </button>
+          <UserMenu username={username} isGuest={isGuest} variant="dark" onLogout={handleLogout} />
         </div>
       </header>
 

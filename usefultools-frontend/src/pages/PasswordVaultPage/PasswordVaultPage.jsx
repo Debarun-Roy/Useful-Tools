@@ -1195,23 +1195,35 @@ export default function PasswordVaultPage() {
         <nav className={styles.tabBar} aria-label="Vault sections">
           {TABS.map(tab => {
             const disabled = isTabDisabled(tab.id)
-            return (
+            return disabled ? (
+              /* Wrap in a span so the title tooltip fires on hover even though
+                 the inner button is disabled (disabled elements don't emit
+                 pointer events, so title never fires on them directly). */
+              <span
+                key={tab.id}
+                className={styles.disabledWrapper}
+                title="Please login to access this resource."
+                aria-label={`${tab.label} — login required`}
+              >
+                <button
+                  className={styles.tabDisabled}
+                  disabled
+                  tabIndex={-1}
+                  aria-disabled="true"
+                >
+                  <span className={styles.tabIcon} aria-hidden="true">{tab.icon}</span>
+                  {tab.label}
+                  <span className={styles.lockBadge} aria-hidden="true">🔒</span>
+                </button>
+              </span>
+            ) : (
               <button
                 key={tab.id}
-                className={
-                  disabled
-                    ? styles.tabDisabled
-                    : activeTab === tab.id
-                    ? styles.tabActive
-                    : styles.tab
-                }
-                onClick={() => !disabled && setActiveTab(tab.id)}
-                disabled={disabled}
-                title={disabled ? 'Please login to access this resource' : undefined}
+                className={activeTab === tab.id ? styles.tabActive : styles.tab}
+                onClick={() => setActiveTab(tab.id)}
               >
                 <span className={styles.tabIcon} aria-hidden="true">{tab.icon}</span>
                 {tab.label}
-                {disabled && <span className={styles.lockBadge} aria-hidden="true">🔒</span>}
               </button>
             )
           })}

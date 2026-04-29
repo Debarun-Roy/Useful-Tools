@@ -7,7 +7,7 @@ import styles from './UserMenu.module.css'
  *
  * Props:
  *   username  — display name
- *   isGuest   — shows Guest badge; dropdown limited to Sign out only
+ *   isGuest   — shows Guest badge; dropdown shows Log in + optional Sign out
  *   variant   — 'light' (default, tool pages) | 'dark' (Dashboard/Calculator)
  *   onLogout  — called when the user clicks "Sign out" inside the dropdown.
  *               When omitted, the Sign out item is not rendered.
@@ -51,19 +51,6 @@ export default function UserMenu({ username, isGuest = false, variant = 'light',
 
   // ── Guest variant ─────────────────────────────────────────────────────────
   if (isGuest) {
-    // If no logout handler, keep it as a non-interactive badge.
-    if (!onLogout) {
-      return (
-        <div className={containerCls} title="Account actions are only available to registered users">
-          <div className={styles.buttonDisplay} aria-disabled="true">
-            <span className={styles.avatar} aria-hidden="true">{initial}</span>
-            <span className={styles.name}>{username}</span>
-            <span className={styles.guestBadge}>Guest</span>
-          </div>
-        </div>
-      )
-    }
-    // With a logout handler, allow the guest to open a minimal dropdown.
     return (
       <div className={containerCls} ref={containerRef}>
         <button
@@ -81,15 +68,34 @@ export default function UserMenu({ username, isGuest = false, variant = 'light',
         </button>
         {open && (
           <div className={styles.dropdown} role="menu">
+            <div className={styles.dropdownHeader} aria-hidden="true">
+              <span className={styles.dropdownHeaderAvatar}>{initial}</span>
+              <span className={styles.dropdownHeaderName}>{username}</span>
+            </div>
+            <div className={styles.menuDivider} aria-hidden="true" />
             <button
               type="button"
-              className={`${styles.menuItem} ${styles.menuItemDanger}`}
+              className={styles.menuItem}
               role="menuitem"
-              onClick={handleSignOut}
+              onClick={() => goTo('/login')}
             >
-              <span className={styles.menuIcon} aria-hidden="true">🚪</span>
-              <span className={styles.menuLabel}>Sign out</span>
+              <span className={styles.menuIcon} aria-hidden="true">🔓</span>
+              <span className={styles.menuLabel}>Log in</span>
             </button>
+            {onLogout && (
+              <>
+                <div className={styles.menuDivider} aria-hidden="true" />
+                <button
+                  type="button"
+                  className={`${styles.menuItem} ${styles.menuItemDanger}`}
+                  role="menuitem"
+                  onClick={handleSignOut}
+                >
+                  <span className={styles.menuIcon} aria-hidden="true">🚪</span>
+                  <span className={styles.menuLabel}>Sign out</span>
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -114,6 +120,11 @@ export default function UserMenu({ username, isGuest = false, variant = 'light',
 
       {open && (
         <div className={styles.dropdown} role="menu">
+          <div className={styles.dropdownHeader} aria-hidden="true">
+            <span className={styles.dropdownHeaderAvatar}>{initial}</span>
+            <span className={styles.dropdownHeaderName}>{username}</span>
+          </div>
+          <div className={styles.menuDivider} aria-hidden="true" />
           <button
             type="button"
             className={styles.menuItem}

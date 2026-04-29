@@ -156,6 +156,39 @@
   to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
 
+/* ─── Dropdown header (username display) ──────────────────────────────── */
+.dropdownHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 8px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.dropdownHeaderAvatar {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--clr-primary), var(--clr-accent-bright));
+  color: #fff;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.dropdownHeaderName {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--clr-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ─── Dropdown menu items ──────────────────────────────────────────────── */
 .menuItem {
   display: flex;
