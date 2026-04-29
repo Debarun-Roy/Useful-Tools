@@ -442,3 +442,77 @@
   text-align: center; color: var(--clr-text-muted);
   font-size: var(--fs-sm); font-style: italic;
 }
+
+/* ─── Mobile ─────────────────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .header {
+    padding: var(--space-sm) var(--space-md);
+    flex-wrap: wrap;
+    min-height: auto;
+    padding-top: var(--space-sm);
+    padding-bottom: var(--space-sm);
+    gap: var(--space-sm);
+  }
+  .headerLeft {
+    flex: 1;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+  }
+  .hero {
+    padding: 36px var(--space-md) 32px;
+    flex-direction: column;
+  }
+  .heroStats {
+    align-self: flex-start;
+  }
+  .main {
+    width: calc(100% - 24px);
+    padding-top: var(--space-md);
+    padding-bottom: var(--space-xl);
+  }
+  .content {
+    padding: var(--space-md);
+  }
+  .searchRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .searchInput {
+    min-width: 0;
+  }
+  .toolCard,
+  .toolCardDisabled {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+  .toolCardRight {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .usersTable th:nth-child(3),
+  .usersTable td:nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .adminChip {
+    display: none;
+  }
+  .brandName {
+    display: none;
+  }
+  .confirmActions {
+    flex-direction: column-reverse;
+    gap: var(--space-sm);
+  }
+  .cancelBtn,
+  .dangerBtn {
+    width: 100%;
+    text-align: center;
+  }
+  .heroTitle {
+    font-size: clamp(1.7rem, 7vw, 2.6rem);
+  }
+}

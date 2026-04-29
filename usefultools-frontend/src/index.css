@@ -627,3 +627,18 @@ select {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--clr-accent);
 }
+
+/* ─── Touch device: remove 300ms tap delay on interactive elements ───────── */
+button,
+[role="button"],
+a,
+label,
+select {
+  touch-action: manipulation;
+}
+
+/* Prevent tap highlight flash on mobile WebKit */
+button,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}

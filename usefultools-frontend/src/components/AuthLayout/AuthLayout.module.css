@@ -130,3 +130,26 @@
   background: linear-gradient(90deg, transparent, var(--auth-divider), transparent);
   margin-bottom: var(--space-lg);
 }
+
+/* ─── Mobile ─────────────────────────────────────────────────────────────── */
+@media (max-width: 520px) {
+  .page {
+    padding: var(--space-sm);
+    align-items: flex-start;
+    padding-top: var(--space-xl);
+  }
+  .card {
+    padding: var(--space-lg) var(--space-md);
+    border-radius: var(--radius-lg);
+  }
+}
+
+@media (max-width: 360px) {
+  .page {
+    padding: var(--space-sm);
+    padding-top: var(--space-md);
+  }
+  .card {
+    padding: var(--space-md);
+  }
+}

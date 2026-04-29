@@ -200,6 +200,37 @@
   }
 }
 
+@media (max-width: 720px) {
+  .hero {
+    padding: 32px var(--space-md) 28px;
+  }
+  .main {
+    padding: var(--space-md);
+  }
+  .favoritesSection {
+    padding: var(--space-md);
+  }
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .hero {
+    padding: 24px var(--space-md) 20px;
+  }
+  .greeting {
+    font-size: clamp(1.5rem, 7vw, 2.4rem);
+  }
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .adminPanelBtn {
+    font-size: var(--fs-xs);
+    padding: 5px 10px;
+  }
+}
+
 /* ─── Main content ───────────────────────────────────────────────────────── */
 .main {
   flex: 1;

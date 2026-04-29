@@ -138,3 +138,30 @@
     border-radius: 0;
   }
 }
+
+@media (max-width: 480px) {
+  .hero {
+    width: calc(100% - 16px);
+    padding: 28px var(--space-md) 24px;
+    border-radius: 18px;
+    gap: var(--space-md);
+  }
+
+  .heroFull {
+    width: 100%;
+    border-radius: 0;
+  }
+
+  .title {
+    font-size: clamp(1.9rem, 7vw, 2.8rem);
+  }
+
+  .statCard {
+    min-width: 88px;
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .statValue {
+    font-size: 1.4rem;
+  }
+}

@@ -1083,11 +1083,17 @@
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 
 @media (max-width: 720px) {
-  .header { padding: 0 var(--space-md); }
+  .header { padding: var(--space-sm) var(--space-md); flex-wrap: wrap; }
   .hero   { padding: 40px var(--space-md) 36px; flex-direction: column; }
   .heroStats { align-self: flex-start; }
-  .main   { width: calc(100% - 32px); }
+  .main   { width: calc(100% - 24px); }
   .numberInputRow { flex-direction: column; align-items: stretch; }
   .analyseBtn { width: 100%; justify-content: center; }
   .summaryStrip { flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-width: 480px) {
+  .hero { padding: 28px var(--space-md) 24px; }
+  .main { width: calc(100% - 16px); }
+  .userBadge { display: none; }
 }

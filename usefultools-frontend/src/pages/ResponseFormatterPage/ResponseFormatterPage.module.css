@@ -454,3 +454,14 @@
   .content, .inputPanel { padding: var(--space-md); }
   .statsGrid { grid-template-columns: repeat(2, 1fr); }
 }
+
+@media (max-width: 480px) {
+  .hero { padding: 28px var(--space-md) 24px; }
+  .main { width: calc(100% - 16px); }
+  .subTabBar { width: 100%; }
+  .subTab, .subTabActive { flex: 1; text-align: center; justify-content: center; }
+  .actionRow { flex-direction: column; align-items: stretch; }
+  .primaryBtn { width: 100%; }
+  .heroStatCard { min-width: 76px; padding: var(--space-sm); }
+  .heroStatValue { font-size: 1.3rem; }
+}
