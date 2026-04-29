@@ -503,7 +503,7 @@ export default function NumberAnalyserPage() {
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           <div className={styles.brand}>
-            <span className={styles.brandMark} aria-hidden="true">#</span>
+            <span className={styles.brandMark} aria-hidden="true">🔢</span>
             <span className={styles.brandName}>UsefulTools</span>
           </div>
           <button className={styles.backBtn} onClick={() => navigate('/dashboard')}>
@@ -511,8 +511,7 @@ export default function NumberAnalyserPage() {
           </button>
         </div>
         <div className={styles.headerRight}>
-          <UserMenu username={username} isGuest={isGuest} variant="light" />
-          <button className={styles.logoutBtn} onClick={handleLogout}>Sign out</button>
+          <UserMenu username={username} isGuest={isGuest} variant="light" onLogout={handleLogout} />
         </div>
       </header>
 
@@ -520,7 +519,7 @@ export default function NumberAnalyserPage() {
       <section className={styles.hero}>
         <div className={styles.heroGrid} aria-hidden="true" />
         <div className={styles.heroContent}>
-          <div className={styles.heroBadge}>Sprint 3 · Number Analyser</div>
+          <div className={styles.heroBadge}>Number Analyser</div>
           <h1 className={styles.heroTitle}>
             Number<br/>
             <span className={styles.heroTitleAccent}>Observatory</span>

@@ -563,7 +563,8 @@
 
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 720px) {
-  .header { padding: var(--space-sm) var(--space-md); flex-wrap: wrap; gap: var(--space-sm); }
+  .header { padding: 0 var(--space-md); }
+  .headerLeft, .headerRight { gap: var(--space-sm); }
   .hero   { padding: 40px var(--space-md) 36px; flex-direction: column; }
   .heroStats { align-self: flex-start; }
   .main   { width: calc(100% - 24px); }

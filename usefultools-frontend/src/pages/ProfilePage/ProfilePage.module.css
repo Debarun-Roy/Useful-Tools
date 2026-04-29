@@ -319,7 +319,8 @@
 }
 
 @media (max-width: 720px) {
-  .header  { padding: 0 var(--space-md); flex-wrap: wrap; padding-top: var(--space-sm); padding-bottom: var(--space-sm); }
+  .header  { padding: 0 var(--space-md); }
+  .headerLeft, .headerRight { gap: var(--space-sm); }
   .hero    { padding: 40px var(--space-md) 36px; flex-direction: column; }
   .heroStats { align-self: flex-start; }
   .identityCard { gap: var(--space-md); padding: var(--space-md); }
@@ -333,5 +334,4 @@
   .statsGrid { grid-template-columns: 1fr 1fr; }
   .identityCard { flex-direction: column; align-items: flex-start; }
   .changePassBtn { width: 100%; text-align: center; }
-  .userBadge { display: none; }
 }

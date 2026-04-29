@@ -195,6 +195,24 @@
   flex: 1;
 }
 
+/* ─── Divider between menu sections ────────────────────────────────────── */
+.menuDivider {
+  height: 1px;
+  background: var(--clr-border);
+  margin: 4px 6px;
+}
+
+/* ─── Danger item (sign out) ────────────────────────────────────────────── */
+.menuItemDanger {
+  color: var(--clr-error, #e85d5d);
+}
+
+.menuItemDanger:hover,
+.menuItemDanger:focus-visible {
+  background: var(--clr-error-bg, rgba(232, 93, 93, 0.08));
+  color: var(--clr-error, #e85d5d);
+}
+
 /* ─── Responsive ───────────────────────────────────────────────────────── */
 @media (max-width: 520px) {
   .name {
@@ -203,5 +221,15 @@
   .dropdown {
     right: -4px;
     min-width: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Compact mode — hide username text so the header stays on one line. */
+  .name {
+    display: none;
+  }
+  .guestBadge {
+    display: none;
   }
 }

@@ -70,17 +70,10 @@
 @media (max-width: 720px) {
   .header {
     padding: 0 var(--space-md);
-    flex-wrap: wrap;
-    padding-top: var(--space-sm);
-    padding-bottom: var(--space-sm);
-    min-height: auto;
   }
 }
 
 @media (max-width: 480px) {
-  .userBadge {
-    display: none;
-  }
   .left,
   .right {
     gap: var(--space-sm);

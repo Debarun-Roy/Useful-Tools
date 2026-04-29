@@ -421,7 +421,7 @@ export default function EncodingDecodingPage() {
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           <div className={styles.brand}>
-            <span className={styles.brandMark} aria-hidden="true">#</span>
+            <span className={styles.brandMark} aria-hidden="true">🔧</span>
             <span className={styles.brandName}>UsefulTools</span>
           </div>
           <button className={styles.backBtn} onClick={() => navigate('/dashboard')}>
@@ -429,8 +429,7 @@ export default function EncodingDecodingPage() {
           </button>
         </div>
         <div className={styles.headerRight}>
-          <UserMenu username={username} isGuest={isGuest} variant="light" />
-          <button className={styles.logoutBtn} onClick={handleLogout}>Sign out</button>
+          <UserMenu username={username} isGuest={isGuest} variant="light" onLogout={handleLogout} />
         </div>
       </header>
 

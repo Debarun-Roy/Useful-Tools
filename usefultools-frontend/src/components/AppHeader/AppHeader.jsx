@@ -36,12 +36,7 @@ export default function AppHeader({
 
       <div className={styles.right}>
         {username && (
-          <UserMenu username={username} isGuest={isGuest} variant="light" />
-        )}
-        {onLogout && (
-          <button className={styles.logoutBtn} onClick={onLogout}>
-            Sign out
-          </button>
+          <UserMenu username={username} isGuest={isGuest} variant="light" onLogout={onLogout} />
         )}
       </div>
     </header>

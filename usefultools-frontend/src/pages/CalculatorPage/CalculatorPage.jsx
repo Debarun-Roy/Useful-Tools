@@ -300,12 +300,12 @@ export default function CalculatorPage() {
         onLogout={handleLogout}
         onBack={() => navigate('/dashboard')}
         backLabel="Dashboard"
-        glyph="="
+        glyph="🧮"
       />
 
       <div className={styles.chrome}>
         <ToolHero
-          badge="Sprint 2 · Calculator"
+          badge="Calculator"
           title="Computation"
           accent="Flight Deck"
           description="Switch between arithmetic, boolean, trigonometric, combined, complex, and financial modes inside the same futuristic tool shell."

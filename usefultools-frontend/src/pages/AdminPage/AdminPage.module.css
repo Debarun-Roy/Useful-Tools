@@ -446,18 +446,9 @@
 /* ─── Mobile ─────────────────────────────────────────────────────────────── */
 @media (max-width: 720px) {
   .header {
-    padding: var(--space-sm) var(--space-md);
-    flex-wrap: wrap;
-    min-height: auto;
-    padding-top: var(--space-sm);
-    padding-bottom: var(--space-sm);
-    gap: var(--space-sm);
+    padding: 0 var(--space-md);
   }
-  .headerLeft {
-    flex: 1;
-    flex-wrap: wrap;
-    gap: var(--space-sm);
-  }
+  .headerLeft, .headerRight { gap: var(--space-sm); }
   .hero {
     padding: 36px var(--space-md) 32px;
     flex-direction: column;
@@ -498,9 +489,6 @@
 
 @media (max-width: 480px) {
   .adminChip {
-    display: none;
-  }
-  .brandName {
     display: none;
   }
   .confirmActions {

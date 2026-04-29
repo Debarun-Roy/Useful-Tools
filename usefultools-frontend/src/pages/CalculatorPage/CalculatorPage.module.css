@@ -134,15 +134,6 @@
 
 /* ─── Mobile ─────────────────────────────────────────────────────────────── */
 @media (max-width: 720px) {
-  .header {
-    padding: var(--space-sm) var(--space-md);
-    height: auto;
-    min-height: 52px;
-    flex-wrap: wrap;
-  }
-  .usernameLabel {
-    display: none;
-  }
   .tabBar {
     padding: var(--space-xs) var(--space-md);
   }
@@ -152,9 +143,6 @@
 }
 
 @media (max-width: 480px) {
-  .brandName {
-    display: none;
-  }
   .tab,
   .tabActive {
     padding: 6px var(--space-sm);

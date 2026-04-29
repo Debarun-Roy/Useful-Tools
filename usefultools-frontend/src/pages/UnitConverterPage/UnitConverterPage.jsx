@@ -196,7 +196,7 @@ export default function UnitConverterPage() {
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           <div className={styles.brand}>
-            <span className={styles.brandMark} aria-hidden="true">#</span>
+            <span className={styles.brandMark} aria-hidden="true">🔄</span>
             <span className={styles.brandName}>UsefulTools</span>
           </div>
           <button className={styles.backBtn} onClick={() => navigate('/dashboard')}>
@@ -204,8 +204,7 @@ export default function UnitConverterPage() {
           </button>
         </div>
         <div className={styles.headerRight}>
-          <UserMenu username={username} isGuest={isGuest} variant="light" />
-          <button className={styles.logoutBtn} onClick={handleLogout}>Sign out</button>
+          <UserMenu username={username} isGuest={isGuest} variant="light" onLogout={handleLogout} />
         </div>
       </header>
 
@@ -213,7 +212,7 @@ export default function UnitConverterPage() {
       <section className={styles.hero}>
         <div className={styles.heroGrid} aria-hidden="true" />
         <div className={styles.heroContent}>
-          <div className={styles.heroBadge}>Sprint 7 · Unit Converter</div>
+          <div className={styles.heroBadge}>Unit Converter</div>
           <h1 className={styles.heroTitle}>
             Unit<br />
             <span className={styles.heroAccent}>Converter</span>

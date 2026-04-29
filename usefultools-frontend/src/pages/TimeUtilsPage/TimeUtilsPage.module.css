@@ -606,10 +606,6 @@
 @media (max-width: 720px) {
   .header {
     padding: 0 var(--space-md);
-    flex-wrap: wrap;
-    padding-top: var(--space-sm);
-    padding-bottom: var(--space-sm);
-    min-height: auto;
   }
   .headerLeft, .headerRight { gap: var(--space-sm); }
   .hero { padding: 40px var(--space-md) 36px; flex-direction: column; }
@@ -622,7 +618,6 @@
 @media (max-width: 480px) {
   .hero { padding: 28px var(--space-md) 24px; }
   .main { width: calc(100% - 16px); }
-  .brandName { display: none; }
   .tab, .tabActive { padding: 9px 14px; font-size: var(--fs-xs); }
   .statCard { min-width: 70px; padding: var(--space-sm) var(--space-md); }
   .statValue { font-size: var(--fs-lg); }

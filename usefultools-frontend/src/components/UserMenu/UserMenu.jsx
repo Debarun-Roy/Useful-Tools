@@ -5,51 +5,33 @@ import styles from './UserMenu.module.css'
 /**
  * UserMenu — identity button + dropdown.
  *
- * Replaces the "Signed in as <username>" text and the standalone Profile /
- * Update Password dashboard tiles. Shows an avatar-letter mark beside the
- * username; clicking the button toggles a dropdown that lets logged-in users
- * reach /profile and /update-password.
- *
- * Behaviour:
- *   • Non-guest users      — the button is a real <button>. Clicking opens a
- *                            dropdown with "Profile" and "Update Password".
- *                            The dropdown closes on outside-click, Esc, or
- *                            after an option is chosen.
- *   • Guest users          — the button is a non-interactive display-only
- *                            wrapper with a "Guest" badge; no dropdown. This
- *                            matches the visual treatment previously shown in
- *                            Guest Mode and makes clear that the identity
- *                            menu has no account actions available.
- *
- * Variants (visual only — behaviour is identical):
- *   variant="light" (default)  — used on pages whose header has a light
- *                                surface background (all tool pages).
- *   variant="dark"             — used on the Dashboard and Calculator pages
- *                                whose headers have a dark background.
+ * Props:
+ *   username  — display name
+ *   isGuest   — shows Guest badge; dropdown limited to Sign out only
+ *   variant   — 'light' (default, tool pages) | 'dark' (Dashboard/Calculator)
+ *   onLogout  — called when the user clicks "Sign out" inside the dropdown.
+ *               When omitted, the Sign out item is not rendered.
  */
-export default function UserMenu({ username, isGuest = false, variant = 'light' }) {
+export default function UserMenu({ username, isGuest = false, variant = 'light', onLogout }) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef(null)
   const navigate = useNavigate()
 
   const initial = (username?.[0] || '?').toUpperCase()
 
-  // Close on outside click (non-guest dropdown).
+  // Close dropdown on outside click or Escape.
   useEffect(() => {
     if (!open) return
-
-    function handleClick(event) {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setOpen(false)
-      }
+    function handleOutside(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false)
     }
-    function handleKey(event) {
-      if (event.key === 'Escape') setOpen(false)
+    function handleKey(e) {
+      if (e.key === 'Escape') setOpen(false)
     }
-    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('mousedown', handleOutside)
     document.addEventListener('keydown', handleKey)
     return () => {
-      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('mousedown', handleOutside)
       document.removeEventListener('keydown', handleKey)
     }
   }, [open])
@@ -59,28 +41,62 @@ export default function UserMenu({ username, isGuest = false, variant = 'light' 
     navigate(path)
   }
 
+  function handleSignOut() {
+    setOpen(false)
+    onLogout?.()
+  }
+
   const variantClass = variant === 'dark' ? styles.dark : styles.light
   const containerCls = `${styles.container} ${variantClass}`
 
   // ── Guest variant ─────────────────────────────────────────────────────────
-  // Static display; no dropdown, no click handler. Preserves the "badge"
-  // identity treatment that was tried out in Guest Mode.
   if (isGuest) {
+    // If no logout handler, keep it as a non-interactive badge.
+    if (!onLogout) {
+      return (
+        <div className={containerCls} title="Account actions are only available to registered users">
+          <div className={styles.buttonDisplay} aria-disabled="true">
+            <span className={styles.avatar} aria-hidden="true">{initial}</span>
+            <span className={styles.name}>{username}</span>
+            <span className={styles.guestBadge}>Guest</span>
+          </div>
+        </div>
+      )
+    }
+    // With a logout handler, allow the guest to open a minimal dropdown.
     return (
-      <div
-        className={containerCls}
-        title="Account actions are only available to registered users"
-      >
-        <div className={styles.buttonDisplay} aria-disabled="true">
+      <div className={containerCls} ref={containerRef}>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() => setOpen(o => !o)}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label="Account menu"
+        >
           <span className={styles.avatar} aria-hidden="true">{initial}</span>
           <span className={styles.name}>{username}</span>
           <span className={styles.guestBadge}>Guest</span>
-        </div>
+          <span className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`} aria-hidden="true">▾</span>
+        </button>
+        {open && (
+          <div className={styles.dropdown} role="menu">
+            <button
+              type="button"
+              className={`${styles.menuItem} ${styles.menuItemDanger}`}
+              role="menuitem"
+              onClick={handleSignOut}
+            >
+              <span className={styles.menuIcon} aria-hidden="true">🚪</span>
+              <span className={styles.menuLabel}>Sign out</span>
+            </button>
+          </div>
+        )}
       </div>
     )
   }
 
-  // ── Non-guest variant ────────────────────────────────────────────────────
+  // ── Non-guest variant ─────────────────────────────────────────────────────
   return (
     <div className={containerCls} ref={containerRef}>
       <button
@@ -116,6 +132,20 @@ export default function UserMenu({ username, isGuest = false, variant = 'light' 
             <span className={styles.menuIcon} aria-hidden="true">🔑</span>
             <span className={styles.menuLabel}>Update password</span>
           </button>
+          {onLogout && (
+            <>
+              <div className={styles.menuDivider} aria-hidden="true" />
+              <button
+                type="button"
+                className={`${styles.menuItem} ${styles.menuItemDanger}`}
+                role="menuitem"
+                onClick={handleSignOut}
+              >
+                <span className={styles.menuIcon} aria-hidden="true">🚪</span>
+                <span className={styles.menuLabel}>Sign out</span>
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

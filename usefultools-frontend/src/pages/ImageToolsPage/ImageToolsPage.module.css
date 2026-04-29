@@ -389,10 +389,9 @@
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 720px) {
   .header {
-    padding: var(--space-sm) var(--space-md);
-    flex-wrap: wrap;
-    gap: var(--space-sm);
+    padding: 0 var(--space-md);
   }
+  .headerLeft, .headerRight { gap: var(--space-sm); }
   .hero { padding: 40px var(--space-md) 36px; flex-direction: column; }
   .fieldGrid { grid-template-columns: 1fr; }
   .rotateControls { flex-direction: column; }
