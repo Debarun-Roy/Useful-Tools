@@ -9,6 +9,7 @@ import {
   fetchAdminToolToggles,
   updateToolToggle,
 } from '../../api/apiClient'
+import UserMenu from '../../components/UserMenu/UserMenu'
 import styles from './AdminPage.module.css'
 import AnalyticsTab from './AnalyticsTab'
 import FeedbackTab  from './FeedbackTab'
@@ -399,6 +400,7 @@ const TABS = [
 export default function AdminPage() {
   const { username, logout } = useAuth()
   const navigate = useNavigate()
+  const isGuest = username === 'Guest User'
   const [activeTab, setActiveTab] = useState('users')
 
   async function handleLogout() {
@@ -418,12 +420,12 @@ export default function AdminPage() {
             <span className={styles.brandName}>UsefulTools</span>
           </div>
           <button className={styles.backBtn} onClick={() => navigate('/dashboard')}>
-            ← Dashboard
+            Dashboard
           </button>
         </div>
         <div className={styles.headerRight}>
           <span className={styles.adminChip}>Admin</span>
-          <span className={styles.userBadge}>{username}</span>
+          <UserMenu username={username} isGuest={isGuest} variant="light" />
           <button className={styles.logoutBtn} onClick={handleLogout}>Sign out</button>
         </div>
       </header>

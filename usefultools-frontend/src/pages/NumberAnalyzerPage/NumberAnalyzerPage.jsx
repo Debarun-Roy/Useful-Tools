@@ -11,6 +11,7 @@ import {
 import { useAuth } from '../../auth/useAuth'
 import { logActivity } from '../../utils/logActivity'
 import SeriesChart from './SeriesChart'
+import UserMenu from '../../components/UserMenu/UserMenu'
 import styles from './NumberAnalyzerPage.module.css'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -288,6 +289,7 @@ function SeriesResults({ result }) {
 export default function NumberAnalyserPage() {
   const { username, logout } = useAuth()
   const navigate = useNavigate()
+  const isGuest = username === 'Guest User'
 
   const [activeTab, setActiveTab] = useState('classify')
 
@@ -505,11 +507,11 @@ export default function NumberAnalyserPage() {
             <span className={styles.brandName}>UsefulTools</span>
           </div>
           <button className={styles.backBtn} onClick={() => navigate('/dashboard')}>
-            ← Dashboard
+            Dashboard
           </button>
         </div>
         <div className={styles.headerRight}>
-          <span className={styles.userBadge}>{username}</span>
+          <UserMenu username={username} isGuest={isGuest} variant="light" />
           <button className={styles.logoutBtn} onClick={handleLogout}>Sign out</button>
         </div>
       </header>

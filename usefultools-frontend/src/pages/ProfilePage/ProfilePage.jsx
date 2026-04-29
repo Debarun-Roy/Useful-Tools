@@ -3,6 +3,7 @@ import { useNavigate }         from 'react-router-dom'
 import { fetchUserProfile, logoutUser } from '../../api/apiClient'
 import { useAuth }             from '../../auth/useAuth'
 import LockedResourceOverlay from '../../components/LockedResourceOverlay/LockedResourceOverlay'
+import UserMenu from '../../components/UserMenu/UserMenu'
 import styles                  from './ProfilePage.module.css'
 
 export default function ProfilePage() {
@@ -56,11 +57,11 @@ export default function ProfilePage() {
             <span className={styles.brandName}>UsefulTools</span>
           </div>
           <button className={styles.backBtn} onClick={() => navigate('/dashboard')}>
-            ← Dashboard
+            Dashboard
           </button>
         </div>
         <div className={styles.headerRight}>
-          <span className={styles.userBadge}>{username}</span>
+          <UserMenu username={username} isGuest={isGuest} variant="light" />
           <button className={styles.logoutBtn} onClick={handleLogout}>Sign out</button>
         </div>
       </header>

@@ -217,8 +217,28 @@ font-size: var(--fs-sm); font-weight: 700; color: var(--clr-primary);
 }
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 720px) {
-.header { padding: 0 var(--space-md); }
-.hero   { padding: 40px var(--space-md) 36px; flex-direction: column; }
-.converterRow { flex-direction: column; }
-.inputWrap, .resultWrap { min-width: unset; }
+  .header {
+    padding: 0 var(--space-md);
+    flex-wrap: wrap;
+    padding-top: var(--space-sm);
+    padding-bottom: var(--space-sm);
+    height: auto;
+    min-height: 52px;
+  }
+  .hero { padding: 40px var(--space-md) 36px; flex-direction: column; }
+  .heroStats { align-self: flex-start; }
+  .main { width: calc(100% - 24px); padding-top: var(--space-md); }
+  .converterCard { padding: var(--space-md); }
+  .converterRow { flex-direction: column; }
+  .converterField { width: 100%; min-width: unset; flex: none; }
+  .inputWrap, .resultWrap { min-width: unset; width: 100%; }
+  .categoryTabs { overflow-x: auto; }
+}
+
+@media (max-width: 480px) {
+  .hero { padding: 28px var(--space-md) 24px; }
+  .main { width: calc(100% - 16px); }
+  .brandName { display: none; }
+  .catTab, .catTabActive { padding: 9px 12px; font-size: var(--fs-xs); }
+  .statCard { min-width: 80px; }
 }

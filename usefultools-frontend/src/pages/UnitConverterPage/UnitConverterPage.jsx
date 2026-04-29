@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
+import UserMenu from '../../components/UserMenu/UserMenu'
 import styles from './UnitConverterPage.module.css'
 import { trackTool } from '../../utils/logMetric'
 import { logActivity } from '../../utils/logActivity'
@@ -133,6 +134,7 @@ function formatResult(value) {
 export default function UnitConverterPage() {
   const { username, logout } = useAuth()
   const navigate = useNavigate()
+  const isGuest = username === 'Guest User'
 
   const [category, setCategory] = useState('length')
   const [fromUnit, setFromUnit] = useState('m')
@@ -198,11 +200,11 @@ export default function UnitConverterPage() {
             <span className={styles.brandName}>UsefulTools</span>
           </div>
           <button className={styles.backBtn} onClick={() => navigate('/dashboard')}>
-            ← Dashboard
+            Dashboard
           </button>
         </div>
         <div className={styles.headerRight}>
-          <span className={styles.userBadge}>{username}</span>
+          <UserMenu username={username} isGuest={isGuest} variant="light" />
           <button className={styles.logoutBtn} onClick={handleLogout}>Sign out</button>
         </div>
       </header>

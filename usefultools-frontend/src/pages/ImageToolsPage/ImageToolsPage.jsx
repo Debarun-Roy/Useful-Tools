@@ -1201,7 +1201,7 @@ export default function ImageToolsPage() {
             <span className={styles.brandName}>UsefulTools</span>
           </div>
           <button className={styles.backBtn} onClick={() => navigate('/dashboard')}>
-            ← Dashboard
+            Dashboard
           </button>
         </div>
         <div className={styles.headerRight}>

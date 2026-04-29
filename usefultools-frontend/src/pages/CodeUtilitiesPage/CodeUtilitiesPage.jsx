@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
 import yaml from 'js-yaml'
 import Papa from 'papaparse'
+import UserMenu from '../../components/UserMenu/UserMenu'
 import styles from './CodeUtilitiesPage.module.css'
 import { trackTool } from '../../utils/logMetric'
 import { logActivity } from '../../utils/logActivity'
@@ -380,6 +381,7 @@ function MarkdownTool() {
 export default function CodeUtilitiesPage() {
   const { username, logout } = useAuth()
   const navigate = useNavigate()
+  const isGuest = username === 'Guest User'
   const [activeTab, setActiveTab] = useState('json')
 
   async function handleLogout() {
@@ -418,11 +420,11 @@ export default function CodeUtilitiesPage() {
             <span className={styles.brandName}>UsefulTools</span>
           </div>
           <button className={styles.backBtn} onClick={() => navigate('/dashboard')}>
-            ← Dashboard
+            Dashboard
           </button>
         </div>
         <div className={styles.headerRight}>
-          <span className={styles.userBadge}>{username}</span>
+          <UserMenu username={username} isGuest={isGuest} variant="light" />
           <button className={styles.logoutBtn} onClick={handleLogout}>Sign out</button>
         </div>
       </header>

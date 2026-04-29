@@ -3,6 +3,7 @@ import { fetchRequestHeaders } from '../../api/apiClient'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
+import UserMenu from '../../components/UserMenu/UserMenu'
 import styles from './WebDevHelpersPage.module.css'
 import { trackTool } from '../../utils/logMetric'
 import { logActivity } from '../../utils/logActivity'
@@ -559,6 +560,7 @@ function FaviconTool() {
 export default function WebDevHelpersPage() {
   const { username, logout } = useAuth()
   const navigate = useNavigate()
+  const isGuest = username === 'Guest User'
   const [activeTab, setActiveTab] = useState('gradient')
 
   async function handleLogout() {
@@ -606,11 +608,11 @@ export default function WebDevHelpersPage() {
             <span className={styles.brandName}>UsefulTools</span>
           </div>
           <button className={styles.backBtn} onClick={() => navigate('/dashboard')}>
-            ← Dashboard
+            Dashboard
           </button>
         </div>
         <div className={styles.headerRight}>
-          <span className={styles.userBadge}>{username}</span>
+          <UserMenu username={username} isGuest={isGuest} variant="light" />
           <button className={styles.logoutBtn} onClick={handleLogout}>Sign out</button>
         </div>
       </header>
