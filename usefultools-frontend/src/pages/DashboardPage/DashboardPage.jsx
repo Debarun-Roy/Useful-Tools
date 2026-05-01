@@ -485,12 +485,11 @@ export default function DashboardPage() {
     <div className={styles.page}>
 
       <header className={styles.header}>
-        <div className={styles.brand}>
-          <span className={styles.brandMark} aria-hidden="true">#</span>
-          <span className={styles.brandName}>UsefulTools</span>
-        </div>
-        <div className={styles.userArea}>
-          <ThemePicker />
+        <div className={styles.headerTopRow}>
+          <div className={styles.brand}>
+            <span className={styles.brandMark} aria-hidden="true">#</span>
+            <span className={styles.brandName}>UsefulTools</span>
+          </div>
           {isAdmin && (
             <button
               className={styles.adminPanelBtn}
@@ -499,6 +498,9 @@ export default function DashboardPage() {
               ⚙ Admin
             </button>
           )}
+        </div>
+        <div className={styles.userArea}>
+          <ThemePicker />
           <UserMenu username={username} isGuest={isGuest} variant="dark" onLogout={handleLogout} />
         </div>
       </header>

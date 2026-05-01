@@ -46,6 +46,14 @@
   gap: var(--space-lg);    /* guarantees breathing room even on narrow widths */
 }
 
+.headerTopRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-shrink: 0;
+  min-width: 0;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -193,7 +201,6 @@
     min-height: 60px;
     padding: 10px var(--space-md);
     gap: var(--space-md);
-    flex-wrap: wrap;
   }
   .userArea {
     gap: var(--space-md);
@@ -201,8 +208,27 @@
 }
 
 @media (max-width: 720px) {
+  /* Stack the header into two rows: brand+admin on top, theme+profile below.
+     On non-admin users the right side of the top row stays empty by design. */
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    min-height: 0;
+    padding: 8px var(--space-md);
+    gap: 6px;
+  }
+  .headerTopRow {
+    width: 100%;
+    justify-content: space-between;
+    gap: var(--space-sm);
+  }
+  .userArea {
+    width: 100%;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+  }
   .hero {
-    padding: 32px var(--space-md) 28px;
+    padding: 64px var(--space-md) 60px;
   }
   .main {
     padding: var(--space-md);
@@ -216,8 +242,11 @@
 }
 
 @media (max-width: 420px) {
+  .header {
+    padding: 6px var(--space-md);
+  }
   .hero {
-    padding: 24px var(--space-md) 20px;
+    padding: 56px var(--space-md) 52px;
   }
   .greeting {
     font-size: clamp(1.5rem, 7vw, 2.4rem);
