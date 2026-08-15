@@ -56,7 +56,9 @@ export function setCsrfToken(token) {
   if (_csrfToken) {
     try {
       sessionStorage.setItem(CSRF_STORAGE_KEY, _csrfToken)
-    } catch {}
+    } catch {
+      // Session storage can be blocked; CSRF still works through fallbacks.
+    }
   }
 }
 
@@ -64,7 +66,9 @@ export function clearCsrfToken() {
   _csrfToken = ''
   try {
     sessionStorage.removeItem(CSRF_STORAGE_KEY)
-  } catch {}
+  } catch {
+    // Ignore blocked storage during logout cleanup.
+  }
 }
 
 function getCsrfToken() {
@@ -76,7 +80,9 @@ function getCsrfToken() {
       _csrfToken = stored
       return stored
     }
-  } catch {}
+  } catch {
+    // Session storage may be unavailable in hardened browser contexts.
+  }
 
   try {
     const match = document.cookie
@@ -84,7 +90,9 @@ function getCsrfToken() {
       .find(row => row.startsWith('XSRF-TOKEN='))
 
     if (match) return decodeURIComponent(match.split('=')[1])
-  } catch {}
+  } catch {
+    // Cookie access may be unavailable cross-origin or in restricted contexts.
+  }
 
   return ''
 }
@@ -728,3 +736,45 @@ export const getSchemaTemplates = (category) => {
 
 export const getSchemaTemplate = (name) =>
   request(`/validator/template/${encodeURIComponent(name)}`)
+
+
+// REGEX BUILDER (SPRINT 22)
+
+export const getRegexPatterns = () =>
+  request('/regex/patterns')
+
+export const getSavedRegexPatterns = () =>
+  request('/regex/user')
+
+export const validateRegexPattern = (pattern) =>
+  request('/regex/validate', {
+    method: 'POST',
+    isJson: true,
+    body: { pattern },
+  })
+
+export const testRegexPattern = (pattern, testString) =>
+  request('/regex/test', {
+    method: 'POST',
+    isJson: true,
+    body: { pattern, testString },
+  })
+
+export const explainRegexPattern = (pattern) =>
+  request('/regex/explain', {
+    method: 'POST',
+    isJson: true,
+    body: { pattern },
+  })
+
+export const saveRegexPattern = ({ pattern, description, category, exampleString }) =>
+  request('/regex/save', {
+    method: 'POST',
+    isJson: true,
+    body: { pattern, description, category, exampleString },
+  })
+
+export const deleteRegexPattern = (id) =>
+  request(`/regex/user/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  })

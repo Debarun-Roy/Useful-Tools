@@ -65,6 +65,8 @@ public class AuthFilter implements Filter {
                 role = UserContext.ROLE_USER; // default — handles pre-17 sessions
             }
 
+            request.setAttribute("username", username);
+            request.setAttribute("role", role);
             UserContext.set(username);
             UserContext.setRole(role);
             try {

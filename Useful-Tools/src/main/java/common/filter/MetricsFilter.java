@@ -159,6 +159,14 @@ public class MetricsFilter implements Filter {
         // Don't self-instrument the metrics log endpoint.
         if (path.equals("/api/metrics/log"))                  return null;
 
+        if (path.startsWith("/api/formatter/"))               return "formatter.format";
+        if (path.equals("/api/pattern/test"))                 return "regex.test";
+        if (path.equals("/api/regex/test"))                   return "regex.test";
+        if (path.equals("/api/pattern/save"))                 return "regex.save";
+        if (path.equals("/api/regex/save"))                   return "regex.save";
+        if (path.startsWith("/api/pattern/"))                 return "regex.build";
+        if (path.startsWith("/api/regex/"))                   return "regex.build";
+
         // ── Vault ───────────────────────────────────────────────────────────
         if (path.equals("/api/passwords/generate"))           return "password.generate";
         if (path.equals("/api/passwords/save"))               return "password.save";

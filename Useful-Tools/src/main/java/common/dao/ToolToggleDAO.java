@@ -47,7 +47,9 @@ public class ToolToggleDAO {
             "/web-dev",
             "/image-tools",
             "/dev-utils",
-            "/time-utils"
+            "/time-utils",
+            "/formatter",
+            "/regex-builder"
     );
 
     // ── Schema ─────────────────────────────────────────────────────────────

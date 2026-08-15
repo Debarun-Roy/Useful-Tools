@@ -63,6 +63,8 @@ public class SearchController extends HttpServlet {
                     "Timezone converter and Unix timestamp conversion"),
             new ToolInfo("/formatter", "API Formatter", "⚡",
                     "Format, validate, minify and analyse JSON, XML, and YAML — with JSON Schema support")
+            , new ToolInfo("/regex-builder", "Regex Builder", ".*",
+                    "Build, test, explain, save, and reuse regular expressions")
     );
 
     private static class RecordUsageRequest {

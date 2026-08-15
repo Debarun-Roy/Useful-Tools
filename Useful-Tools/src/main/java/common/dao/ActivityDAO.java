@@ -112,7 +112,11 @@ public class ActivityDAO {
             "time.convert",
             "time.timestamp",
             // Sprint 21 additions:
-            "formatter.format"
+            "formatter.format",
+            // Sprint 22 additions:
+            "regex.build",
+            "regex.test",
+            "regex.save"
     );
 
     // ── Maximum payload size (TEXT column, keep sane to avoid abuse) ────────

@@ -60,6 +60,10 @@ const VALID_TOOL_NAMES = new Set([
   'cron.build',
   'time.convert',
   'time.timestamp',
+  'formatter.format',
+  'regex.build',
+  'regex.test',
+  'regex.save',
   // Server-side tools — listed for symmetry; client code typically won't
   // call these directly because MetricsFilter handles them server-side.
   'password.generate',

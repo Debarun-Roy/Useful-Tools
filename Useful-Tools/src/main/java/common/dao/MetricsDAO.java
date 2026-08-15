@@ -100,6 +100,10 @@ public class MetricsDAO {
             "cron.build",
             "time.convert",
             "time.timestamp",
+            "formatter.format",
+            "regex.build",
+            "regex.test",
+            "regex.save",
 
             // ── Server-side tools (auto-instrumented by MetricsFilter) ─────
             "password.generate",

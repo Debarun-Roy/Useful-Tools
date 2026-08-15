@@ -415,6 +415,7 @@ function TextDiff() {
 // ── Regex Tester ──────────────────────────────────────────────────────────────
 
 function RegexTester() {
+  const navigate = useNavigate()
   const [pattern,  setPattern]  = useState('')
   const [flags,    setFlags]    = useState({ g: true, i: false, m: false, s: false })
   const [testStr,  setTestStr]  = useState('')
@@ -502,6 +503,9 @@ function RegexTester() {
             </button>
           ))}
         </div>
+        <button type="button" className={styles.copyBtn} onClick={() => navigate('/regex-builder')}>
+          Open Builder
+        </button>
       </div>
 
       {result?.error && (

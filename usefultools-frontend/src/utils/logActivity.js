@@ -65,6 +65,10 @@ const VALID_TOOL_NAMES = new Set([
   'time.timestamp',
   // Sprint 21 additions (API Formatter).
   'formatter.format',
+  // Sprint 22 additions (Regex Builder).
+  'regex.build',
+  'regex.test',
+  'regex.save',
 ])
 
 // ── Internal: the actual send ───────────────────────────────────────────────

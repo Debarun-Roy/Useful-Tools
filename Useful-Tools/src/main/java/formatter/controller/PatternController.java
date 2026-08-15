@@ -12,6 +12,7 @@ import common.ApiResponse;
 import common.cache.ToolCache;
 import common.dao.FormatterDAO;
 import formatter.service.PatternService;
+import formatter.service.PatternService.ExplanationResult;
 import formatter.service.PatternService.MatchResult;
 import formatter.service.PatternService.SplitResult;
 import formatter.service.PatternService.ValidationResult;
@@ -34,7 +35,9 @@ import jakarta.servlet.http.HttpServletResponse;
  * DELETE /api/pattern/user/{id}   — Delete user pattern (requires auth)
  */
 @WebServlet({"/api/pattern/validate", "/api/pattern/test", "/api/pattern/split",
-        "/api/pattern/common", "/api/pattern/save", "/api/pattern/user", "/api/pattern/user/*"})
+        "/api/pattern/common", "/api/pattern/save", "/api/pattern/user", "/api/pattern/user/*",
+        "/api/regex/validate", "/api/regex/test", "/api/regex/split", "/api/regex/explain",
+        "/api/regex/patterns", "/api/regex/save", "/api/regex/user", "/api/regex/user/*"})
 public class PatternController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
@@ -49,6 +52,15 @@ public class PatternController extends HttpServlet {
         String description;
         String category;
         String exampleString;
+    }
+
+    private boolean isPath(String servletPath, String... candidates) {
+        for (String candidate : candidates) {
+            if (candidate.equals(servletPath)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -73,13 +85,15 @@ public class PatternController extends HttpServlet {
             }
 
             // Route to appropriate handler
-            if (servletPath.equals("/api/pattern/validate")) {
+            if (isPath(servletPath, "/api/pattern/validate", "/api/regex/validate")) {
                 handleValidate(body, out, response);
-            } else if (servletPath.equals("/api/pattern/test")) {
+            } else if (isPath(servletPath, "/api/pattern/test", "/api/regex/test")) {
                 handleTest(body, out, response);
-            } else if (servletPath.equals("/api/pattern/split")) {
+            } else if (isPath(servletPath, "/api/pattern/split", "/api/regex/split")) {
                 handleSplit(body, out, response);
-            } else if (servletPath.equals("/api/pattern/save")) {
+            } else if (isPath(servletPath, "/api/regex/explain")) {
+                handleExplain(body.pattern, out, response);
+            } else if (isPath(servletPath, "/api/pattern/save", "/api/regex/save")) {
                 handleSave(body, request, out, response);
             }
 
@@ -108,9 +122,11 @@ public class PatternController extends HttpServlet {
         PrintWriter out = response.getWriter();
 
         try {
-            if (servletPath.equals("/api/pattern/common")) {
+            if (isPath(servletPath, "/api/pattern/common", "/api/regex/patterns")) {
                 handleGetCommon(out, response);
-            } else if (servletPath.equals("/api/pattern/user")) {
+            } else if (isPath(servletPath, "/api/regex/explain")) {
+                handleExplain(request.getParameter("pattern"), out, response);
+            } else if (isPath(servletPath, "/api/pattern/user", "/api/regex/user")) {
                 handleGetUserPatterns(request, out, response);
             }
         } catch (Exception e) {
@@ -133,7 +149,7 @@ public class PatternController extends HttpServlet {
         PrintWriter out = response.getWriter();
 
         try {
-            if (servletPath.startsWith("/api/pattern/user/")) {
+            if (servletPath.startsWith("/api/pattern/user/") || servletPath.startsWith("/api/regex/user/")) {
                 handleDeletePattern(servletPath, request, out, response);
             }
         } catch (Exception e) {
@@ -233,6 +249,32 @@ public class PatternController extends HttpServlet {
         if (result.isValid) {
             data.put("parts", result.parts);
         } else {
+            data.put("error", result.error);
+        }
+
+        response.setStatus(HttpServletResponse.SC_OK);
+        out.print(gson.toJson(ApiResponse.ok(data)));
+    }
+
+    /**
+     * Handler for /api/regex/explain - Explain a regex pattern.
+     */
+    private void handleExplain(String pattern, PrintWriter out, HttpServletResponse response) {
+        if (pattern == null || pattern.isBlank()) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            out.print(gson.toJson(ApiResponse.fail(
+                    "Field 'pattern' is required.",
+                    "MISSING_PATTERN")));
+            return;
+        }
+
+        ExplanationResult result = patternService.explainPattern(pattern);
+
+        LinkedHashMap<String, Object> data = new LinkedHashMap<>();
+        data.put("isValid", result.isValid);
+        data.put("summary", result.summary);
+        data.put("parts", result.parts);
+        if (!result.isValid) {
             data.put("error", result.error);
         }
 
@@ -345,7 +387,10 @@ public class PatternController extends HttpServlet {
             return;
         }
 
-        String patternIdStr = servletPath.substring("/api/pattern/user/".length());
+        String prefix = servletPath.startsWith("/api/regex/user/")
+                ? "/api/regex/user/"
+                : "/api/pattern/user/";
+        String patternIdStr = servletPath.substring(prefix.length());
 
         try {
             int patternId = Integer.parseInt(patternIdStr);

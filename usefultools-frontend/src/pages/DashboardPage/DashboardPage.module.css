@@ -252,6 +252,15 @@
   margin: 0 0 var(--space-md);
 }
 
+.searchSection {
+  margin-bottom: var(--space-xl);
+  padding: var(--space-lg);
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
 /* ─── Feature grid ───────────────────────────────────────────────────────── */
 .grid {
   display: grid;

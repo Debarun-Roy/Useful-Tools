@@ -145,6 +145,71 @@ public class PatternService {
                 )
         ));
 
+        patterns.put("date-time", List.of(
+                new PatternDefinition("ISO date", "^\\d{4}-\\d{2}-\\d{2}$", "2026-04-30", "YYYY-MM-DD date"),
+                new PatternDefinition("US date", "^\\d{2}/\\d{2}/\\d{4}$", "04/30/2026", "MM/DD/YYYY date"),
+                new PatternDefinition("Time 24-hour", "^\\d{2}:\\d{2}(:\\d{2})?$", "18:45:30", "HH:MM or HH:MM:SS"),
+                new PatternDefinition("ISO timestamp", "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+-]\\d{2}:\\d{2})$", "2026-04-30T18:45:30Z", "ISO-8601 timestamp"),
+                new PatternDefinition("Month/year", "^(0[1-9]|1[0-2])/(19|20)\\d{2}$", "04/2026", "MM/YYYY month reference"),
+                new PatternDefinition("Year", "^(19|20)\\d{2}$", "2026", "Year from 1900 to 2099"),
+                new PatternDefinition("Quarter", "^Q[1-4]-(19|20)\\d{2}$", "Q2-2026", "Business quarter label")
+        ));
+
+        patterns.put("web", List.of(
+                new PatternDefinition("Domain", "^[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", "example.com", "Domain name"),
+                new PatternDefinition("URL path", "^/[A-Za-z0-9/_-]*$", "/docs/api/v1", "URL path segments"),
+                new PatternDefinition("Query pair", "^[A-Za-z0-9_-]+=[^&=]*$", "page=2", "Single query-string key/value pair"),
+                new PatternDefinition("HTML id selector", "^#[A-Za-z][A-Za-z0-9_-]*$", "#mainContent", "CSS ID selector"),
+                new PatternDefinition("CSS class selector", "^\\.[A-Za-z][A-Za-z0-9_-]*$", ".buttonPrimary", "CSS class selector"),
+                new PatternDefinition("CSS custom property", "^--[A-Za-z0-9_-]+$", "--brand-color", "CSS variable name"),
+                new PatternDefinition("Social handle", "^@[A-Za-z0-9_]{1,15}$", "@usefultools", "At-prefixed username"),
+                new PatternDefinition("Hex color with alpha", "^#[A-Fa-f0-9]{3,8}$", "#3366ffaa", "CSS hex color including optional alpha")
+        ));
+
+        patterns.put("identifiers", List.of(
+                new PatternDefinition("camelCase", "^[a-z][A-Za-z0-9]*$", "userProfileId", "camelCase identifier"),
+                new PatternDefinition("PascalCase", "^[A-Z][A-Za-z0-9]*$", "UserProfileId", "PascalCase identifier"),
+                new PatternDefinition("snake_case", "^[a-z][a-z0-9]*(_[a-z0-9]+)*$", "user_profile_id", "snake_case identifier"),
+                new PatternDefinition("kebab-case", "^[a-z0-9]+(-[a-z0-9]+)*$", "user-profile-id", "kebab-case identifier"),
+                new PatternDefinition("CONSTANT_CASE", "^[A-Z][A-Z0-9_]*$", "MAX_RETRY_COUNT", "Uppercase constant identifier"),
+                new PatternDefinition("JavaScript identifier", "^[A-Za-z_$][A-Za-z0-9_$]*$", "$result_1", "JavaScript variable/function identifier"),
+                new PatternDefinition("Java package", "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)+$", "com.usefultools.regex", "Java package name")
+        ));
+
+        patterns.put("security", List.of(
+                new PatternDefinition("MD5 hash", "^[A-Fa-f0-9]{32}$", "d41d8cd98f00b204e9800998ecf8427e", "32-character hexadecimal hash"),
+                new PatternDefinition("SHA-1 hash", "^[A-Fa-f0-9]{40}$", "da39a3ee5e6b4b0d3255bfef95601890afd80709", "40-character hexadecimal hash"),
+                new PatternDefinition("SHA-256 hash", "^[A-Fa-f0-9]{64}$", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "64-character hexadecimal hash"),
+                new PatternDefinition("BCrypt hash", "^\\$2[aby]\\$\\d{2}\\$[./A-Za-z0-9]{53}$", "$2a$12$abcdefghijklmnopqrstuuJk1qGxS5lKZ8Y1cTq6s5M1jK4", "BCrypt password hash"),
+                new PatternDefinition("JWT token", "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$", "header.payload.signature", "JSON Web Token structure"),
+                new PatternDefinition("Secret key", "^sk-[A-Za-z0-9]{20,}$", "sk-AbCdEf1234567890abcd", "Generic secret key prefix"),
+                new PatternDefinition("Base64 token", "^[A-Za-z0-9+/]{40,}={0,2}$", "QWxhZGRpbjpvcGVuIHNlc2FtZQAAAAAAAAAAAAAAAA==", "Long Base64-like token")
+        ));
+
+        patterns.put("file", List.of(
+                new PatternDefinition("Safe filename", "^[^\\\\/:*?\\\"<>|]+$", "report-final.pdf", "Filename without reserved Windows characters"),
+                new PatternDefinition("File with extension", "^.+\\.[A-Za-z0-9]{1,10}$", "archive.tar.gz", "Filename ending in an extension"),
+                new PatternDefinition("Windows path", "^[A-Za-z]:\\\\(?:[^\\\\/:*?\\\"<>|]+\\\\)*[^\\\\/:*?\\\"<>|]*$", "C:\\\\Users\\\\royta\\\\file.txt", "Absolute Windows path"),
+                new PatternDefinition("Unix path", "^/(?:[^/]+/)*[^/]*$", "/usr/local/bin", "Absolute Unix-style path"),
+                new PatternDefinition("Relative path", "^\\.{1,2}(/[^/]+)*$", "../assets/logo.png", "Relative path beginning with . or .."),
+                new PatternDefinition("Data URL", "^data:[\\w/+.-]+;base64,[A-Za-z0-9+/=]+$", "data:image/png;base64,iVBORw0KGgo=", "Base64 data URL")
+        ));
+
+        patterns.put("network", List.of(
+                new PatternDefinition("IPv6 address", "^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$", "2001:0db8:85a3:0000:0000:8a2e:0370:7334", "Full IPv6 address"),
+                new PatternDefinition("MAC address", "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$", "00:1A:2B:3C:4D:5E", "Colon-separated MAC address"),
+                new PatternDefinition("IPv4 CIDR", "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)/(3[0-2]|[12]?[0-9])$", "192.168.1.0/24", "IPv4 network with CIDR mask"),
+                new PatternDefinition("Port", "^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$", "8080", "TCP/UDP port from 0 to 65535"),
+                new PatternDefinition("Hostname", "^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z]{2,})+$", "api.example.com", "DNS hostname")
+        ));
+
+        patterns.put("finance", List.of(
+                new PatternDefinition("Currency amount", "^-?\\$?\\d{1,3}(,\\d{3})*(\\.\\d{2})?$", "$1,250.00", "Currency-style amount"),
+                new PatternDefinition("Percentage", "^-?\\d+(\\.\\d+)?%$", "12.5%", "Percentage value"),
+                new PatternDefinition("IBAN", "^[A-Z]{2}\\d{2}[A-Z0-9]{11,30}$", "GB82WEST12345698765432", "Simplified IBAN format"),
+                new PatternDefinition("Credit card", "^(?:\\d[ -]*?){13,19}$", "4111 1111 1111 1111", "Payment card number shape")
+        ));
+
         return patterns;
     }
 
@@ -253,6 +318,163 @@ public class PatternService {
         return result;
     }
 
+    /**
+     * Builds a concise, rule-based explanation for a regex pattern.
+     */
+    public ExplanationResult explainPattern(String pattern) {
+        ExplanationResult result = new ExplanationResult();
+
+        ValidationResult validation = validatePattern(pattern);
+        result.isValid = validation.isValid;
+        if (!validation.isValid) {
+            result.error = validation.error;
+            return result;
+        }
+
+        if (pattern == null || pattern.isBlank()) {
+            result.summary = "Empty pattern.";
+            return result;
+        }
+
+        int i = 0;
+        while (i < pattern.length()) {
+            char ch = pattern.charAt(i);
+
+            if (ch == '\\' && i + 1 < pattern.length()) {
+                String token = pattern.substring(i, i + 2);
+                result.parts.add(new ExplanationPart(token, explainEscape(pattern.charAt(i + 1))));
+                i += 2;
+                continue;
+            }
+
+            if (ch == '[') {
+                int end = findClosing(pattern, i, ']');
+                if (end > i) {
+                    String token = pattern.substring(i, end + 1);
+                    String text = token.startsWith("[^")
+                            ? "Match one character not in this set."
+                            : "Match one character from this set.";
+                    result.parts.add(new ExplanationPart(token, text));
+                    i = end + 1;
+                    continue;
+                }
+            }
+
+            if (ch == '(') {
+                String token = "(";
+                String text = "Start a capturing group.";
+                if (pattern.startsWith("(?:", i)) {
+                    token = "(?:";
+                    text = "Start a non-capturing group.";
+                    i += 3;
+                } else if (pattern.startsWith("(?=", i)) {
+                    token = "(?=";
+                    text = "Start a positive lookahead.";
+                    i += 3;
+                } else if (pattern.startsWith("(?!", i)) {
+                    token = "(?!";
+                    text = "Start a negative lookahead.";
+                    i += 3;
+                } else if (pattern.startsWith("(?<=", i)) {
+                    token = "(?<=";
+                    text = "Start a positive lookbehind.";
+                    i += 4;
+                } else if (pattern.startsWith("(?<!", i)) {
+                    token = "(?<!";
+                    text = "Start a negative lookbehind.";
+                    i += 4;
+                } else if (isInlineFlagGroup(pattern, i)) {
+                    int close = pattern.indexOf(')', i + 2);
+                    if (close > i) {
+                        token = pattern.substring(i, close + 1);
+                        text = "Set inline regex flags.";
+                        i = close + 1;
+                    } else {
+                        i++;
+                    }
+                } else if (pattern.startsWith("(?<", i)) {
+                    int close = pattern.indexOf('>', i + 3);
+                    if (close > i) {
+                        token = pattern.substring(i, close + 1);
+                        text = "Start a named capturing group.";
+                        i = close + 1;
+                    } else {
+                        i++;
+                    }
+                } else {
+                    i++;
+                }
+                result.parts.add(new ExplanationPart(token, text));
+                continue;
+            }
+
+            String token = String.valueOf(ch);
+            result.parts.add(new ExplanationPart(token, explainSingleChar(ch)));
+            i++;
+        }
+
+        result.summary = "Valid regex with " + result.parts.size() + " explained part"
+                + (result.parts.size() == 1 ? "." : "s.");
+        return result;
+    }
+
+    private int findClosing(String pattern, int start, char close) {
+        for (int i = start + 1; i < pattern.length(); i++) {
+            if (pattern.charAt(i) == close && !isEscaped(pattern, i)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private boolean isInlineFlagGroup(String pattern, int start) {
+        if (!pattern.startsWith("(?", start)) return false;
+        int close = pattern.indexOf(')', start + 2);
+        if (close <= start + 2) return false;
+        String flags = pattern.substring(start + 2, close);
+        return flags.matches("[idmsuxU-]+");
+    }
+
+    private boolean isEscaped(String pattern, int index) {
+        int slashCount = 0;
+        for (int i = index - 1; i >= 0 && pattern.charAt(i) == '\\'; i--) {
+            slashCount++;
+        }
+        return slashCount % 2 == 1;
+    }
+
+    private String explainEscape(char ch) {
+        return switch (ch) {
+            case 'd' -> "Match any digit.";
+            case 'D' -> "Match any non-digit.";
+            case 'w' -> "Match a word character.";
+            case 'W' -> "Match a non-word character.";
+            case 's' -> "Match whitespace.";
+            case 'S' -> "Match non-whitespace.";
+            case 'b' -> "Match a word boundary.";
+            case 'B' -> "Match a non-word boundary.";
+            case 'n' -> "Match a newline.";
+            case 't' -> "Match a tab.";
+            default -> "Match the escaped character '" + ch + "'.";
+        };
+    }
+
+    private String explainSingleChar(char ch) {
+        return switch (ch) {
+            case '^' -> "Anchor the match to the start of input or line.";
+            case '$' -> "Anchor the match to the end of input or line.";
+            case '.' -> "Match any character except line breaks.";
+            case '*' -> "Repeat the previous token zero or more times.";
+            case '+' -> "Repeat the previous token one or more times.";
+            case '?' -> "Make the previous token optional or lazy.";
+            case '{' -> "Start an explicit repeat range.";
+            case '}' -> "End an explicit repeat range.";
+            case '|' -> "Separate alternatives.";
+            case ')' -> "End a group.";
+            default -> "Match the literal character '" + ch + "'.";
+        };
+    }
+
     // ── Helper Classes ───────────────────────────────────────────────────────
 
     /**
@@ -313,5 +535,28 @@ public class PatternService {
         public int partCount = 0;
         public List<String> parts = new ArrayList<>();
         public String error = null;
+    }
+
+    /**
+     * Token-level regex explanation result.
+     */
+    public static class ExplanationResult {
+        public boolean isValid = false;
+        public String summary = "";
+        public List<ExplanationPart> parts = new ArrayList<>();
+        public String error = null;
+    }
+
+    /**
+     * A single explained token or token group.
+     */
+    public static class ExplanationPart {
+        public String token;
+        public String explanation;
+
+        public ExplanationPart(String token, String explanation) {
+            this.token = token;
+            this.explanation = explanation;
+        }
     }
 }

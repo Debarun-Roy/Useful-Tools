@@ -21,6 +21,7 @@ import DevUtilsPage           from './pages/DevUtilsPage/DevUtilsPage'
 import TimeUtilsPage          from './pages/TimeUtilsPage/TimeUtilsPage'
 import AdminPage              from './pages/AdminPage/AdminPage'
 import ResponseFormatterPage  from './pages/ResponseFormatterPage/ResponseFormatterPage'
+import RegexBuilderPage       from './pages/RegexBuilderPage/RegexBuilderPage'
 import FeedbackModal          from './components/FeedbackModal/FeedbackModal'
 
 //console.log(AuthProvider) // Ensure AuthProvider is included in the bundle for the unauthorized handler to work 
@@ -81,6 +82,9 @@ export default function App() {
             } />
             <Route path="/formatter" element={
               <ProtectedRoute><ResponseFormatterPage /></ProtectedRoute>
+            } />
+            <Route path="/regex-builder" element={
+              <ProtectedRoute><RegexBuilderPage /></ProtectedRoute>
             } />
 
             {/*

@@ -6,6 +6,7 @@ import { useAuth }     from '../../auth/useAuth'
 import ThemePicker     from '../../components/ThemePicker/ThemePicker'
 import UserMenu        from '../../components/UserMenu/UserMenu'
 import RecentActivity  from '../../components/RecentActivity/RecentActivity'
+import SearchResults   from '../../components/SearchResults/SearchResults'
 import useFavorites    from '../../hooks/useFavorites.js'
 import styles          from './DashboardPage.module.css'
 
@@ -148,6 +149,14 @@ const FEATURES = [
     ready:  true,
     icon:   '⚡',
     desc:   'Format, validate, minify and analyse JSON, XML, and YAML — with JSON Schema support',
+  },
+  {
+    label:  'Regex Builder',
+    path:   '/regex-builder',
+    sprint: 22,
+    ready:  true,
+    icon:   '.*',
+    desc:   'Build, test, explain, save, and reuse regular expressions',
   },
 ]
 
@@ -522,6 +531,19 @@ export default function DashboardPage() {
       </section>
 
       <main className={styles.main}>
+
+        <section className={styles.searchSection} aria-label="Tool search">
+          <div className={styles.sectionHeader}>
+            <p className={styles.sectionTitle}>Find a tool</p>
+            <span className={styles.favoriteHint}>Search by task, format, or workflow.</span>
+          </div>
+          <SearchResults
+            username={username}
+            onSelectTool={(tool) => navigate(tool.path)}
+            maxResults={8}
+            placeholder="Search tools, formats, and utilities"
+          />
+        </section>
 
         {/* ── Recent Activity (non-guest only) ─────────────────────────── */}
         {!isGuest && <RecentActivity />}
