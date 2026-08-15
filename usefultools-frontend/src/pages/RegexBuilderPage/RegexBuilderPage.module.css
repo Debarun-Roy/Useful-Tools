@@ -188,6 +188,13 @@
   line-height: 1.2;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
 .palette,
 .sideStack,
 .compactList,

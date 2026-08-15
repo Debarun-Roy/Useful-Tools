@@ -98,6 +98,38 @@ function makeId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
+function ExportButton({ pattern, flagString, description }) {
+  function handleExport() {
+    if (!pattern) return
+    const payload = {
+      pattern,
+      flags: flagString || '',
+      display: `/${pattern}/${flagString || ''}`,
+      description: description || '',
+      exportedAt: new Date().toISOString(),
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `regex-${Date.now()}.json`
+    anchor.click()
+    URL.revokeObjectURL(url)
+  }
+
+  return (
+    <button
+      type="button"
+      className={styles.secondaryBtn}
+      onClick={handleExport}
+      disabled={!pattern}
+      title="Download pattern as JSON"
+    >
+      Export
+    </button>
+  )
+}
+
 function CopyButton({ text, label = 'Copy', doneLabel = 'Copied' }) {
   const [copied, setCopied] = useState(false)
 
@@ -252,7 +284,7 @@ export default function RegexBuilderPage() {
       } finally {
         if (!cancelled) setLoading(false)
       }
-    }, 350)
+    }, 1500)
 
     return () => {
       cancelled = true
@@ -392,7 +424,7 @@ export default function RegexBuilderPage() {
 
       <section className={styles.hero}>
         <div className={styles.heroContent}>
-          <div className={styles.heroBadge}>Sprint 22</div>
+          <div className={styles.heroBadge}>Sprint 19</div>
           <h1 className={styles.heroTitle}>Regex Builder</h1>
           <p className={styles.heroSub}>
             Compose patterns from reusable blocks, test matches live, explain tokens,
@@ -457,7 +489,14 @@ export default function RegexBuilderPage() {
                 <p className={styles.eyebrow}>Pattern</p>
                 <h2 className={styles.panelTitle}>Canvas</h2>
               </div>
-              <CopyButton text={pattern} />
+              <div className={styles.headerActions}>
+                <ExportButton
+                  pattern={pattern}
+                  flagString={flagString}
+                  description={saveState.description}
+                />
+                <CopyButton text={pattern} />
+              </div>
             </div>
 
             <div className={styles.segmentCanvas} aria-label="Regex builder canvas">
