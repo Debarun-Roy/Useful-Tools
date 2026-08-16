@@ -27,7 +27,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * GET /api/search/recommendations — Get personalized tool recommendations
  * POST /api/search/record-usage  — Record tool usage for recommendations
  */
-@WebServlet({"/api/search/tools", "/api/search/recommendations", "/api/search/record-usage"})
+@WebServlet({"/api/search/tools", "/api/search/recommendations", "/api/search/record-usage", "/api/search/trending"})
 public class SearchController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
@@ -66,7 +66,9 @@ public class SearchController extends HttpServlet {
             , new ToolInfo("/regex-builder", "Regex Builder", ".*",
                     "Build, test, explain, save, and reuse regular expressions"),
             new ToolInfo("/data-viz", "Data Visualisation", "📊",
-                    "Build bar, line, pie, area and scatter charts; import CSV/JSON; analyse trends and export PNG/SVG")
+                    "Build bar, line, pie, area and scatter charts; import CSV/JSON; analyse trends and export PNG/SVG"),
+            new ToolInfo("/markdown", "Markdown Converter", "M↓",
+                    "Live Markdown editor with preview, 5 themes, custom CSS, table builder, and HTML/PDF export")
     );
 
     private static class RecordUsageRequest {
@@ -89,6 +91,8 @@ public class SearchController extends HttpServlet {
                 handleSearch(request, out, response);
             } else if (servletPath.equals("/api/search/recommendations")) {
                 handleRecommendations(request, out, response);
+            } else if (servletPath.equals("/api/search/trending")) {
+                handleTrending(request, out, response);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -268,35 +272,180 @@ public class SearchController extends HttpServlet {
     }
 
     /**
+     * Handler for GET /api/search/trending — Returns site-wide trending tools
+     * for the "Most Popular This Week" widget.
+     */
+    private void handleTrending(HttpServletRequest request, PrintWriter out,
+                                HttpServletResponse response) throws Exception {
+        int limit = 6;
+        try {
+            String limitParam = request.getParameter("limit");
+            if (limitParam != null) {
+                limit = Math.min(Integer.parseInt(limitParam), 20);
+            }
+        } catch (NumberFormatException e) {
+            // Use default
+        }
+
+        List<Map<String, Object>> dbTrending = formatterDAO.getTrendingTools(limit);
+
+        // Enrich DB results with icon + description from ALL_TOOLS registry
+        Map<String, ToolInfo> toolByPath = new java.util.HashMap<>();
+        for (ToolInfo t : ALL_TOOLS) toolByPath.put(t.path, t);
+
+        List<Map<String, Object>> enriched = new ArrayList<>();
+        for (Map<String, Object> row : dbTrending) {
+            String path = (String) row.get("toolPath");
+            ToolInfo info = toolByPath.get(path);
+            Map<String, Object> entry = new LinkedHashMap<>(row);
+            entry.put("icon",        info != null ? info.icon        : "🔧");
+            entry.put("description", info != null ? info.description : "");
+            entry.put("name",        info != null ? info.name        : row.get("toolName"));
+            enriched.add(entry);
+        }
+
+        // If DB is empty (cold start), return the top static tools as default trending
+        if (enriched.isEmpty()) {
+            String[] defaultPaths = {"/calculator", "/text-utils", "/vault",
+                                     "/formatter", "/regex-builder", "/data-viz"};
+            for (String p : defaultPaths) {
+                ToolInfo info = toolByPath.get(p);
+                if (info != null) {
+                    Map<String, Object> entry = new LinkedHashMap<>();
+                    entry.put("toolPath",    p);
+                    entry.put("toolName",    info.name);
+                    entry.put("name",        info.name);
+                    entry.put("icon",        info.icon);
+                    entry.put("description", info.description);
+                    entry.put("trend",       0L);
+                    enriched.add(entry);
+                }
+            }
+        }
+
+        LinkedHashMap<String, Object> data = new LinkedHashMap<>();
+        data.put("trending", enriched);
+        data.put("count",    enriched.size());
+
+        response.setStatus(HttpServletResponse.SC_OK);
+        out.print(gson.toJson(ApiResponse.ok(data)));
+    }
+
+    /**
      * Calculates a relevance score for a tool based on query match.
      * Higher scores indicate better matches.
+     *
+     * Sprint 21 enhancement: natural language intent matching.
+     * Phrases like "convert colours", "check contrast", "validate JSON" are
+     * mapped to tool keywords so the score reflects user intent, not just
+     * literal string overlap.
      */
+    // ── Natural language intent → keyword mapping ─────────────────────────────
+    //
+    // Maps common natural-language phrases to tool-relevant keywords.
+    // When the search query contains a phrase on the left, the keywords on the
+    // right are added to the effective query before scoring. This lets a query
+    // like "validate json" surface API Formatter even if the user types
+    // "check if my json is valid".
+    private static final Map<String, String[]> NL_INTENT_MAP;
+    static {
+        NL_INTENT_MAP = new java.util.LinkedHashMap<>();
+        NL_INTENT_MAP.put("validate",     new String[]{"formatter", "validator"});
+        NL_INTENT_MAP.put("format",       new String[]{"formatter", "code"});
+        NL_INTENT_MAP.put("json",         new String[]{"formatter", "code"});
+        NL_INTENT_MAP.put("xml",          new String[]{"formatter"});
+        NL_INTENT_MAP.put("yaml",         new String[]{"formatter", "code"});
+        NL_INTENT_MAP.put("regex",        new String[]{"regex", "pattern", "text"});
+        NL_INTENT_MAP.put("pattern",      new String[]{"regex"});
+        NL_INTENT_MAP.put("chart",        new String[]{"data", "visualisation"});
+        NL_INTENT_MAP.put("graph",        new String[]{"data", "visualisation"});
+        NL_INTENT_MAP.put("visualise",    new String[]{"data", "visualisation"});
+        NL_INTENT_MAP.put("visualize",    new String[]{"data", "visualisation"});
+        NL_INTENT_MAP.put("markdown",     new String[]{"markdown", "converter"});
+        NL_INTENT_MAP.put("document",     new String[]{"markdown", "text"});
+        NL_INTENT_MAP.put("pdf",          new String[]{"markdown", "converter"});
+        NL_INTENT_MAP.put("convert",      new String[]{"converter", "encoding"});
+        NL_INTENT_MAP.put("encode",       new String[]{"encoding"});
+        NL_INTENT_MAP.put("decode",       new String[]{"encoding"});
+        NL_INTENT_MAP.put("base64",       new String[]{"encoding"});
+        NL_INTENT_MAP.put("hash",         new String[]{"dev", "hash"});
+        NL_INTENT_MAP.put("password",     new String[]{"vault", "password"});
+        NL_INTENT_MAP.put("generate",     new String[]{"key", "password", "dev"});
+        NL_INTENT_MAP.put("calculate",    new String[]{"calculator"});
+        NL_INTENT_MAP.put("math",         new String[]{"calculator"});
+        NL_INTENT_MAP.put("time",         new String[]{"time", "timezone"});
+        NL_INTENT_MAP.put("timezone",     new String[]{"time"});
+        NL_INTENT_MAP.put("image",        new String[]{"image"});
+        NL_INTENT_MAP.put("resize",       new String[]{"image"});
+        NL_INTENT_MAP.put("css",          new String[]{"web", "dev"});
+        NL_INTENT_MAP.put("html",         new String[]{"web", "encoding", "markdown"});
+        NL_INTENT_MAP.put("colour",       new String[]{"web", "dev"});
+        NL_INTENT_MAP.put("color",        new String[]{"web", "dev"});
+        NL_INTENT_MAP.put("number",       new String[]{"analyser", "calculator"});
+        NL_INTENT_MAP.put("prime",        new String[]{"analyser"});
+        NL_INTENT_MAP.put("text",         new String[]{"text"});
+        NL_INTENT_MAP.put("string",       new String[]{"text", "encoding"});
+        NL_INTENT_MAP.put("qr",           new String[]{"dev", "qr"});
+        NL_INTENT_MAP.put("cron",         new String[]{"dev", "cron"});
+        NL_INTENT_MAP.put("table",        new String[]{"markdown", "text"});
+        NL_INTENT_MAP.put("scatter",      new String[]{"data", "visualisation"});
+        NL_INTENT_MAP.put("statistics",   new String[]{"calculator", "data"});
+        NL_INTENT_MAP.put("stat",         new String[]{"calculator", "data"});
+        NL_INTENT_MAP.put("matrix",       new String[]{"calculator"});
+        NL_INTENT_MAP.put("unit",         new String[]{"converter"});
+    }
+
     private int calculateMatchScore(String query, ToolInfo tool) {
         int score = 0;
 
-        String toolNameLower = tool.name.toLowerCase();
+        String toolNameLower   = tool.name.toLowerCase();
         String descriptionLower = tool.description.toLowerCase();
+        String pathLower       = tool.path.toLowerCase();
 
-        // Exact match on name
+        // ── Direct scoring ────────────────────────────────────────────────────
         if (toolNameLower.equals(query)) {
             score += 100;
-        }
-        // Name starts with query
-        else if (toolNameLower.startsWith(query)) {
-            score += 50;
-        }
-        // Name contains query word
-        else if (toolNameLower.contains(" " + query) || toolNameLower.contains(query)) {
-            score += 30;
+        } else if (toolNameLower.startsWith(query)) {
+            score += 60;
+        } else if (toolNameLower.contains(query)) {
+            score += 40;
         }
 
-        // Description contains query
+        // Path segment match (e.g. "vault" matches "/vault")
+        if (pathLower.contains(query)) {
+            score += 20;
+        }
+
         if (descriptionLower.contains(query)) {
-            score += 10;
+            score += 15;
         }
 
-        // Partial word matching (character-by-character)
-        if (isFuzzyMatch(query, toolNameLower)) {
+        // ── Token-level scoring ───────────────────────────────────────────────
+        // Split query into words and score each word independently.
+        // A multi-word query like "json format" scores both "json" and "format".
+        String[] queryTokens = query.split("\\s+");
+        if (queryTokens.length > 1) {
+            for (String token : queryTokens) {
+                if (token.length() < 2) continue;
+                if (toolNameLower.contains(token))   score += 15;
+                if (descriptionLower.contains(token)) score += 8;
+                if (pathLower.contains(token))       score += 10;
+            }
+        }
+
+        // ── Natural language intent expansion ─────────────────────────────────
+        for (Map.Entry<String, String[]> entry : NL_INTENT_MAP.entrySet()) {
+            if (query.contains(entry.getKey())) {
+                for (String keyword : entry.getValue()) {
+                    if (toolNameLower.contains(keyword))    score += 12;
+                    if (descriptionLower.contains(keyword)) score += 6;
+                    if (pathLower.contains(keyword))        score += 8;
+                }
+            }
+        }
+
+        // ── Fuzzy character-sequence matching (fallback) ──────────────────────
+        if (score == 0 && isFuzzyMatch(query, toolNameLower)) {
             score += 5;
         }
 

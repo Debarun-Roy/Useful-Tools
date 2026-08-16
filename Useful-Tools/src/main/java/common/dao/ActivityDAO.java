@@ -120,7 +120,10 @@ public class ActivityDAO {
             // Sprint 20 additions (Data Visualisation):
             "chart.build",
             "chart.import",
-            "chart.export"
+            "chart.export",
+            // Sprint 21 additions (Markdown Converter):
+            "markdown.convert",
+            "markdown.table"
     );
 
     // ── Maximum payload size (TEXT column, keep sane to avoid abuse) ────────

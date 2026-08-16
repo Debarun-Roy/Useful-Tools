@@ -210,6 +210,69 @@ public class FormatterDAO {
     }
 
     /**
+     * Returns site-wide trending tools ordered by total usage in the last 7 days.
+     *
+     * Aggregates usage_count across all users, grouped by tool_path. Falls back
+     * to all-time counts if the last_used_at column is unavailable (e.g. during
+     * first-run before any data exists).
+     *
+     * @param limit Maximum number of tools to return (capped at 20 server-side)
+     * @return List of maps: { toolPath, toolName, icon, trend (total uses) }
+     * @throws SQLException if the database operation fails
+     */
+    public List<Map<String, Object>> getTrendingTools(int limit) throws SQLException {
+        // Aggregate across all users over the last 7 days; fall back to all-time.
+        String sql =
+            "SELECT tool_path, tool_name, SUM(usage_count) AS trend " +
+            "FROM tool_recommendations " +
+            "WHERE last_used_at >= datetime('now', '-7 days') " +
+            "GROUP BY tool_path " +
+            "ORDER BY trend DESC " +
+            "LIMIT ?";
+
+        List<Map<String, Object>> results = new ArrayList<>();
+
+        try (Connection conn = DatabaseUtils.getSQLite3Connection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, Math.min(limit, 20));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("toolPath",  rs.getString("tool_path"));
+                    row.put("toolName",  rs.getString("tool_name"));
+                    row.put("trend",     rs.getLong("trend"));
+                    results.add(row);
+                }
+            }
+        }
+
+        // If no data in the last 7 days, fall back to all-time top tools
+        if (results.isEmpty()) {
+            String fallbackSql =
+                "SELECT tool_path, tool_name, SUM(usage_count) AS trend " +
+                "FROM tool_recommendations " +
+                "GROUP BY tool_path " +
+                "ORDER BY trend DESC " +
+                "LIMIT ?";
+            try (Connection conn = DatabaseUtils.getSQLite3Connection();
+                 PreparedStatement stmt = conn.prepareStatement(fallbackSql)) {
+                stmt.setInt(1, Math.min(limit, 20));
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        Map<String, Object> row = new LinkedHashMap<>();
+                        row.put("toolPath",  rs.getString("tool_path"));
+                        row.put("toolName",  rs.getString("tool_name"));
+                        row.put("trend",     rs.getLong("trend"));
+                        results.add(row);
+                    }
+                }
+            }
+        }
+
+        return results;
+    }
+
+    /**
      * Retrieves tool recommendations for a user based on usage patterns.
      *
      * @param username Username

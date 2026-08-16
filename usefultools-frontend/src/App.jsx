@@ -23,6 +23,7 @@ import AdminPage              from './pages/AdminPage/AdminPage'
 import ResponseFormatterPage      from './pages/ResponseFormatterPage/ResponseFormatterPage'
 import RegexBuilderPage           from './pages/RegexBuilderPage/RegexBuilderPage'
 import DataVisualizationPage      from './pages/DataVisualizationPage/DataVisualizationPage'
+import MarkdownConverterPage      from './pages/MarkdownConverterPage/MarkdownConverterPage'
 import FeedbackModal          from './components/FeedbackModal/FeedbackModal'
 
 //console.log(AuthProvider) // Ensure AuthProvider is included in the bundle for the unauthorized handler to work 
@@ -89,6 +90,9 @@ export default function App() {
             } />
             <Route path="/data-viz" element={
               <ProtectedRoute><DataVisualizationPage /></ProtectedRoute>
+            } />
+            <Route path="/markdown" element={
+              <ProtectedRoute><MarkdownConverterPage /></ProtectedRoute>
             } />
 
             {/*

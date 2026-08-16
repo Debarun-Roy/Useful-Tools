@@ -73,6 +73,9 @@ const VALID_TOOL_NAMES = new Set([
   'chart.build',
   'chart.import',
   'chart.export',
+  // Sprint 21 additions (Markdown Converter).
+  'markdown.convert',
+  'markdown.table',
 ])
 
 // ── Internal: the actual send ───────────────────────────────────────────────

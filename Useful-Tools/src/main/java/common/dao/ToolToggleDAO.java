@@ -50,7 +50,8 @@ public class ToolToggleDAO {
             "/time-utils",
             "/formatter",
             "/regex-builder",
-            "/data-viz"
+            "/data-viz",
+            "/markdown"
     );
 
     // ── Schema ─────────────────────────────────────────────────────────────

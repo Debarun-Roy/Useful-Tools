@@ -67,6 +67,8 @@ const VALID_TOOL_NAMES = new Set([
   'chart.build',
   'chart.import',
   'chart.export',
+  'markdown.convert',
+  'markdown.table',
   // Server-side tools — listed for symmetry; client code typically won't
   // call these directly because MetricsFilter handles them server-side.
   'password.generate',

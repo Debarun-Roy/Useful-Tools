@@ -7,6 +7,7 @@ import ThemePicker     from '../../components/ThemePicker/ThemePicker'
 import UserMenu        from '../../components/UserMenu/UserMenu'
 import RecentActivity  from '../../components/RecentActivity/RecentActivity'
 import SearchResults   from '../../components/SearchResults/SearchResults'
+import ToolRecommendations from '../../components/ToolRecommendations/ToolRecommendations'
 import useFavorites    from '../../hooks/useFavorites.js'
 import styles          from './DashboardPage.module.css'
 
@@ -165,6 +166,14 @@ const FEATURES = [
     ready:  true,
     icon:   '📊',
     desc:   'Build bar, line, pie, area and scatter charts; import CSV/JSON; analyse trends and export PNG/SVG',
+  },
+  {
+    label:  'Markdown Converter',
+    path:   '/markdown',
+    sprint: 21,
+    ready:  true,
+    icon:   'M↓',
+    desc:   'Live Markdown editor with preview, 5 themes, custom CSS, table builder, and HTML/PDF export',
   },
 ]
 
@@ -552,6 +561,12 @@ export default function DashboardPage() {
             placeholder="Search tools, formats, and utilities"
           />
         </section>
+
+        {/* ── Tool Recommendations + Trending (Sprint 21) ───────────────── */}
+        <ToolRecommendations
+          username={username}
+          onSelectTool={(path) => navigate(path)}
+        />
 
         {/* ── Recent Activity (non-guest only) ─────────────────────────── */}
         {!isGuest && <RecentActivity />}

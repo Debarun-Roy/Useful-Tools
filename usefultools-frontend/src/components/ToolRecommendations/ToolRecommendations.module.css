@@ -1,0 +1,84 @@
+.widget {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.sectionIcon {
+  font-size: var(--fs-sm);
+}
+
+.sectionTitle {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--clr-text);
+}
+
+.sectionHint {
+  font-size: var(--fs-xs);
+  color: var(--clr-text-muted);
+  margin-left: var(--space-xs);
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 99px;
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--clr-text);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), color var(--transition);
+  white-space: nowrap;
+}
+
+.chip:hover {
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+  background: rgba(59, 111, 212, 0.05);
+}
+
+.chipIcon {
+  font-size: var(--fs-sm);
+  flex-shrink: 0;
+}
+
+.chipName {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chipBadge {
+  background: var(--clr-bg);
+  border-radius: 99px;
+  padding: 1px 7px;
+  font-size: var(--fs-xs);
+  color: var(--clr-text-muted);
+  font-weight: 700;
+  flex-shrink: 0;
+}

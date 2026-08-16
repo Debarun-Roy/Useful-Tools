@@ -107,6 +107,8 @@ public class MetricsDAO {
             "chart.build",
             "chart.import",
             "chart.export",
+            "markdown.convert",
+            "markdown.table",
 
             // ── Server-side tools (auto-instrumented by MetricsFilter) ─────
             "password.generate",
