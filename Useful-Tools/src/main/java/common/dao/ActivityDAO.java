@@ -116,7 +116,11 @@ public class ActivityDAO {
             // Sprint 22 additions:
             "regex.build",
             "regex.test",
-            "regex.save"
+            "regex.save",
+            // Sprint 20 additions (Data Visualisation):
+            "chart.build",
+            "chart.import",
+            "chart.export"
     );
 
     // ── Maximum payload size (TEXT column, keep sane to avoid abuse) ────────

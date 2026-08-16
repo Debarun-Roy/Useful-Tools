@@ -104,6 +104,9 @@ public class MetricsDAO {
             "regex.build",
             "regex.test",
             "regex.save",
+            "chart.build",
+            "chart.import",
+            "chart.export",
 
             // ── Server-side tools (auto-instrumented by MetricsFilter) ─────
             "password.generate",

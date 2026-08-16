@@ -64,7 +64,9 @@ public class SearchController extends HttpServlet {
             new ToolInfo("/formatter", "API Formatter", "⚡",
                     "Format, validate, minify and analyse JSON, XML, and YAML — with JSON Schema support")
             , new ToolInfo("/regex-builder", "Regex Builder", ".*",
-                    "Build, test, explain, save, and reuse regular expressions")
+                    "Build, test, explain, save, and reuse regular expressions"),
+            new ToolInfo("/data-viz", "Data Visualisation", "📊",
+                    "Build bar, line, pie, area and scatter charts; import CSV/JSON; analyse trends and export PNG/SVG")
     );
 
     private static class RecordUsageRequest {

@@ -69,6 +69,10 @@ const VALID_TOOL_NAMES = new Set([
   'regex.build',
   'regex.test',
   'regex.save',
+  // Sprint 20 additions (Data Visualisation).
+  'chart.build',
+  'chart.import',
+  'chart.export',
 ])
 
 // ── Internal: the actual send ───────────────────────────────────────────────

@@ -145,7 +145,7 @@ const FEATURES = [
   {
     label:  'API Formatter',
     path:   '/formatter',
-    sprint: 21,
+    sprint: 18,
     ready:  true,
     icon:   '⚡',
     desc:   'Format, validate, minify and analyse JSON, XML, and YAML — with JSON Schema support',
@@ -153,10 +153,18 @@ const FEATURES = [
   {
     label:  'Regex Builder',
     path:   '/regex-builder',
-    sprint: 22,
+    sprint: 19,
     ready:  true,
     icon:   '.*',
     desc:   'Build, test, explain, save, and reuse regular expressions',
+  },
+  {
+    label:  'Data Visualisation',
+    path:   '/data-viz',
+    sprint: 20,
+    ready:  true,
+    icon:   '📊',
+    desc:   'Build bar, line, pie, area and scatter charts; import CSV/JSON; analyse trends and export PNG/SVG',
   },
 ]
 

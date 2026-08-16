@@ -64,6 +64,9 @@ const VALID_TOOL_NAMES = new Set([
   'regex.build',
   'regex.test',
   'regex.save',
+  'chart.build',
+  'chart.import',
+  'chart.export',
   // Server-side tools — listed for symmetry; client code typically won't
   // call these directly because MetricsFilter handles them server-side.
   'password.generate',
