@@ -109,6 +109,14 @@ public class MetricsDAO {
             "chart.export",
             "markdown.convert",
             "markdown.table",
+            "color.convert",
+            "color.palette",
+            "color.gradient",
+            "color.accessibility",
+            "placeholder.text",
+            "placeholder.data",
+            "placeholder.image",
+            "placeholder.json",
 
             // ── Server-side tools (auto-instrumented by MetricsFilter) ─────
             "password.generate",

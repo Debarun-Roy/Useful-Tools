@@ -123,7 +123,16 @@ public class ActivityDAO {
             "chart.export",
             // Sprint 21 additions (Markdown Converter):
             "markdown.convert",
-            "markdown.table"
+            "markdown.table",
+            // Sprint 22 additions (Color Tools + Placeholder Generator):
+            "color.convert",
+            "color.palette",
+            "color.gradient",
+            "color.accessibility",
+            "placeholder.text",
+            "placeholder.data",
+            "placeholder.image",
+            "placeholder.json"
     );
 
     // ── Maximum payload size (TEXT column, keep sane to avoid abuse) ────────

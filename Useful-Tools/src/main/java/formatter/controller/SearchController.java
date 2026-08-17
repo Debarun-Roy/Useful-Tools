@@ -68,7 +68,11 @@ public class SearchController extends HttpServlet {
             new ToolInfo("/data-viz", "Data Visualisation", "📊",
                     "Build bar, line, pie, area and scatter charts; import CSV/JSON; analyse trends and export PNG/SVG"),
             new ToolInfo("/markdown", "Markdown Converter", "M↓",
-                    "Live Markdown editor with preview, 5 themes, custom CSS, table builder, and HTML/PDF export")
+                    "Live Markdown editor with preview, 5 themes, custom CSS, table builder, and HTML/PDF export"),
+            new ToolInfo("/color-tools", "Color Tools", "🎨",
+                    "Convert HEX/RGB/HSL/HSV/CMYK, generate palettes, build CSS gradients, and check WCAG contrast"),
+            new ToolInfo("/placeholder", "Placeholder Generator", "¶",
+                    "Generate Lorem Ipsum, fake data records, SVG image placeholders, and JSON sample data")
     );
 
     private static class RecordUsageRequest {

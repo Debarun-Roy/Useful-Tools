@@ -76,6 +76,15 @@ const VALID_TOOL_NAMES = new Set([
   // Sprint 21 additions (Markdown Converter).
   'markdown.convert',
   'markdown.table',
+  // Sprint 22 additions (Color Tools + Placeholder Generator).
+  'color.convert',
+  'color.palette',
+  'color.gradient',
+  'color.accessibility',
+  'placeholder.text',
+  'placeholder.data',
+  'placeholder.image',
+  'placeholder.json',
 ])
 
 // ── Internal: the actual send ───────────────────────────────────────────────

@@ -51,7 +51,9 @@ public class ToolToggleDAO {
             "/formatter",
             "/regex-builder",
             "/data-viz",
-            "/markdown"
+            "/markdown",
+            "/color-tools",
+            "/placeholder"
     );
 
     // ── Schema ─────────────────────────────────────────────────────────────

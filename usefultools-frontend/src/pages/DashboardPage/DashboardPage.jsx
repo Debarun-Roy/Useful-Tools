@@ -175,6 +175,22 @@ const FEATURES = [
     icon:   'M↓',
     desc:   'Live Markdown editor with preview, 5 themes, custom CSS, table builder, and HTML/PDF export',
   },
+  {
+    label:  'Color Tools',
+    path:   '/color-tools',
+    sprint: 22,
+    ready:  true,
+    icon:   '🎨',
+    desc:   'Convert HEX/RGB/HSL/HSV/CMYK, generate palettes, build CSS gradients, and check WCAG contrast',
+  },
+  {
+    label:  'Placeholder Generator',
+    path:   '/placeholder',
+    sprint: 22,
+    ready:  true,
+    icon:   '¶',
+    desc:   'Generate Lorem Ipsum, fake data records, SVG image placeholders, and JSON sample data',
+  },
 ]
 
 // Quick lookup by path for rendering a favorite's corresponding feature card.

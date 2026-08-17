@@ -24,6 +24,8 @@ import ResponseFormatterPage      from './pages/ResponseFormatterPage/ResponseFo
 import RegexBuilderPage           from './pages/RegexBuilderPage/RegexBuilderPage'
 import DataVisualizationPage      from './pages/DataVisualizationPage/DataVisualizationPage'
 import MarkdownConverterPage      from './pages/MarkdownConverterPage/MarkdownConverterPage'
+import ColorToolsPage             from './pages/ColorToolsPage/ColorToolsPage'
+import PlaceholderGeneratorPage   from './pages/PlaceholderGeneratorPage/PlaceholderGeneratorPage'
 import FeedbackModal          from './components/FeedbackModal/FeedbackModal'
 
 //console.log(AuthProvider) // Ensure AuthProvider is included in the bundle for the unauthorized handler to work 
@@ -93,6 +95,12 @@ export default function App() {
             } />
             <Route path="/markdown" element={
               <ProtectedRoute><MarkdownConverterPage /></ProtectedRoute>
+            } />
+            <Route path="/color-tools" element={
+              <ProtectedRoute><ColorToolsPage /></ProtectedRoute>
+            } />
+            <Route path="/placeholder" element={
+              <ProtectedRoute><PlaceholderGeneratorPage /></ProtectedRoute>
             } />
 
             {/*
