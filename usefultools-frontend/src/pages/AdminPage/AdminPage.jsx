@@ -28,17 +28,23 @@ import FeedbackTab  from './FeedbackTab'
 // ── Tool metadata (for display in the toggles tab) ──────────────────────────
 
 const TOOL_META = {
-  '/calculator':  { icon: '🧮', label: 'Calculator' },
-  '/analyser':    { icon: '🔢', label: 'Number Analyser' },
-  '/vault':       { icon: '🔐', label: 'Password Vault' },
-  '/converter':   { icon: '🔄', label: 'Unit Converter' },
-  '/text-utils':  { icon: '📝', label: 'Text Utilities' },
-  '/encoding':    { icon: '🔧', label: 'Encoding & Decoding' },
-  '/code-utils':  { icon: '💻', label: 'Code Utilities' },
-  '/web-dev':     { icon: '🛠️', label: 'Web Dev Helpers' },
-  '/image-tools': { icon: '🖼️', label: 'Image Tools' },
-  '/dev-utils':   { icon: '🧑‍💻', label: 'Dev Utilities' },
-  '/time-utils':  { icon: '🕐', label: 'Time Utilities' },
+  '/calculator':    { icon: '🧮', label: 'Calculator' },
+  '/analyser':      { icon: '🔢', label: 'Number Analyser' },
+  '/vault':         { icon: '🔐', label: 'Password Vault' },
+  '/converter':     { icon: '🔄', label: 'Unit Converter' },
+  '/text-utils':    { icon: '📝', label: 'Text Utilities' },
+  '/encoding':      { icon: '🔧', label: 'Encoding & Decoding' },
+  '/code-utils':    { icon: '💻', label: 'Code Utilities' },
+  '/web-dev':       { icon: '🛠️', label: 'Web Dev Helpers' },
+  '/image-tools':   { icon: '🖼️', label: 'Image Tools' },
+  '/dev-utils':     { icon: '🧑‍💻', label: 'Dev Utilities' },
+  '/time-utils':    { icon: '🕐', label: 'Time Utilities' },
+  '/formatter':     { icon: '⚡', label: 'API Formatter' },
+  '/regex-builder': { icon: '.*', label: 'Regex Builder' },
+  '/data-viz':      { icon: '📊', label: 'Data Visualisation' },
+  '/markdown':      { icon: 'M↓', label: 'Markdown Converter' },
+  '/color-tools':   { icon: '🎨', label: 'Color Tools' },
+  '/placeholder':   { icon: '¶',  label: 'Placeholder Generator' },
 }
 
 // ── Role badge ──────────────────────────────────────────────────────────────

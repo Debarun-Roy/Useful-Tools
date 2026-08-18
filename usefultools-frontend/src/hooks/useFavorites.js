@@ -58,6 +58,13 @@ const VALID_PATHS = new Set([
   '/web-dev',
   '/image-tools',
   '/dev-utils',
+  '/time-utils',    // Sprint 16
+  '/formatter',     // Sprint 18
+  '/regex-builder', // Sprint 19
+  '/data-viz',      // Sprint 20
+  '/markdown',      // Sprint 21
+  '/color-tools',   // Sprint 22
+  '/placeholder',   // Sprint 22
 ])
 
 // ─── localStorage helpers (guest path) ──────────────────────────────────────

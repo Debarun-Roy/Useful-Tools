@@ -59,7 +59,13 @@ public class FavoritesDAO {
             "/web-dev",
             "/image-tools",
             "/dev-utils",
-            "/time-utils"   // Sprint 16 addition
+            "/time-utils",    // Sprint 16
+            "/formatter",     // Sprint 18
+            "/regex-builder", // Sprint 19
+            "/data-viz",      // Sprint 20
+            "/markdown",      // Sprint 21
+            "/color-tools",   // Sprint 22
+            "/placeholder"    // Sprint 22
     );
 
     // Hard cap — a user pinning every tool still shouldn't have unlimited rows.
