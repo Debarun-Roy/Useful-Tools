@@ -72,7 +72,11 @@ public class SearchController extends HttpServlet {
             new ToolInfo("/color-tools", "Color Tools", "🎨",
                     "Convert HEX/RGB/HSL/HSV/CMYK, generate palettes, build CSS gradients, and check WCAG contrast"),
             new ToolInfo("/placeholder", "Placeholder Generator", "¶",
-                    "Generate Lorem Ipsum, fake data records, SVG image placeholders, and JSON sample data")
+                    "Generate Lorem Ipsum, fake data records, SVG image placeholders, and JSON sample data"),
+            new ToolInfo("/sql-formatter", "SQL Formatter", "SQL",
+                    "Format SQL queries, analyze complexity with index hints, and generate CRUD queries from a table schema"),
+            new ToolInfo("/bulk-converter", "Bulk Converter", "⇄",
+                    "Convert data files between CSV, JSON, and XML; batch-convert images to PNG, JPEG, or WebP")
     );
 
     private static class RecordUsageRequest {

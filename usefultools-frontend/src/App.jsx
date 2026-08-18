@@ -26,6 +26,8 @@ import DataVisualizationPage      from './pages/DataVisualizationPage/DataVisual
 import MarkdownConverterPage      from './pages/MarkdownConverterPage/MarkdownConverterPage'
 import ColorToolsPage             from './pages/ColorToolsPage/ColorToolsPage'
 import PlaceholderGeneratorPage   from './pages/PlaceholderGeneratorPage/PlaceholderGeneratorPage'
+import SQLFormatterPage           from './pages/SQLFormatterPage/SQLFormatterPage'
+import BulkConverterPage         from './pages/BulkConverterPage/BulkConverterPage'
 import FeedbackModal          from './components/FeedbackModal/FeedbackModal'
 
 //console.log(AuthProvider) // Ensure AuthProvider is included in the bundle for the unauthorized handler to work 
@@ -101,6 +103,12 @@ export default function App() {
             } />
             <Route path="/placeholder" element={
               <ProtectedRoute><PlaceholderGeneratorPage /></ProtectedRoute>
+            } />
+            <Route path="/sql-formatter" element={
+              <ProtectedRoute><SQLFormatterPage /></ProtectedRoute>
+            } />
+            <Route path="/bulk-converter" element={
+              <ProtectedRoute><BulkConverterPage /></ProtectedRoute>
             } />
 
             {/*

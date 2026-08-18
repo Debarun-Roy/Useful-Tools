@@ -65,6 +65,8 @@ const VALID_PATHS = new Set([
   '/markdown',      // Sprint 21
   '/color-tools',   // Sprint 22
   '/placeholder',   // Sprint 22
+  '/sql-formatter', // Sprint 23
+  '/bulk-converter', // Sprint 23
 ])
 
 // ─── localStorage helpers (guest path) ──────────────────────────────────────

@@ -77,6 +77,11 @@ const VALID_TOOL_NAMES = new Set([
   'placeholder.data',
   'placeholder.image',
   'placeholder.json',
+  'sql.format',
+  'sql.analyze',
+  'sql.crud',
+  'bulk.data',
+  'bulk.image',
   // Server-side tools — listed for symmetry; client code typically won't
   // call these directly because MetricsFilter handles them server-side.
   'password.generate',

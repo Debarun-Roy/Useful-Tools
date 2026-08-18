@@ -117,6 +117,11 @@ public class MetricsDAO {
             "placeholder.data",
             "placeholder.image",
             "placeholder.json",
+            "sql.format",
+            "sql.analyze",
+            "sql.crud",
+            "bulk.data",
+            "bulk.image",
 
             // ── Server-side tools (auto-instrumented by MetricsFilter) ─────
             "password.generate",

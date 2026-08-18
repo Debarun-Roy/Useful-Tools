@@ -53,7 +53,9 @@ public class ToolToggleDAO {
             "/data-viz",
             "/markdown",
             "/color-tools",
-            "/placeholder"
+            "/placeholder",
+            "/sql-formatter",
+            "/bulk-converter"
     );
 
     // ── Schema ─────────────────────────────────────────────────────────────

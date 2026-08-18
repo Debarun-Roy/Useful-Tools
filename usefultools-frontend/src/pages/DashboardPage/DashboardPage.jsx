@@ -191,6 +191,22 @@ const FEATURES = [
     icon:   '¶',
     desc:   'Generate Lorem Ipsum, fake data records, SVG image placeholders, and JSON sample data',
   },
+  {
+    label:  'SQL Formatter',
+    path:   '/sql-formatter',
+    sprint: 23,
+    ready:  true,
+    icon:   'SQL',
+    desc:   'Format SQL with keyword case and indentation, analyze query complexity, and generate CRUD queries',
+  },
+  {
+    label:  'Bulk Converter',
+    path:   '/bulk-converter',
+    sprint: 23,
+    ready:  true,
+    icon:   '⇄',
+    desc:   'Convert data files between CSV, JSON, and XML; batch-convert images to PNG, JPEG, or WebP',
+  },
 ]
 
 // Quick lookup by path for rendering a favorite's corresponding feature card.

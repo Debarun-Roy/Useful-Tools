@@ -45,6 +45,8 @@ const TOOL_META = {
   '/markdown':      { icon: 'M↓', label: 'Markdown Converter' },
   '/color-tools':   { icon: '🎨', label: 'Color Tools' },
   '/placeholder':   { icon: '¶',  label: 'Placeholder Generator' },
+  '/sql-formatter': { icon: 'SQL', label: 'SQL Formatter' },
+  '/bulk-converter':{ icon: '⇄',  label: 'Bulk Converter' },
 }
 
 // ── Role badge ──────────────────────────────────────────────────────────────

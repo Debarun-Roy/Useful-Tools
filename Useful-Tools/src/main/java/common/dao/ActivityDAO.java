@@ -132,7 +132,13 @@ public class ActivityDAO {
             "placeholder.text",
             "placeholder.data",
             "placeholder.image",
-            "placeholder.json"
+            "placeholder.json",
+            // Sprint 23 additions (SQL Formatter + Bulk Converter):
+            "sql.format",
+            "sql.analyze",
+            "sql.crud",
+            "bulk.data",
+            "bulk.image"
     );
 
     // ── Maximum payload size (TEXT column, keep sane to avoid abuse) ────────
