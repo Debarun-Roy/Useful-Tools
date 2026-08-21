@@ -348,7 +348,7 @@ function LoremTab() {
           className={styles.textInput}
           value={seed}
           onChange={e => setSeed(e.target.value)}
-          placeholder="e.g. 42 or 'myproject'"
+          placeholder="e.g. 42 or 'myproject'" maxLength={50}
         />
       </div>
 
@@ -479,7 +479,7 @@ function FakeDataTab() {
           className={styles.textInput}
           value={seed}
           onChange={e => setSeed(e.target.value)}
-          placeholder="e.g. 42"
+          placeholder="e.g. 42" maxLength={50}
         />
 
         <div className={styles.dataActions}>
@@ -636,6 +636,8 @@ function ImageTab() {
           value={customText}
           onChange={e => setCustomText(e.target.value)}
           placeholder={`${width}×${height}`}
+          maxLength={120}
+          aria-label="Custom placeholder text"
         />
 
         <div className={styles.imageActions}>
@@ -753,7 +755,7 @@ function JSONSampleTab() {
           className={styles.textInput}
           value={seed}
           onChange={e => setSeed(e.target.value)}
-          placeholder="e.g. 42"
+          placeholder="e.g. 42" maxLength={50}
         />
 
         <div className={styles.dataActions}>

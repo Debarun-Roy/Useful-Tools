@@ -740,6 +740,7 @@ export default function DataVisualizationPage() {
                 value={chartTitle}
                 onChange={e => setChartTitle(e.target.value)}
                 placeholder="Optional chart title"
+                maxLength={120}
               />
 
               {/* Sample datasets */}
@@ -765,6 +766,8 @@ export default function DataVisualizationPage() {
                   value={labelInput}
                   onChange={e => setLabelInput(e.target.value)}
                   placeholder="Jan, Feb, Mar, ..."
+                  maxLength={2000}
+                  aria-label="Chart labels (comma-separated)"
                 />
 
                 {seriesInputs.map((si, idx) => (
@@ -774,12 +777,16 @@ export default function DataVisualizationPage() {
                       value={si.name}
                       onChange={e => updateSeries(idx, 'name', e.target.value)}
                       placeholder={`Series ${idx + 1}`}
+                      maxLength={60}
+                      aria-label={`Series ${idx + 1} name`}
                     />
                     <input
                       className={styles.seriesValInput}
                       value={si.values}
                       onChange={e => updateSeries(idx, 'values', e.target.value)}
                       placeholder="42, 55, 38, ..."
+                      maxLength={2000}
+                      aria-label={`Series ${idx + 1} values (comma-separated)`}
                     />
                     {seriesInputs.length > 1 && (
                       <button
@@ -787,6 +794,7 @@ export default function DataVisualizationPage() {
                         className={styles.removeSeriesBtn}
                         onClick={() => removeSeries(idx)}
                         title="Remove series"
+                        aria-label={`Remove series ${idx + 1}`}
                       >×</button>
                     )}
                   </div>

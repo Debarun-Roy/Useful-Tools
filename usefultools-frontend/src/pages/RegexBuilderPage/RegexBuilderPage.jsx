@@ -528,6 +528,8 @@ export default function RegexBuilderPage() {
                 placeholder="^[a-z0-9]+$"
                 spellCheck={false}
                 autoComplete="off"
+                maxLength={2000}
+                aria-label="Regex pattern"
               />
               <span>/{flagString}</span>
             </div>
@@ -568,6 +570,8 @@ export default function RegexBuilderPage() {
                 value={saveState.description}
                 onChange={event => setSaveState(current => ({ ...current, description: event.target.value }))}
                 placeholder="Pattern description"
+                maxLength={200}
+                aria-label="Pattern description"
               />
               <button
                 type="button"
@@ -658,6 +662,8 @@ export default function RegexBuilderPage() {
                 value={libraryFilter}
                 onChange={event => setLibraryFilter(event.target.value)}
                 placeholder="Search library"
+                maxLength={100}
+                aria-label="Search pattern library"
               />
             </div>
 

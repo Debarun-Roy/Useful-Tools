@@ -31,6 +31,64 @@ import { logActivity } from '../../utils/logActivity'
 import { trackTool } from '../../utils/logMetric'
 import styles from './MarkdownConverterPage.module.css'
 
+// ─── HTML sanitiser (Sprint 24 — XSS hardening) ──────────────────────────────
+//
+// Strips anything that could execute JavaScript from Markdown-rendered HTML.
+// DOM-based allowlist: parse into a detached document, walk every node, remove
+// disallowed tags and dangerous attributes. More robust than regex approaches
+// (which can be bypassed via encoding tricks).
+//
+// Allowed tags cover everything our Markdown parser can produce.
+
+const SAFE_TAGS = new Set([
+  'p','br','hr','h1','h2','h3','h4','h5','h6',
+  'strong','em','del','code','pre','blockquote',
+  'ul','ol','li','table','thead','tbody','tr','th','td',
+  'a','img',
+])
+
+function sanitiseHtml(html) {
+  if (!html) return ''
+  const doc = new DOMParser().parseFromString(
+    `<!DOCTYPE html><body>${html}</body>`, 'text/html'
+  )
+  function walk(node) {
+    for (const child of [...node.childNodes]) {
+      if (child.nodeType !== Node.ELEMENT_NODE) continue
+      const tag = child.tagName.toLowerCase()
+      if (!SAFE_TAGS.has(tag)) {
+        // Replace unsafe element with its plain text content
+        node.replaceChild(document.createTextNode(child.textContent), child)
+        continue
+      }
+      // Strip every attribute, then re-allow safe ones
+      for (const attr of [...child.attributes]) {
+        const n = attr.name
+        const v = attr.value
+        const keep =
+          (n === 'href'    && /^(https?:|mailto:|#)/.test(v)) ||
+          (n === 'src'     && /^(https?:|data:image\/(png|jpeg|gif|webp|svg\+xml);base64,)/.test(v)) ||
+          (n === 'alt'     ) ||
+          (n === 'loading' ) ||
+          (n === 'target'  && v === '_blank') ||
+          (n === 'rel'     ) ||
+          (n === 'colspan' ) ||
+          (n === 'rowspan' ) ||
+          (n === 'class'   )
+        if (!keep) child.removeAttribute(n)
+      }
+      // Force _blank links to have noopener to prevent tab-napping
+      if (tag === 'a') {
+        child.setAttribute('rel', 'noopener noreferrer')
+        if (!child.getAttribute('target')) child.setAttribute('target', '_blank')
+      }
+      walk(child)
+    }
+  }
+  walk(doc.body)
+  return doc.body.innerHTML
+}
+
 // ─── Markdown parser ──────────────────────────────────────────────────────────
 //
 // A comprehensive client-side Markdown → HTML renderer covering:
@@ -391,7 +449,10 @@ export default function MarkdownConverterPage() {
 
   // ── Rendered HTML ──────────────────────────────────────────────────────────
   const renderedHtml = useMemo(() => {
-    return trackTool('markdown.convert', () => parseMarkdown(markdown))
+    // Sprint 24: sanitiseHtml strips script injection, unsafe attributes, and
+    // non-allowlisted tags before the HTML is passed to dangerouslySetInnerHTML.
+    const raw = trackTool('markdown.convert', () => parseMarkdown(markdown))
+    return sanitiseHtml(raw)
   }, [markdown])
 
   // ── Word/char count ────────────────────────────────────────────────────────
@@ -722,6 +783,8 @@ ${renderedHtml}
                       value={h}
                       onChange={e => updateHeader(i, e.target.value)}
                       placeholder={`Column ${i + 1}`}
+                      maxLength={80}
+                      aria-label={`Column ${i + 1} header`}
                     />
                     <select
                       className={styles.alignSelect}
@@ -778,6 +841,8 @@ ${renderedHtml}
                                   value={cell}
                                   onChange={e => updateCell(r, c, e.target.value)}
                                   placeholder="—"
+                                  maxLength={500}
+                                  aria-label={`Row ${r + 1}, column ${c + 1}`}
                                 />
                               </td>
                             ))}

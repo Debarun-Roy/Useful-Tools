@@ -418,6 +418,7 @@ function ConverterTab() {
           value={hex}
           onChange={e => applyHex(e.target.value)}
           title="Use native color picker"
+          aria-label="Open native colour picker"
         />
         <div className={styles.colorMeta}>
           <span className={styles.colorName}>{colorName}</span>
@@ -437,6 +438,8 @@ function ConverterTab() {
               onChange={e => applyHex(e.target.value)}
               placeholder="#RRGGBB"
               spellCheck={false}
+              maxLength={7}
+              aria-label="Hex colour value"
             />
             <button className={styles.copyBtn} onClick={() => navigator.clipboard.writeText(hex)}>Copy</button>
           </div>
@@ -766,6 +769,7 @@ function GradientTab() {
                 onClick={() => removeStop(i)}
                 disabled={stops.length <= 2}
                 title="Remove stop"
+                aria-label={`Remove colour stop ${i + 1}`}
               >×</button>
             </div>
           ))}
@@ -832,14 +836,14 @@ function AccessibilityTab() {
           <div className={styles.a11yColorPicker}>
             <label className={styles.fieldLabel}>Foreground</label>
             <div className={styles.baseColorRow}>
-              <input className={styles.hexInput} value={fg} onChange={e => { setFg(e.target.value); check() }} placeholder="#RRGGBB" />
+              <input className={styles.hexInput} value={fg} onChange={e => { setFg(e.target.value); check() }} placeholder="#RRGGBB" maxLength={7} />
               <input type="color" className={styles.nativeColorPickerSm} value={parseColor(fg) ? rgbToHex(parseColor(fg)) : '#ffffff'} onChange={e => { setFg(e.target.value); check() }} />
             </div>
           </div>
           <div className={styles.a11yColorPicker}>
             <label className={styles.fieldLabel}>Background</label>
             <div className={styles.baseColorRow}>
-              <input className={styles.hexInput} value={bg} onChange={e => { setBg(e.target.value); check() }} placeholder="#RRGGBB" />
+              <input className={styles.hexInput} value={bg} onChange={e => { setBg(e.target.value); check() }} placeholder="#RRGGBB" maxLength={7} />
               <input type="color" className={styles.nativeColorPickerSm} value={parseColor(bg) ? rgbToHex(parseColor(bg)) : '#3b6fd4'} onChange={e => { setBg(e.target.value); check() }} />
             </div>
           </div>
@@ -879,14 +883,14 @@ function AccessibilityTab() {
           <div className={styles.a11yColorPicker}>
             <label className={styles.fieldLabel}>Color 1</label>
             <div className={styles.baseColorRow}>
-              <input className={styles.hexInput} value={de1} onChange={e => setDe1(e.target.value)} placeholder="#RRGGBB" />
+              <input className={styles.hexInput} value={de1} onChange={e => setDe1(e.target.value)} placeholder="#RRGGBB" maxLength={7} />
               <input type="color" className={styles.nativeColorPickerSm} value={parseColor(de1) ? rgbToHex(parseColor(de1)) : '#ff0000'} onChange={e => setDe1(e.target.value)} />
             </div>
           </div>
           <div className={styles.a11yColorPicker}>
             <label className={styles.fieldLabel}>Color 2</label>
             <div className={styles.baseColorRow}>
-              <input className={styles.hexInput} value={de2} onChange={e => setDe2(e.target.value)} placeholder="#RRGGBB" />
+              <input className={styles.hexInput} value={de2} onChange={e => setDe2(e.target.value)} placeholder="#RRGGBB" maxLength={7} />
               <input type="color" className={styles.nativeColorPickerSm} value={parseColor(de2) ? rgbToHex(parseColor(de2)) : '#ff8800'} onChange={e => setDe2(e.target.value)} />
             </div>
           </div>

@@ -362,6 +362,26 @@
   border-color: var(--clr-accent);
 }
 
+/* Sprint 24 — Accessibility: visible focus ring for keyboard users.
+   :focus-visible only shows the ring when navigating via keyboard,
+   not on mouse/touch click — so it does not affect the visual design
+   for pointer users. */
+.regexInput:focus-visible,
+.textInput:focus-visible,
+.searchInput:focus-visible,
+.testTextarea:focus-visible {
+  outline: 2px solid var(--clr-primary);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible {
+  outline: 2px solid var(--clr-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
 .flagRow,
 .statusRow,
 .saveBox,
@@ -507,7 +527,9 @@
   padding: 1px 3px;
   border-radius: 4px;
   background: rgba(251, 191, 36, 0.35);
-  color: #7a5200;
+  /* Sprint 24: replaced hardcoded #7a5200 (dark-mode unsafe) with
+     var(--clr-text) which adapts across all themes */
+  color: var(--clr-text);
   outline: 1px solid rgba(251, 191, 36, 0.55);
 }
 

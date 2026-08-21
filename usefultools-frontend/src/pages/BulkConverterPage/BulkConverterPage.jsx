@@ -362,12 +362,14 @@ function DataConverterTab() {
             <div>
               <label className={styles.fieldLabel}>Root tag</label>
               <input className={styles.textInput} value={rootTag}
-                onChange={e => setRootTag(e.target.value)} placeholder="data" />
+                onChange={e => setRootTag(e.target.value)} placeholder="data"
+                maxLength={64} aria-label="XML root tag name" />
             </div>
             <div>
               <label className={styles.fieldLabel}>Row tag</label>
               <input className={styles.textInput} value={rowTag}
-                onChange={e => setRowTag(e.target.value)} placeholder="row" />
+                onChange={e => setRowTag(e.target.value)} placeholder="row"
+                maxLength={64} aria-label="XML row tag name" />
             </div>
           </div>
         )}
@@ -639,7 +641,8 @@ function ImageConverterTab() {
                   <button type="button" className={styles.removeBtn}
                     onClick={() => removeFile(idx)}
                     disabled={converting}
-                    title="Remove">
+                    title="Remove file"
+                    aria-label={`Remove ${entry.name}`}>
                     ×
                   </button>
                 </div>

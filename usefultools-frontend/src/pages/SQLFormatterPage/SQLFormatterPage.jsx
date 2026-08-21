@@ -702,6 +702,8 @@ function CRUDTab() {
           value={tableName}
           onChange={e => setTableName(e.target.value)}
           placeholder="e.g. users"
+          maxLength={64}
+          aria-label="Table name"
         />
 
         <label className={styles.fieldLabel}>Dialect</label>
