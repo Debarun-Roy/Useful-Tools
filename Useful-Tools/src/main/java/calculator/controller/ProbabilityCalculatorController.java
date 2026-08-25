@@ -1,17 +1,18 @@
 package calculator.controller;
 
-import calculator.service.ProbabilityCalculatorService;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import com.google.gson.Gson;
+
+import calculator.service.ProbabilityCalculatorService;
 import common.ApiResponse;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * Calculates probability distributions.

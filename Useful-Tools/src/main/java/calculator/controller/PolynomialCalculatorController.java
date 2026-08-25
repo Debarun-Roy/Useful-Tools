@@ -1,16 +1,17 @@
 package calculator.controller;
 
-import calculator.service.PolynomialCalculatorService;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.LinkedHashMap;
+
 import com.google.gson.Gson;
+
+import calculator.service.PolynomialCalculatorService;
 import common.ApiResponse;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.LinkedHashMap;
 
 /**
  * Performs polynomial operations.

@@ -247,4 +247,3 @@ public class SameSiteFilter implements Filter {
         }
     }
 }
-

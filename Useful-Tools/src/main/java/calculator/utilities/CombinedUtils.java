@@ -6,7 +6,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import calculator.expression.ExpressionBuilderFactory;
 import calculator.functions.biconditional;
 import calculator.functions.converseNonimplication;
 import calculator.functions.implication;

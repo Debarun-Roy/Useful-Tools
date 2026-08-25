@@ -1,6 +1,5 @@
 package calculator.service;
 
-import calculator.expression.ExpressionBuilderFactory;
 import calculator.repository.ComputeRepository;
 import calculator.utilities.BooleanUtils;
 import calculator.utilities.IntermediateUtils;

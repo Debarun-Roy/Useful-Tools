@@ -4,8 +4,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import calculator.dao.ComputeDAO;
-import net.objecthunter.exp4j.Expression;
-import net.objecthunter.exp4j.ExpressionBuilder;
 import calculator.functions.cadd;
 import calculator.functions.csq;
 import calculator.functions.csub;
@@ -13,6 +11,8 @@ import calculator.functions.imag;
 import calculator.functions.radd;
 import calculator.functions.real;
 import calculator.functions.rsub;
+import net.objecthunter.exp4j.Expression;
+import net.objecthunter.exp4j.ExpressionBuilder;
 
 /**
  * NEW FILE — ComplexNumberService

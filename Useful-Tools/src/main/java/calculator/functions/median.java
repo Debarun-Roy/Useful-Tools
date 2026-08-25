@@ -1,6 +1,7 @@
 package calculator.functions;
 
 import java.util.Arrays;
+
 import calculator.registry.FunctionRegistry;
 import net.objecthunter.exp4j.function.Function;
 
