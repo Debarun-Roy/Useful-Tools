@@ -67,6 +67,7 @@ public class RecaptchaUtils {
      */
     public static boolean verify(String token, String expectedAction, String remoteIp) {
         String secretKey = System.getenv("RECAPTCHA_SECRET_KEY");
+        logger.info("reCAPTCHA secret key present:" + (secretKey != null));
         if (secretKey == null || secretKey.isBlank()) {
             throw new IllegalStateException(
                     "RECAPTCHA_SECRET_KEY environment variable is not configured.");
