@@ -47,7 +47,11 @@ public class CsrfFilter implements Filter {
     private static final Set<String> PUBLIC_PATHS = Set.of(
             "/api/auth/login",
             "/api/auth/login-guest",
-            "/api/auth/register");
+            "/api/auth/register",
+            "/api/auth/forgot-password",
+            "/api/auth/forgot-password/captcha",
+            "/api/auth/forgot-password/recovery-code"
+        );
 
     private final Gson gson = new Gson();
 
