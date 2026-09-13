@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useNavigate, Link }   from 'react-router-dom'
 import { loginUser, loginAsGuest } from '../../api/apiClient'
 import { useAuth }             from '../../auth/useAuth'
@@ -25,6 +25,7 @@ export default function LoginPage() {
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error,    setError]    = useState('')
   const [loading,  setLoading]  = useState(false)
 
@@ -122,19 +123,35 @@ export default function LoginPage() {
 
         <div className={styles.field}>
           <label htmlFor="password" className={styles.label}>Password</label>
-          <input
-            id="password"
-            type="password"
-            className={styles.input}
-            value={password}
-            onChange={e => {
-              clearAuthNotice()
-              setPassword(e.target.value)
-            }}
-            autoComplete="current-password"
-            disabled={loading}
-            placeholder="Enter your password"
-          />
+          <div className={styles.passwordWrapper}>
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              className={styles.input}
+              value={password}
+              onChange={e => {
+                clearAuthNotice()
+                setPassword(e.target.value)
+              }}
+              autoComplete="current-password"
+              disabled={loading}
+              placeholder="Enter your password"
+            />
+            <button
+              type="button"
+              className={styles.passwordToggle}
+              onClick={() => setShowPassword(!showPassword)}
+              disabled={loading}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+            >
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
+        </div>
+
+        <div className={styles.forgotRow}>
+          <Link to="/forgot-password" className={styles.forgotLink}>Forgot password?</Link>
         </div>
 
         <button

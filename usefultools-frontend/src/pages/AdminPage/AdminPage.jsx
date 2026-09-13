@@ -6,6 +6,7 @@ import {
   fetchAdminUsers,
   updateUserRole,
   deleteAdminUser,
+  resetUserRecoveryCode,
   fetchAdminToolToggles,
   updateToolToggle,
 } from '../../api/apiClient'
@@ -99,6 +100,8 @@ function UsersTab({ currentUsername }) {
   const [toast,    setToast]    = useState(null)
   const [deleting, setDeleting] = useState(null)   // username pending delete confirmation
   const [working,  setWorking]  = useState(null)   // username currently being updated
+  const [resetTarget, setResetTarget] = useState(null)  // user object pending recovery-code-reset confirmation
+  const [revealedCode, setRevealedCode] = useState(null) // { username, recoveryCode } after a successful reset
 
   function showToast(message, type = 'success') {
     setToast({ message, type })
@@ -157,6 +160,24 @@ function UsersTab({ currentUsername }) {
     }
   }
 
+  async function handleResetRecoveryCode(username) {
+    setResetTarget(null)
+    setWorking(username)
+    try {
+      const { data } = await resetUserRecoveryCode(username)
+      if (data?.success) {
+        setRevealedCode({ username, recoveryCode: data.data.recoveryCode })
+        showToast(`Recovery code regenerated for ${username}`)
+      } else {
+        showToast(data?.error || 'Could not regenerate recovery code', 'error')
+      }
+    } catch {
+      showToast('Network error', 'error')
+    } finally {
+      setWorking(null)
+    }
+  }
+
   const filtered = useMemo(() =>
     query.trim()
       ? users.filter(u => u.username.toLowerCase().includes(query.toLowerCase()))
@@ -192,6 +213,70 @@ function UsersTab({ currentUsername }) {
                 onClick={() => handleDelete(deleting)}
               >
                 Delete permanently
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm recovery-code reset dialog */}
+      {resetTarget && (
+        <div className={styles.confirmOverlay}>
+          <div className={styles.confirmDialog}>
+            <h3 className={styles.confirmTitleNeutral}>Reset recovery code?</h3>
+            <p className={styles.confirmBody}>
+              This issues <strong>{resetTarget.username}</strong> a brand new
+              recovery code. Their previous code will stop working immediately.
+              Only do this after you've confirmed — through a channel other
+              than this request — that you're actually talking to the account
+              owner and not someone impersonating them.
+            </p>
+            <p className={styles.confirmMeta}>
+              Account created:{' '}
+              {resetTarget.createdDate !== 'Unknown'
+                ? new Date(resetTarget.createdDate).toLocaleDateString('en-GB', {
+                    day: 'numeric', month: 'short', year: 'numeric',
+                  })
+                : 'Unknown'}
+            </p>
+            <div className={styles.confirmActions}>
+              <button className={styles.cancelBtn} onClick={() => setResetTarget(null)}>
+                Cancel
+              </button>
+              <button
+                className={styles.dangerBtn}
+                onClick={() => handleResetRecoveryCode(resetTarget.username)}
+              >
+                Regenerate code
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reveal newly-generated recovery code — shown once */}
+      {revealedCode && (
+        <div className={styles.confirmOverlay}>
+          <div className={styles.confirmDialog}>
+            <h3 className={styles.confirmTitleNeutral}>New recovery code</h3>
+            <p className={styles.confirmBody}>
+              For <strong>{revealedCode.username}</strong>. Share this with
+              them through a channel you trust — it will not be shown again
+              after you close this dialog.
+            </p>
+            <div className={styles.recoveryCodeBox}>
+              <code className={styles.recoveryCodeValue}>{revealedCode.recoveryCode}</code>
+              <button
+                type="button"
+                className={styles.copyButton}
+                onClick={() => navigator.clipboard.writeText(revealedCode.recoveryCode)}
+              >
+                Copy
+              </button>
+            </div>
+            <div className={styles.confirmActions}>
+              <button className={styles.cancelBtn} onClick={() => setRevealedCode(null)}>
+                Done
               </button>
             </div>
           </div>
@@ -271,6 +356,18 @@ function UsersTab({ currentUsername }) {
                           <option value="user">user</option>
                           <option value="admin">admin</option>
                         </select>
+
+                        {/* Reset recovery code button — an admin CAN do this
+                            for their own account too (harmless, unlike role
+                            change or delete), so it's only disabled while busy. */}
+                        <button
+                          className={styles.resetCodeBtn}
+                          onClick={() => setResetTarget(user)}
+                          disabled={busy}
+                          title={`Reset recovery code for ${user.username}`}
+                        >
+                          {busy ? '…' : '🔑'}
+                        </button>
 
                         {/* Delete button */}
                         <button

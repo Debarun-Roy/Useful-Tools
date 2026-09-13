@@ -10,6 +10,7 @@ import FeedbackModal          from './components/FeedbackModal/FeedbackModal'
 import LoginPage          from './pages/LoginPage/LoginPage'
 import RegisterPage       from './pages/RegisterPage/RegisterPage'
 import UpdatePasswordPage from './pages/UpdatePasswordPage/UpdatePasswordPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage'
 
 // ── Authenticated pages — lazy loaded (each becomes a separate Vite chunk) ─
 // Sprint 24: Code-splitting. Vite 8 automatically creates one JS chunk per
@@ -71,6 +72,7 @@ export default function App() {
               {/* ── Public routes ───────────────────────────────────────── */}
               <Route path="/login"    element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
               {/* ── Protected routes ────────────────────────────────────── */}
               <Route path="/update-password" element={

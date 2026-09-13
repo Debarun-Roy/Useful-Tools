@@ -8,6 +8,8 @@ import java.sql.Statement;
 import java.time.Instant;
 import java.util.logging.Logger;
 
+import org.mindrot.jbcrypt.BCrypt;
+
 import common.DatabaseUtils;
 import common.UnifiedLogger;
 import passwordgenerator.utilities.HashingUtils;
@@ -29,6 +31,18 @@ import passwordgenerator.utilities.HashingUtils;
  * Required schema change (run once before Sprint 6):
  *   ALTER TABLE user_table ADD COLUMN failed_attempts INTEGER DEFAULT 0;
  *   ALTER TABLE user_table ADD COLUMN locked_until    TEXT;
+ *
+ * Forgot-password addition:
+ *   - recovery_code_hash TEXT column — stores a BCrypt hash of the UUID
+ *     recovery code issued at registration (see RegistrationController).
+ *   - FIX: verifyRecoveryCode() previously compared against a hardcoded
+ *     "123456" stub and never touched the database. It now reads the
+ *     stored hash and verifies with BCrypt, exactly like password checks
+ *     elsewhere in this class (see LoginUtils.verifyUser()).
+ *
+ * Required schema change (handled automatically by ensureUserProfileSchema,
+ * same migration pattern already used for created_date):
+ *   ALTER TABLE user_table ADD COLUMN recovery_code_hash TEXT;
  */
 public class UserDAO {
 
@@ -36,7 +50,8 @@ public class UserDAO {
     private static final String USER_CREATED_DATE_FALLBACK = "Unknown";
 
     private static void ensureUserProfileSchema(Connection conn) throws SQLException {
-        boolean hasCreatedDate = false;
+        boolean hasCreatedDate       = false;
+        boolean hasRecoveryCodeHash  = false;
 
         try (Statement st = conn.createStatement();
              ResultSet rs = st.executeQuery("PRAGMA table_info(user_table)")) {
@@ -46,15 +61,19 @@ public class UserDAO {
                             "hashed_password VARCHAR(5000) NOT NULL, " +
                             "failed_attempts INTEGER DEFAULT 0, " +
                             "locked_until TEXT, " +
-                            "created_date TEXT" +
+                            "created_date TEXT, " +
+                            "recovery_code_hash TEXT" +
                             ");");
                     logger.info("Created user_table with basic schema");
                     return; // New table created, so no need to check for columns.
                 }
             while (rs.next()) {
-                if ("created_date".equalsIgnoreCase(rs.getString("name"))) {
+                String columnName = rs.getString("name");
+                if ("created_date".equalsIgnoreCase(columnName)) {
                     hasCreatedDate = true;
-                    break;
+                }
+                if ("recovery_code_hash".equalsIgnoreCase(columnName)) {
+                    hasRecoveryCodeHash = true;
                 }
             }
         }
@@ -67,8 +86,15 @@ public class UserDAO {
             }
             logger.info("Added created_date column to user_table for profile support");
         }
+
+        if (!hasRecoveryCodeHash) {
+            try (Statement st = conn.createStatement()) {
+                st.executeUpdate("ALTER TABLE user_table ADD COLUMN recovery_code_hash TEXT;");
+            }
+            logger.info("Added recovery_code_hash column to user_table for forgot-password support");
+        }
     }
-    
+
     // ── Lock status value object ──────────────────────────────────────────────
 
     /**
@@ -328,5 +354,103 @@ public class UserDAO {
             DatabaseUtils.closeSQLConnection(conn, pst, rs);
         }
         return USER_CREATED_DATE_FALLBACK;
+    }
+
+    public static void updateUserPassword(String username, String password){
+        Connection conn = null;
+        PreparedStatement pst = null;
+        try {
+            conn = DatabaseUtils.getSQLite3Connection();
+            ensureUserProfileSchema(conn);
+            String sql = "UPDATE user_table SET hashed_password = ? WHERE username = ?;";
+            pst = conn.prepareStatement(sql);
+            String hashedPassword = HashingUtils.generateHashedPassword(password);
+            pst.setString(1, hashedPassword);
+            pst.setString(2, username);
+            pst.executeUpdate();
+            logger.info("User password updated in database");
+        } catch (SQLException sqle) {
+            sqle.printStackTrace();
+        } finally {
+            DatabaseUtils.closeSQLConnection(conn, pst, null);
+        }
+    }
+
+    // ── Forgot-password / recovery code ──────────────────────────────────────
+
+    /**
+     * Stores a BCrypt hash of a recovery code for the given user, overwriting
+     * any previously stored value.
+     *
+     * Used both by RegistrationController (initial code issued at sign-up)
+     * and AdminRecoveryCodeController (admin-triggered regeneration when a
+     * user has lost their code and cannot self-serve).
+     *
+     * @param username           The account to attach the recovery code to.
+     * @param hashedRecoveryCode A BCrypt hash — generate with
+     *                           HashingUtils.generateHashedPassword(rawCode).
+     *                           Never pass the raw code here.
+     */
+    public static void storeRecoveryCode(String username, String hashedRecoveryCode) {
+        Connection conn = null;
+        PreparedStatement pst = null;
+        try {
+            conn = DatabaseUtils.getSQLite3Connection();
+            ensureUserProfileSchema(conn);
+            String sql = "UPDATE user_table SET recovery_code_hash = ? WHERE username = ?;";
+            pst = conn.prepareStatement(sql);
+            pst.setString(1, hashedRecoveryCode);
+            pst.setString(2, username);
+            pst.executeUpdate();
+            logger.info("Recovery code stored for " + username);
+        } catch (SQLException sqle) {
+            sqle.printStackTrace();
+        } finally {
+            DatabaseUtils.closeSQLConnection(conn, pst, null);
+        }
+    }
+
+    /**
+     * FIX: previously compared the supplied code against a hardcoded
+     * "123456" stub and never touched the database. Now reads the stored
+     * BCrypt hash for the user and verifies with BCrypt.checkpw(), exactly
+     * like LoginUtils.verifyUser() does for passwords.
+     *
+     * Returns false (never throws) if the user has no recovery code on file
+     * — e.g. an account created before this feature existed, or one whose
+     * code was never successfully generated.
+     *
+     * @param username     The account the code is being checked against.
+     * @param recoveryCode The raw code supplied by the caller (trimmed by
+     *                     the caller before this method is invoked).
+     */
+    public static boolean verifyRecoveryCode(String username, String recoveryCode) {
+        if (username == null || recoveryCode == null || recoveryCode.isBlank()) {
+            return false;
+        }
+
+        Connection conn = null;
+        PreparedStatement pst = null;
+        ResultSet rs = null;
+        try {
+            conn = DatabaseUtils.getSQLite3Connection();
+            ensureUserProfileSchema(conn);
+            pst = conn.prepareStatement(
+                    "SELECT recovery_code_hash FROM user_table WHERE username = ?;");
+            pst.setString(1, username);
+            rs = pst.executeQuery();
+            if (rs.next()) {
+                String storedHash = rs.getString("recovery_code_hash");
+                if (storedHash == null || storedHash.isBlank()) {
+                    return false; // No recovery code has ever been issued for this account.
+                }
+                return BCrypt.checkpw(recoveryCode, storedHash);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DatabaseUtils.closeSQLConnection(conn, pst, rs);
+        }
+        return false;
     }
 }

@@ -3,6 +3,7 @@ package passwordgenerator.controller;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.LinkedHashMap;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
@@ -26,6 +27,15 @@ import passwordgenerator.utilities.HashingUtils;
  * A second BCrypt hash is generated for the history entry. BCrypt uses a
  * per-call random salt, so the history hash differs from the one stored in
  * user_table as a string — but both correctly verify via BCrypt.checkpw().
+ *
+ * Forgot-password addition: also generates a random UUID recovery code,
+ * stores a BCrypt hash of it via UserDAO.storeRecoveryCode(), and returns
+ * the RAW code to the client exactly once, in this response. It is never
+ * retrievable again after this — the server only ever stores the hash. The
+ * frontend (RegisterPage.jsx) must display it prominently and require the
+ * user to acknowledge saving it before moving on, since there is currently
+ * no self-service way to view a lost code again (see AdminRecoveryCodeController
+ * for the admin-mediated recovery path).
  */
 @WebServlet("/api/auth/register")
 public class RegistrationController extends HttpServlet {
@@ -90,18 +100,28 @@ public class RegistrationController extends HttpServlet {
                 return;
             }
 
+            String trimmedUsername = username.trim();
+
             // Register the user (hashes password internally).
-            UserDAO.registerUser(username.trim(), password);
+            UserDAO.registerUser(trimmedUsername, password);
 
             // Seed password history so the registration password cannot be
             // immediately reused after a "change password" action (Sprint 6).
             // A fresh BCrypt hash is generated — different salt from user_table
             // but verifiable by BCrypt.checkpw().
             String historyHash = HashingUtils.generateHashedPassword(password);
-            PasswordHistoryDAO.addToHistory(username.trim(), historyHash);
+            PasswordHistoryDAO.addToHistory(trimmedUsername, historyHash);
+
+            // Generate and store the one-time recovery code (forgot-password addition).
+            // Only the BCrypt hash is ever persisted — the raw value below is
+            // returned to the client in this response and then discarded here.
+            String recoveryCode = UUID.randomUUID().toString();
+            String recoveryCodeHash = HashingUtils.generateHashedPassword(recoveryCode);
+            UserDAO.storeRecoveryCode(trimmedUsername, recoveryCodeHash);
 
             LinkedHashMap<String, String> data = new LinkedHashMap<>();
             data.put("message", "Registration successful. Please log in.");
+            data.put("recoveryCode", recoveryCode);
 
             response.setStatus(HttpServletResponse.SC_CREATED);
             out.print(gson.toJson(ApiResponse.ok(data)));

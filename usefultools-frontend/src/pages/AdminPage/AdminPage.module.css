@@ -252,6 +252,39 @@
 }
 .dangerBtn:hover { opacity: 0.87; }
 
+.confirmTitleNeutral {
+  font-size: var(--fs-lg); font-weight: 800; color: var(--clr-text);
+  margin-bottom: var(--space-sm);
+}
+
+.confirmMeta {
+  font-size: var(--fs-xs); color: var(--clr-text-muted);
+  margin: -8px 0 var(--space-lg);
+}
+
+/* ─── Recovery code reveal (admin regeneration) ─────────────────────────── */
+.recoveryCodeBox {
+  display: flex; align-items: center; gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--clr-input-bg);
+  border: 1px solid var(--clr-border); border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+}
+
+.recoveryCodeValue {
+  flex: 1; font-family: var(--font-mono); font-size: var(--fs-sm);
+  color: var(--clr-text); word-break: break-all; user-select: all;
+}
+
+.copyButton {
+  flex-shrink: 0; padding: 6px 14px;
+  background: transparent; border: 1px solid var(--clr-accent);
+  border-radius: var(--radius-sm); color: var(--clr-accent);
+  font-size: var(--fs-xs); font-weight: 700; cursor: pointer;
+  transition: background 120ms;
+}
+.copyButton:hover { background: rgba(59,111,212,0.08); }
+
 /* ─── Users tab ──────────────────────────────────────────────────────────── */
 .searchRow {
   display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap;
@@ -351,6 +384,19 @@
   background: var(--clr-error-bg); border-color: var(--clr-error);
 }
 .deleteBtn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.resetCodeBtn {
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  background: transparent;
+  border: 1px solid var(--clr-border); border-radius: var(--radius-sm);
+  font-size: 0.85rem; cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+}
+.resetCodeBtn:hover:not(:disabled) {
+  background: rgba(59,111,212,0.08); border-color: var(--clr-accent);
+}
+.resetCodeBtn:disabled { opacity: 0.3; cursor: not-allowed; }
 
 /* ─── Role badges ────────────────────────────────────────────────────────── */
 .badgeAdmin, .badgeUser {

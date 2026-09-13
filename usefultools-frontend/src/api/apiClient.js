@@ -213,6 +213,32 @@ export const registerUser =
       body: { username, password }
     })
 
+// ── Forgot password (3-step: captcha -> recovery code -> new password) ──
+
+export const verifyForgotPasswordCaptcha =
+  (username, recaptchaToken) =>
+    request('/auth/forgot-password/captcha', {
+      method: 'POST',
+      isForm: true,
+      body: { username, recaptchaToken }
+    })
+
+export const verifyRecoveryCode =
+  (username, recoveryCode) =>
+    request('/auth/forgot-password/recovery-code', {
+      method: 'POST',
+      isForm: true,
+      body: { username, recoveryCode }
+    })
+
+export const requestPasswordReset =
+  (username, recoveryCode, newPassword) =>
+    request('/auth/forgot-password', {
+      method: 'POST',
+      isForm: true,
+      body: { username, recoveryCode, newPassword }
+    })
+
 export const updatePassword =
   (username, updatedPassword) =>
     request('/auth/update-password', {
@@ -587,6 +613,14 @@ export const deleteAdminUser =
   username =>
     request('/admin/users', {
       method: 'DELETE',
+      isJson: true,
+      body: { username }
+    })
+
+export const resetUserRecoveryCode =
+  username =>
+    request('/admin/users/recovery-code', {
+      method: 'POST',
       isJson: true,
       body: { username }
     })

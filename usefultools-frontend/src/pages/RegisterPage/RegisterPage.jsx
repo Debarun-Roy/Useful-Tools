@@ -50,6 +50,12 @@ export default function RegisterPage() {
   const [success,  setSuccess]  = useState(false)
   const [loading,  setLoading]  = useState(false)
 
+  // Set once, right after a successful registration. Never fetched again —
+  // the server only ever stores a BCrypt hash of this value from this point on.
+  const [recoveryCode, setRecoveryCode] = useState('')
+  const [copied,        setCopied]      = useState(false)
+  const [acknowledged,  setAcknowledged] = useState(false)
+
   const navigate = useNavigate()
 
   async function handleSubmit(e) {
@@ -73,7 +79,12 @@ export default function RegisterPage() {
 
       if (data.success) {
         setSuccess(true)
-        setTimeout(() => navigate('/login'), 2000)
+        // FIX: this page previously auto-redirected to /login after 2s
+        // unconditionally. Now that registration also hands back a one-time
+        // recovery code, an unattended redirect would rush the user past the
+        // only chance they get to save it. Navigation now waits for the
+        // explicit "I've saved my code" acknowledgement below instead.
+        setRecoveryCode(data.data?.recoveryCode || '')
       } else {
         setError(getErrorMessage(data.errorCode))
       }
@@ -84,12 +95,58 @@ export default function RegisterPage() {
     }
   }
 
+  function handleCopyCode() {
+    navigator.clipboard.writeText(recoveryCode).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
   if (success) {
     return (
       <AuthLayout title="Account created">
         <div className={styles.success}>
-          ✓ Registration successful. Redirecting to sign in…
+          ✓ Registration successful.
         </div>
+
+        {recoveryCode && (
+          <>
+            <div className={styles.recoveryWarning}>
+              Save your recovery code now. It will not be shown again — you'll
+              need it if you ever forget your password, and losing it means an
+              administrator has to issue you a new one.
+            </div>
+
+            <div className={styles.recoveryCodeBox}>
+              <code className={styles.recoveryCodeValue}>{recoveryCode}</code>
+              <button
+                type="button"
+                className={styles.copyButton}
+                onClick={handleCopyCode}
+              >
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+
+            <label className={styles.acknowledgeRow}>
+              <input
+                type="checkbox"
+                checked={acknowledged}
+                onChange={e => setAcknowledged(e.target.checked)}
+              />
+              I've saved this recovery code somewhere safe.
+            </label>
+
+            <button
+              type="button"
+              className={styles.button}
+              disabled={!acknowledged}
+              onClick={() => navigate('/login')}
+            >
+              Continue to sign in
+            </button>
+          </>
+        )}
       </AuthLayout>
     )
   }
