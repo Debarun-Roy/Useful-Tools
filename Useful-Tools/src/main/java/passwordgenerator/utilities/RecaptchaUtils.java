@@ -71,7 +71,9 @@ public class RecaptchaUtils {
             throw new IllegalStateException(
                     "RECAPTCHA_SECRET_KEY environment variable is not configured.");
         }
-
+        
+        logger.info("reCAPTCHA token present: " + (token != null));
+        logger.info("reCAPTCHA token length: " + (token != null ? token.length() : 0));
         if (token == null || token.isBlank()) {
             return false;
         }
