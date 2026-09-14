@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import passwordgenerator.dao.PasswordHistoryDAO;
 import passwordgenerator.dao.UserDAO;
 import passwordgenerator.utilities.HashingUtils;
+import passwordgenerator.utilities.RecaptchaUtils;
 
 /**
  * Sprint 6 addition: seeds the password_history table with the user's
@@ -36,6 +37,12 @@ import passwordgenerator.utilities.HashingUtils;
  * user to acknowledge saving it before moving on, since there is currently
  * no self-service way to view a lost code again (see AdminRecoveryCodeController
  * for the admin-mediated recovery path).
+ *
+ * reCAPTCHA addition: verifies a reCAPTCHA v3 token (action "register")
+ * immediately after confirming both fields are present, before running any
+ * of the more detailed validation below — same RecaptchaUtils used by
+ * LoginController and ForgotPasswordCaptchaController, fails closed on any
+ * misconfiguration or verification error.
  */
 @WebServlet("/api/auth/register")
 public class RegistrationController extends HttpServlet {
@@ -43,6 +50,7 @@ public class RegistrationController extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final int MIN_PASSWORD_LENGTH = 8;
     private static final int MIN_USERNAME_LENGTH = 3;
+    private static final String RECAPTCHA_ACTION = "register";
     private static final Pattern UPPERCASE_PATTERN = Pattern.compile(".*[A-Z].*");
     private static final Pattern DIGIT_PATTERN = Pattern.compile(".*\\d.*");
     private static final Pattern SPECIAL_PATTERN = Pattern.compile(".*[^A-Za-z0-9].*");
@@ -59,12 +67,44 @@ public class RegistrationController extends HttpServlet {
 
             String username = request.getParameter("username");
             String password = request.getParameter("password");
+            String recaptchaToken = request.getParameter("recaptchaToken");
 
             if (username == null || username.isBlank()
                     || password == null || password.isBlank()) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 out.print(gson.toJson(ApiResponse.fail(
                         "Username and password are required.", "MISSING_CREDENTIALS")));
+                return;
+            }
+
+            // ── reCAPTCHA v3 verification ───────────────────────────────────
+            if (recaptchaToken == null || recaptchaToken.isBlank()) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Captcha verification is required.", "CAPTCHA_REQUIRED")));
+                return;
+            }
+
+            boolean captchaValid;
+            try {
+                captchaValid = RecaptchaUtils.verify(
+                        recaptchaToken, RECAPTCHA_ACTION, request.getRemoteAddr());
+            } catch (IllegalStateException configError) {
+                // RECAPTCHA_SECRET_KEY missing — a server misconfiguration, not
+                // the caller's fault. Fail closed with a distinct error code.
+                configError.printStackTrace();
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Captcha verification is not configured on the server.",
+                        "CAPTCHA_NOT_CONFIGURED")));
+                return;
+            }
+
+            if (!captchaValid) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Captcha verification failed. Please try again.",
+                        "CAPTCHA_INVALID")));
                 return;
             }
 

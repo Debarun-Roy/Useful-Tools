@@ -98,6 +98,15 @@
   cursor: not-allowed;
 }
 
+/* ─── reCAPTCHA disclosure ────────────────────────────────────────────────── */
+.helperText {
+  font-size: var(--fs-xs);
+  color: var(--clr-dark-muted);
+  line-height: 1.5;
+  margin: var(--space-sm) 0 0;
+  text-align: center;
+}
+
 /* ─── Footer link ────────────────────────────────────────────────────────── */
 .footer {
   text-align: center;

@@ -37,6 +37,8 @@ import jakarta.servlet.http.HttpSession;
  *   /api/passwords/export   — download encrypted vault JSON
  *   /api/auth/update-password — change account password
  *   /api/user/profile       — view activity summary
+ *   /api/user/delete-data   — wipe usage data ("Delete My Data")
+ *   /api/user/remove-account — delete the account ("Remove My Account")
  *
  * Unrestricted for guests (tools that require no personal data):
  *   /api/passwords/generate — password generation is stateless and allowed
@@ -55,7 +57,9 @@ public class GuestRestrictionFilter implements Filter {
             "/api/passwords/export",
             "/api/passwords/generated-history",
             "/api/auth/update-password",
-            "/api/user/profile"
+            "/api/user/profile",
+            "/api/user/delete-data",
+            "/api/user/remove-account"
     );
 
     private final Gson gson = new Gson();

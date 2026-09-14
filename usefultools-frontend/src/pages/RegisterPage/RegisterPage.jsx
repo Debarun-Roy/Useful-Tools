@@ -1,5 +1,6 @@
 import { useState }          from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3'
 import { registerUser }      from '../../api/apiClient'
 import AuthLayout            from '../../components/AuthLayout/AuthLayout'
 import styles                from './RegisterPage.module.css'
@@ -10,6 +11,9 @@ const ERROR_MESSAGES = {
   PASSWORD_TOO_SHORT:  'Password must be at least 8 characters long.',
   PASSWORD_WEAK:       'Password must include 1 uppercase letter, 1 digit, and 1 special character.',
   USERNAME_TAKEN:      'That username is already taken. Please choose another.',
+  CAPTCHA_REQUIRED:       'Captcha verification is required.',
+  CAPTCHA_INVALID:        'Captcha verification failed. Please try again.',
+  CAPTCHA_NOT_CONFIGURED: 'Captcha verification is unavailable right now. Please try again later.',
   // Sprint 6: rate limiting
   RATE_LIMITED:        'Too many registration attempts. Please wait a moment before trying again.',
   INTERNAL_ERROR:      'Something went wrong on our end. Please try again.',
@@ -56,6 +60,7 @@ export default function RegisterPage() {
   const [copied,        setCopied]      = useState(false)
   const [acknowledged,  setAcknowledged] = useState(false)
 
+  const { executeRecaptcha } = useGoogleReCaptcha()
   const navigate = useNavigate()
 
   async function handleSubmit(e) {
@@ -71,11 +76,17 @@ export default function RegisterPage() {
       return
     }
 
+    if (!executeRecaptcha) {
+      setError('Captcha is still loading. Please wait a moment and try again.')
+      return
+    }
+
     setLoading(true)
     setError('')
 
     try {
-      const { data } = await registerUser(username.trim(), password)
+      const recaptchaToken = await executeRecaptcha('register')
+      const { data } = await registerUser(username.trim(), password, recaptchaToken)
 
       if (data.success) {
         setSuccess(true)
@@ -214,6 +225,11 @@ export default function RegisterPage() {
         >
           {loading ? 'Creating account…' : 'Create account'}
         </button>
+
+        <p className={styles.helperText}>
+          This site is protected by reCAPTCHA. Verifying will not show a
+          checkbox — it runs automatically when you create your account.
+        </p>
 
       </form>
 

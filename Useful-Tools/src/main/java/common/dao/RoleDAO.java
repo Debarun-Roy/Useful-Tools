@@ -12,6 +12,7 @@ import java.util.Map;
 
 import common.DatabaseUtils;
 import common.UserContext;
+import user.utilities.UserUtils;
 
 /**
  * RoleDAO — Sprint 17 RBAC support.
@@ -186,6 +187,15 @@ public class RoleDAO {
      *   - Cannot delete self.
      *   - Cannot delete the last remaining admin.
      *
+     * FIX: the cascading delete previously ran its own hardcoded list of
+     * DELETE statements here, which had drifted out of sync with the tables
+     * added in later sprints (ci_calculations, emi_calculations,
+     * salary_calculations, tax_calculations, regex_patterns, tool_metrics,
+     * tool_recommendations were all missing). The deletion itself now
+     * delegates to UserUtils.deleteAccountAndData(), the single source of
+     * truth also used by the self-service "Remove My Account" endpoint, so
+     * the two code paths can't drift apart again.
+     *
      * @return true if deleted, false if blocked or not found.
      */
     public static boolean deleteUser(String targetUsername, String requestingUsername) {
@@ -198,33 +208,7 @@ public class RoleDAO {
             return false;
         }
 
-        try (Connection conn = DatabaseUtils.getSQLite3Connection()) {
-            ensureSchema(conn);
-
-            // Delete in dependency order — ignore errors on tables that may
-            // not exist for every user.
-            String[] deleteSqls = {
-                "DELETE FROM user_activity   WHERE username = ?",
-                "DELETE FROM user_favorites  WHERE username = ?",
-                "DELETE FROM generator_table WHERE username = ?",
-                "DELETE FROM password_table  WHERE username = ?",
-                "DELETE FROM encryption_table WHERE username = ?",
-                "DELETE FROM password_history WHERE username = ?",
-                "DELETE FROM calc_history    WHERE username = ?",
-                "DELETE FROM user_table      WHERE username = ?",
-            };
-
-            for (String sql : deleteSqls) {
-                try (PreparedStatement pst = conn.prepareStatement(sql)) {
-                    pst.setString(1, targetUsername);
-                    pst.executeUpdate(); // swallow; table may not exist for every user
-                } catch (SQLException ignored) { /* table may not exist */ }
-            }
-            return true;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
+        return UserUtils.deleteAccountAndData(targetUsername);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -239,5 +223,15 @@ public class RoleDAO {
             e.printStackTrace();
         }
         return 0;
+    }
+
+    /**
+     * True if {@code username} holds the 'admin' role and is the only admin
+     * account left. Used by self-service account removal
+     * (RemoveAccountController) to block an admin from locking the rest of
+     * the team out of the admin panel by deleting their own account.
+     */
+    public static boolean isSoleAdmin(String username) {
+        return UserContext.ROLE_ADMIN.equals(getRole(username)) && countAdmins() <= 1;
     }
 }

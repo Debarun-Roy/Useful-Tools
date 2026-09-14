@@ -253,7 +253,15 @@
   margin-top: 4px;
 }
 
-.changePassBtn {
+/* ─── Settings dropdown (Change password / Delete my data / Remove account) */
+.settingsWrap {
+  position: relative;
+}
+
+.settingsBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 9px 20px;
   background: transparent;
   border: 1.5px solid var(--clr-border);
@@ -265,10 +273,172 @@
   transition: background 120ms, border-color 120ms;
   white-space: nowrap;
 }
-.changePassBtn:hover {
+.settingsBtn:hover,
+.settingsBtn[aria-expanded='true'] {
   background: var(--clr-bg);
   border-color: var(--clr-primary);
 }
+
+.chevron {
+  display: inline-block;
+  font-size: 0.75rem;
+  opacity: 0.7;
+  transition: transform 160ms ease;
+}
+.chevronOpen { transform: rotate(180deg); }
+
+.settingsDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  padding: 6px;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 14px;
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.18),
+    0 2px 6px rgba(0, 0, 0, 0.08);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: profileDropdownIn 140ms ease both;
+}
+
+@keyframes profileDropdownIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--clr-text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+
+.menuItem:hover,
+.menuItem:focus-visible {
+  background: var(--clr-bg);
+  color: var(--clr-primary);
+  outline: none;
+}
+
+.menuIcon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+}
+
+.menuLabel { flex: 1; }
+
+.menuDivider {
+  height: 1px;
+  background: var(--clr-border);
+  margin: 4px 6px;
+}
+
+.menuItemDanger { color: var(--clr-error, #e85d5d); }
+
+.menuItemDanger:hover,
+.menuItemDanger:focus-visible {
+  background: var(--clr-error-bg, rgba(232, 93, 93, 0.08));
+  color: var(--clr-error, #e85d5d);
+}
+
+/* ─── Toast ──────────────────────────────────────────────────────────────── */
+.toastWrap {
+  width: min(900px, calc(100% - 40px));
+  margin: var(--space-md) auto 0;
+}
+
+.toastSuccess, .toastError {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px var(--space-md); border-radius: var(--radius-md);
+  font-size: var(--fs-sm); font-weight: 600;
+  animation: profilePanelIn 180ms ease both;
+}
+.toastSuccess {
+  background: var(--clr-success-bg); border: 1px solid var(--clr-success-border);
+  color: var(--clr-success);
+}
+.toastError {
+  background: var(--clr-error-bg); border: 1px solid var(--clr-error-border);
+  color: var(--clr-error);
+}
+.toastClose {
+  background: transparent; border: none; font-size: 1.1rem;
+  cursor: pointer; color: inherit; line-height: 1; padding: 0 4px;
+}
+
+@keyframes profilePanelIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Confirm overlay (Delete my data / Remove my account) ─────────────── */
+.confirmOverlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.55);
+  display: grid; place-items: center;
+  animation: profileFadeIn 120ms ease both;
+}
+@keyframes profileFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.confirmDialog {
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  max-width: 440px; width: calc(100% - 40px);
+  box-shadow: var(--shadow-lg);
+  animation: profilePanelIn 160ms ease both;
+}
+
+.confirmTitle {
+  font-size: var(--fs-lg); font-weight: 800; color: var(--clr-error);
+  margin-bottom: var(--space-sm);
+}
+
+.confirmBody {
+  font-size: var(--fs-sm); color: var(--clr-text-muted);
+  line-height: 1.6; margin-bottom: var(--space-lg);
+}
+
+.confirmActions { display: flex; gap: var(--space-md); justify-content: flex-end; }
+
+.cancelBtn {
+  padding: 8px 18px; background: transparent;
+  border: 1px solid var(--clr-border); border-radius: var(--radius-md);
+  font-size: var(--fs-sm); font-weight: 600; color: var(--clr-text-muted);
+  cursor: pointer; transition: background 100ms;
+}
+.cancelBtn:hover { background: var(--clr-bg); }
+.cancelBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.dangerBtn {
+  padding: 8px 18px; background: var(--clr-error);
+  border: none; border-radius: var(--radius-md);
+  font-size: var(--fs-sm); font-weight: 700; color: #fff;
+  cursor: pointer; transition: opacity 120ms;
+}
+.dangerBtn:hover { opacity: 0.87; }
+.dangerBtn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* ─── Stats grid ─────────────────────────────────────────────────────────── */
 .sectionLabel {
@@ -333,5 +503,9 @@
   .main { width: calc(100% - 16px); }
   .statsGrid { grid-template-columns: 1fr 1fr; }
   .identityCard { flex-direction: column; align-items: flex-start; }
-  .changePassBtn { width: 100%; text-align: center; }
+  .settingsWrap { width: 100%; }
+  .settingsBtn { width: 100%; justify-content: center; }
+  .settingsDropdown { left: 0; right: 0; min-width: 0; }
+  .confirmActions { flex-direction: column-reverse; gap: var(--space-sm); }
+  .cancelBtn, .dangerBtn { width: 100%; text-align: center; }
 }

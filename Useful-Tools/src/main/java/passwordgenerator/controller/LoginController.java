@@ -20,6 +20,7 @@ import jakarta.servlet.http.HttpSession;
 import passwordgenerator.dao.UserDAO;
 import passwordgenerator.dao.UserDAO.LockStatus;
 import passwordgenerator.utilities.LoginUtils;
+import passwordgenerator.utilities.RecaptchaUtils;
 
 /**
  * Sprint 6 security: session fixation prevention, account lockout, CSRF token.
@@ -42,11 +43,18 @@ import passwordgenerator.utilities.LoginUtils;
  *
  *      The cookie is still set because it remains the correct mechanism in
  *      same-origin (local development) deployments.
+ *
+ * reCAPTCHA addition: verifies a reCAPTCHA v3 token (action "login") before
+ * touching credentials at all — same RecaptchaUtils used by
+ * ForgotPasswordCaptchaController, fails closed on any misconfiguration or
+ * verification error. Placed before the "user exists" check so a bot doesn't
+ * get to use this endpoint as a username-enumeration oracle.
  */
 @WebServlet("/api/auth/login")
 public class LoginController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
+    private static final String RECAPTCHA_ACTION = "login";
     private final Gson gson = new Gson();
 
     @Override
@@ -60,6 +68,7 @@ public class LoginController extends HttpServlet {
 
             String username = request.getParameter("username");
             String password = request.getParameter("password");
+            String recaptchaToken = request.getParameter("recaptchaToken");
 
             // ── 1. Validate input ──────────────────────────────────────────
             if (username == null || username.isBlank()
@@ -67,6 +76,37 @@ public class LoginController extends HttpServlet {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 out.print(gson.toJson(ApiResponse.fail(
                         "Username and password are required.", "MISSING_CREDENTIALS")));
+                return;
+            }
+
+            // ── 1b. reCAPTCHA v3 verification ──────────────────────────────
+            if (recaptchaToken == null || recaptchaToken.isBlank()) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Captcha verification is required.", "CAPTCHA_REQUIRED")));
+                return;
+            }
+
+            boolean captchaValid;
+            try {
+                captchaValid = RecaptchaUtils.verify(
+                        recaptchaToken, RECAPTCHA_ACTION, request.getRemoteAddr());
+            } catch (IllegalStateException configError) {
+                // RECAPTCHA_SECRET_KEY missing — a server misconfiguration, not
+                // the caller's fault. Fail closed with a distinct error code.
+                configError.printStackTrace();
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Captcha verification is not configured on the server.",
+                        "CAPTCHA_NOT_CONFIGURED")));
+                return;
+            }
+
+            if (!captchaValid) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                out.print(gson.toJson(ApiResponse.fail(
+                        "Captcha verification failed. Please try again.",
+                        "CAPTCHA_INVALID")));
                 return;
             }
 

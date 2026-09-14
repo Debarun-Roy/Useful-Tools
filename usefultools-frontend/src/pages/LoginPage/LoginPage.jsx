@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate, Link }   from 'react-router-dom'
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3'
 import { loginUser, loginAsGuest } from '../../api/apiClient'
 import { useAuth }             from '../../auth/useAuth'
 import AuthLayout              from '../../components/AuthLayout/AuthLayout'
@@ -10,6 +11,9 @@ const ERROR_MESSAGES = {
   USER_NOT_FOUND:      'No account found for that username. Try registering.',
   INVALID_CREDENTIALS: 'Incorrect password. Please try again.',
   ACCOUNT_LOCKED:      null, // Use the server message directly (contains time remaining).
+  CAPTCHA_REQUIRED:       'Captcha verification is required.',
+  CAPTCHA_INVALID:        'Captcha verification failed. Please try again.',
+  CAPTCHA_NOT_CONFIGURED: 'Captcha verification is unavailable right now. Please try again later.',
   RATE_LIMITED:        'Too many login attempts. Please wait a moment before trying again.',
   INTERNAL_ERROR:      'Something went wrong on our end. Please try again.',
 }
@@ -30,6 +34,7 @@ export default function LoginPage() {
   const [loading,  setLoading]  = useState(false)
 
   const { login, authNotice, clearAuthNotice } = useAuth()
+  const { executeRecaptcha } = useGoogleReCaptcha()
   const navigate = useNavigate()
 
   async function handleSubmit(e) {
@@ -40,11 +45,17 @@ export default function LoginPage() {
       return
     }
 
+    if (!executeRecaptcha) {
+      setError('Captcha is still loading. Please wait a moment and try again.')
+      return
+    }
+
     setLoading(true)
     setError('')
 
     try {
-      const { data } = await loginUser(username.trim(), password)
+      const recaptchaToken = await executeRecaptcha('login')
+      const { data } = await loginUser(username.trim(), password, recaptchaToken)
 
       if (data.success) {
         // Pass the csrfToken from the response body so AuthContext can store
@@ -170,6 +181,11 @@ export default function LoginPage() {
         >
           {loading ? 'Starting guest session…' : 'Continue as Guest'}
         </button>
+
+        <p className={styles.helperText}>
+          This site is protected by reCAPTCHA. Verifying will not show a
+          checkbox — it runs automatically when you sign in.
+        </p>
 
       </form>
 

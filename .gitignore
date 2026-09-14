@@ -94,3 +94,8 @@ node_modules
 # RAILWAY CaC TO IaC MIGRATION
 #######################################
 .railway/
+
+#######################################
+# OTHER TXT FILES
+#######################################
+remaining_tasks.txt

@@ -195,22 +195,22 @@ export async function request(
 // ─────────────────────────────────────────────────────────────
 
 export const loginUser =
-  (username, password) =>
+  (username, password, recaptchaToken = '') =>
     request('/auth/login', {
       method: 'POST',
       isForm: true,
-      body: { username, password }
+      body: { username, password, recaptchaToken }
     })
 
 export const loginAsGuest =
   () => request('/auth/login-guest', { method: 'POST' })
 
 export const registerUser =
-  (username, password) =>
+  (username, password, recaptchaToken = '') =>
     request('/auth/register', {
       method: 'POST',
       isForm: true,
-      body: { username, password }
+      body: { username, password, recaptchaToken }
     })
 
 // ── Forgot password (3-step: captcha -> recovery code -> new password) ──
@@ -266,6 +266,17 @@ export const validateSession =
 
 export const fetchUserProfile =
   () => request('/user/profile')
+
+// "Delete My Data" — wipes usage data, keeps the account/login intact.
+// The target user is derived from the session server-side; no username
+// is (or should be) sent from the client.
+export const deleteUserData =
+  () => request('/user/delete-data', { method: 'DELETE' })
+
+// "Remove My Account" — deletes the account and all its data, then signs
+// the browser out server-side. Same session-derived-user note as above.
+export const removeUserAccount =
+  () => request('/user/remove-account', { method: 'DELETE' })
 
 
 // ─────────────────────────────────────────────────────────────
