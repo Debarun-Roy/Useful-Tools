@@ -16,14 +16,32 @@ const CATEGORIES = {
     label: 'Length', icon: '📏', baseLabel: 'Meters',
     units: {
       m:   { label: 'Meters',            symbol: 'm',   factor: 1 },
+      dam: { label: 'Decameters',        symbol: 'dam', factor: 10 },
+      hm:  { label: 'Hectometers',       symbol: 'hm',  factor: 100},
       km:  { label: 'Kilometers',        symbol: 'km',  factor: 1000 },
+      Mm:  { label: 'Megameters',        symbol: 'Mm',  factor: 1e6 },
+      Gm:  { label: 'Gigameters',        symbol: 'Gm',  factor: 1e9 },
+      dm:  { label: 'Decimeters',        symbol: 'dm',  factor: 0.1 },
       cm:  { label: 'Centimeters',       symbol: 'cm',  factor: 0.01 },
       mm:  { label: 'Millimeters',       symbol: 'mm',  factor: 0.001 },
+      µm:  { label: 'Micrometers (Microns)', symbol: 'µm', factor: 1e-6 },
+      nm:  { label: 'Nanometers',        symbol: 'nm',  factor: 1e-9 },
+      pm:  { label: 'Picometers',         symbol: 'pm',  factor: 1e-12 },
+      Å:   { label: 'Angstrom',          symbol: 'Å',   factor: 1e-10 },
+      fm:  { label: 'Fermi',             symbol: 'fm',  factor: 1e-15 },
       ft:  { label: 'Feet',              symbol: 'ft',  factor: 0.3048 },
       in:  { label: 'Inches',            symbol: 'in',  factor: 0.0254 },
+      th:  { label: 'Thou / Mil',        symbol: 'th',  factor: 0.0000254 },
       yd:  { label: 'Yards',             symbol: 'yd',  factor: 0.9144 },
       mi:  { label: 'Miles',             symbol: 'mi',  factor: 1609.344 },
       nmi: { label: 'Nautical Miles',    symbol: 'nmi', factor: 1852 },
+      ftm: { label: 'Fathom',            symbol: 'ftm', factor: 1.8288 },
+      LD:  { label: 'Lunar Distance',    symbol: 'LD',  factor: 3.844e8 },
+      AU:  { label: 'Astronomical Units',symbol: 'AU',  factor: 1.496e11 },
+      ly:  { label: 'Light years',       symbol: 'ly',  factor: 9.46e15 },
+      pc:  { label: 'Parsec',            symbol: 'pc',  factor: 3.086e16 },
+      a0:  { label: 'Bohr Radius',       symbol: 'a₀',  factor: 5.291772109e-11 },
+      lp:  { label: 'Planck Length',     symbol: '\(\ell _{p}\)', factor: 1.6e-35 },
     }
   },
   mass: {
@@ -33,9 +51,22 @@ const CATEGORIES = {
       g:   { label: 'Grams',             symbol: 'g',   factor: 0.001 },
       mg:  { label: 'Milligrams',        symbol: 'mg',  factor: 1e-6 },
       t:   { label: 'Metric Tons',       symbol: 't',   factor: 1000 },
+      dag: { label: 'Decagrams',         symbol: 'dag', factor: 0.01 },
+      Gg:  { label: 'Gigagrams',         symbol: 'Gg',  factor: 1e6 },
+      Tg:  { label: 'Teragrams',         symbol: 'Tg',  factor: 1e9 },
+      µg:  { label: 'Micrograms',        symbol: 'µg',  factor: 1e-9 },
+      ng:  { label: 'Nanograms',         symbol: 'ng',  factor: 1e-12 },
+      pg:  { label: 'Picograms',         symbol: 'pg',  factor: 1e-15 },
+      fg:  { label: 'Femtograms',        symbol: 'fg',  factor: 1e-18 },
       lb:  { label: 'Pounds',            symbol: 'lb',  factor: 0.453592 },
       oz:  { label: 'Ounces',            symbol: 'oz',  factor: 0.0283495 },
       st:  { label: 'Stone',             symbol: 'st',  factor: 6.35029 },
+      ozt: { label: 'Troy Ounces',       symbol: 'ozt', factor: 0.031103 },
+      dwt: { label: 'Pennyweight',       symbol: 'dwt', factor: 0.00155515 },
+      mp:  { label: 'Planck Mass',       symbol: '\(m_{P}\)', factor: 2.176e-8 },
+      mSun:{ label: 'Solar Mass',        symbol: '\(M_{\odot }\)', factor: 1.989e30 },
+      mEarth:{ label: 'Earth Mass',      symbol: '\(M_{\oplus }\)', factor: 5.972e24 },
+      q:   { label: 'Quintals',          symbol: 'q',   factor: 100 },
     }
   },
   temperature: {
@@ -44,18 +75,28 @@ const CATEGORIES = {
       C: { label: 'Celsius',    symbol: '°C' },
       F: { label: 'Fahrenheit', symbol: '°F' },
       K: { label: 'Kelvin',     symbol: 'K'  },
+      R: { label: 'Rankine',    symbol: '°R' },
+
     }
   },
   time: {
     label: 'Time', icon: '⏱️', baseLabel: 'Seconds',
     units: {
       ms:   { label: 'Milliseconds',     symbol: 'ms',   factor: 0.001 },
+      μs:   { label: 'Microseconds',     symbol: 'μs',   factor: 1e-6 },
+      ns:   { label: 'Nanoseconds',      symbol: 'ns',   factor: 1e-9 },
+      ps:   { label: 'Picoseconds',      symbol: 'ps',   factor: 1e-12 },
       s:    { label: 'Seconds',          symbol: 's',    factor: 1 },
       min:  { label: 'Minutes',          symbol: 'min',  factor: 60 },
       h:    { label: 'Hours',            symbol: 'h',    factor: 3600 },
       d:    { label: 'Days',             symbol: 'd',    factor: 86400 },
       week: { label: 'Weeks',            symbol: 'wk',   factor: 604800 },
       year: { label: 'Years (365.25d)',  symbol: 'yr',   factor: 31557600 },
+      pt:   { label: 'Planck Time',      symbol: '\(t_{P}\)', factor: 5.39e-44 },
+      c:    { label: 'Century',          symbol: 'c',    factor: 3.1556926e9 },
+      m:    { label: 'Millenium',        symbol: 'm',    factor: 3.1556926e10 },
+      Ma:   { label: 'Mega annum',       symbol: 'Ma',   factor: 3.1556926e13 },
+      Ga:   { label: 'Giga annum',       symbol: 'Ga',   factor: 3.1556926e16 },
     }
   },
   data: {
@@ -91,21 +132,44 @@ const CATEGORIES = {
       ha:   { label: 'Hectares',         symbol: 'ha',     factor: 10000 },
     }
   },
+  volume: {
+    label: 'Volume', icon: '🧊', baseLabel: 'Cubic meters',
+    units: {
+      m3:   { label: 'Cu. Meters',       symbol: 'm³',     factor: 1 },
+      km3:  { label: 'Cu. Kimometers',   symbol: 'km³',    factor: 1e9 },
+      cm3:  { label: 'Cu. Centimeters',  symbol: 'cm³',    factor: 1e-6 },
+      ft3:  { label: 'Cu. Feet',         symbol: 'ft³',    factor: 0.028316846592000004 },
+      in3:  { label: 'Cu. Inches',       symbol: 'in³',    factor: 0.000016387064 },
+    }
+  }
 }
 
 // ── Conversion logic ──────────────────────────────────────────────────────────
 
 function convertTemperature(value, from, to) {
-  if (from === to) return value
-  // Step 1: to Celsius
-  let c
-  if (from === 'C') c = value
-  else if (from === 'F') c = (value - 32) * 5 / 9
-  else c = value - 273.15 // K
-  // Step 2: from Celsius to target
-  if (to === 'C') return c
-  if (to === 'F') return c * 9 / 5 + 32
-  return c + 273.15 // K
+  if (from === to) return value;
+  
+  // Step 1: Convert source unit to Celsius
+  let c;
+  if (from === 'C') {
+    c = value;
+  } else if (from === 'F') {
+    c = (value - 32) * 5 / 9;
+  } else if (from === 'K') {
+    c = value - 273.15;
+  } else if (from === 'R') {
+    c = (value - 491.67) * 5 / 9;
+  } else {
+    throw new Error(`Unsupported input unit: ${from}`);
+  }
+  
+  // Step 2: Convert Celsius to the target unit
+  if (to === 'C') return c;
+  if (to === 'F') return (c * 9 / 5) + 32;
+  if (to === 'K') return c + 273.15;
+  if (to === 'R') return (c + 273.15) * 9 / 5;
+  
+  throw new Error(`Unsupported output unit: ${to}`);
 }
 
 function convert(value, fromKey, toKey, categoryKey) {
