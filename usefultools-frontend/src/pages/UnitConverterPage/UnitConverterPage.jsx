@@ -17,7 +17,7 @@ const CATEGORIES = {
     units: {
       m:   { label: 'Meters',            symbol: 'm',   factor: 1 },
       dam: { label: 'Decameters',        symbol: 'dam', factor: 10 },
-      hm:  { label: 'Hectometers',       symbol: 'hm',  factor: 100},
+      hm:  { label: 'Hectometers',       symbol: 'hm',  factor: 100 },
       km:  { label: 'Kilometers',        symbol: 'km',  factor: 1000 },
       Mm:  { label: 'Megameters',        symbol: 'Mm',  factor: 1e6 },
       Gm:  { label: 'Gigameters',        symbol: 'Gm',  factor: 1e9 },
@@ -104,10 +104,18 @@ const CATEGORIES = {
     units: {
       b:   { label: 'Bits',              symbol: 'b',  factor: 1 },
       B:   { label: 'Bytes',             symbol: 'B',  factor: 8 },
-      KB:  { label: 'Kilobytes',         symbol: 'KB', factor: 8192 },
-      MB:  { label: 'Megabytes',         symbol: 'MB', factor: 8388608 },
-      GB:  { label: 'Gigabytes',         symbol: 'GB', factor: 8589934592 },
-      TB:  { label: 'Terabytes',         symbol: 'TB', factor: 8796093022208 },
+      KB:  { label: 'Kilobytes (decimal)',         symbol: 'KB', factor: 8000 },
+      MB:  { label: 'Megabytes (decimal)',         symbol: 'MB', factor: 8e6 },
+      GB:  { label: 'Gigabytes (decimal)',         symbol: 'GB', factor: 8e9 },
+      TB:  { label: 'Terabytes (decimal)',         symbol: 'TB', factor: 8e12 },
+      PB:  { label: 'Petabytes (decimal)',         symbol: 'PB', factor: 8e15 },
+      EB:  { label: 'Exabytes (decimal)',          symbol: 'EB', factor: 8e18 },
+      KiB:  { label: 'Kilobytes (binary)',         symbol: 'KiB', factor: 8192 },
+      MiB:  { label: 'Megabytes (binary)',         symbol: 'MiB', factor: 8388608 },
+      GiB:  { label: 'Gigabytes (binary)',         symbol: 'GiB', factor: 8589934592 },
+      TiB:  { label: 'Terabytes (binary)',         symbol: 'TiB', factor: 8796093022208 },
+      PiB:  { label: 'Petabytes (binary)',         symbol: 'PiB', factor: 9007199254740992 },
+      EiB:  { label: 'Exabytes (binary)',          symbol: 'EiB', factor: 9007199254740992000 },
     }
   },
   speed: {
@@ -118,6 +126,31 @@ const CATEGORIES = {
       mph:  { label: 'Miles/hour',       symbol: 'mph',   factor: 0.44704 },
       knot: { label: 'Knots',            symbol: 'kn',    factor: 0.514444 },
       fts:  { label: 'Feet/second',      symbol: 'ft/s',  factor: 0.3048 },
+      kms:  { label: 'Kilometres/second',symbol: 'km/s',  factor: 1000 },
+      cms:  { label: 'Centimetres/second',symbol: 'cm/s', factor: 0.01 },
+      ips:  { label: 'Inches/second',    symbol: 'ips',   factor: 0.0254000000001016 },
+      c:    { label: 'Speed of light',   symbol: 'c',     factor: 299792458 },
+      Mach: { label: 'Mach Number',      symbol: 'Mach',  factor: 343 },
+    }
+  },
+  acceleration: {
+    label: 'Acceleration', icon: '<Aclr>', baseLabel: 'm/s²',
+    units: {
+      ms2: { label: 'Metres/sq. seconds', symbol: 'm/s²',  factor: 1 },
+      cms2:{ label: 'Centimetres/sq. seconds', symbol: 'cm/s²', factor: 0.01 },
+      fts2:{ label: 'Feet/sq. seconds',   symbol: 'ft/s²', factor: 0.3048 },
+      kmh2:{ label: 'Kilometres/sq. hours',symbol: 'km/h²',factor: 0.0000772 },
+      mms2:{ label: 'Millimetres/sq. seconds', symbol: 'mm/s²', factor: 0.001 },
+      Gal: { label: 'Galileo',            symbol: 'Gal',   factor: 0.01 },
+      mGal:{ label: 'Milligal',           symbol: 'mGal',  factor: 0.00001 },
+      µGal:{ label: 'Microgal',           symbol: 'µGal',  factor: 1e-8 },
+      mis2:{ label: 'Miles/sq. seconds',  symbol: 'mi/s²', factor: 1609.344 },
+      kms2:{ label: 'Kilometres/sq. seconds', symbol: 'km/s²', factor: 1000 },
+      mph2:{ label: 'Miles/sq. hours',    symbol: 'mi/h²', factor: 0.00012418 },
+      g:   { label: 'Standard gravity (g-force)', symbol: 'g', factor: 9.81 },
+      mg:  { label: 'Milligravity',       symbol: 'mg',    factor: 0.00981 },
+      kns: { label: 'Knots/second',       symbol: 'kn/s',  factor: 0.514444 },
+      pa:  { label: 'Planck Acceleration',symbol: 'pa',    factor: 5.56e51 },
     }
   },
   area: {
@@ -129,17 +162,45 @@ const CATEGORIES = {
       ft2:  { label: 'Sq. Feet',         symbol: 'ft²',    factor: 0.092903 },
       in2:  { label: 'Sq. Inches',       symbol: 'in²',    factor: 0.000645 },
       acre: { label: 'Acres',            symbol: 'ac',     factor: 4046.86 },
+      a:    { label: 'Ares',             symbol: 'a',      factor: 100 },
       ha:   { label: 'Hectares',         symbol: 'ha',     factor: 10000 },
+      mm2:  { label: 'Sq. Millimeters',  symbol: 'mm²',    factor: 1e-6 },
+      dm2:  { label: 'Sq. Decimeters',   symbol: 'dm²',    factor: 0.01 },
+      yd2:  { label: 'Sq. Yards',        symbol: 'yd²',    factor: 0.836127 },
+      mi2:  { label: 'Sq. Miles',        symbol: 'mi²',    factor: 2.59e6 },
+      b:    { label: 'Barn',             symbol: 'b',      factor: 1e-28 },
+      pa:   { label: 'Planck Area',      symbol: '\(A_{p}\)', factor: 2.61e-70 },
     }
   },
   volume: {
     label: 'Volume', icon: '🧊', baseLabel: 'Cubic meters',
     units: {
       m3:   { label: 'Cu. Meters',       symbol: 'm³',     factor: 1 },
-      km3:  { label: 'Cu. Kimometers',   symbol: 'km³',    factor: 1e9 },
+      km3:  { label: 'Cu. Kilometers',   symbol: 'km³',    factor: 1e9 },
       cm3:  { label: 'Cu. Centimeters',  symbol: 'cm³',    factor: 1e-6 },
-      ft3:  { label: 'Cu. Feet',         symbol: 'ft³',    factor: 0.028316846592000004 },
+      dm3:  { label: 'Cu. Decimeters',   symbol: 'dm³',    factor: 0.001 },
+      ft3:  { label: 'Cu. Feet',         symbol: 'ft³',    factor: 0.0283168 },
       in3:  { label: 'Cu. Inches',       symbol: 'in³',    factor: 0.000016387064 },
+      L:    { label: 'Liters',           symbol: 'L',      factor: 0.001 },
+      mL:   { label: 'Milliliters',      symbol: 'mL',     factor: 1e-6 },
+      µL:   { label: 'Microliters',      symbol: 'µL',     factor: 1e-12 },
+      nL:   { label: 'Nanoliters',       symbol: 'nL',     factor: 1e-18 },
+      dL:   { label: 'Deciliters',       symbol: 'dL',     factor: 0.0001 },
+      kL:   { label: 'Kiloliters',       symbol: 'kL',     factor: 1 },
+      ML:   { label: 'Megaliters',       symbol: 'ML',     factor: 1000 },
+      GL:   { label: 'Gigaliters',       symbol: 'GL',     factor: 1e9 },
+      tsp:  { label: 'Teaspoons',        symbol: 'tsp',    factor: 4.9e-6 },
+      tbsp: { label: 'Tablespoons',      symbol: 'tbsp',   factor: 14.8e-6 },
+      floz: { label: 'Fluid ounces',     symbol: 'fl oz',  factor: 2.95735e-5 },
+      shot: { label: 'Shots',            symbol: 'shot',   factor: 0.00004436025 },
+      c:    { label: 'Cups',             symbol: 'c',      factor: 0.000236588 },
+      pt:   { label: 'Pints',            symbol: 'pt',     factor: 0.000473176 },
+      qt:   { label: 'Quarts',           symbol: 'qt',     factor: 0.000946352 },
+      gal:  { label: 'Gallons',          symbol: 'gal',    factor: 0.003785408 },
+      yd3:  { label: 'Cu. Yards',        symbol: 'yd³',    factor: 0.764555 },
+      bbl:  { label: 'Oil barrels',      symbol: 'bbl',    factor: 0.159 },
+      acft: { label: 'Acre-Foot',        symbol: 'ac-ft',  factor: 1233.48 },
+      pv:   { label: 'Planck volume',    symbol: 'Vp',     factor: 4.22e-105 },
     }
   }
 }
@@ -283,16 +344,16 @@ export default function UnitConverterPage() {
           </h1>
           <p className={styles.heroSub}>
             Instant conversion across 7 categories: length, mass, temperature,
-            time, data size, speed, and area — all calculated client-side.
+            time, data size, speed, area and volume — all calculated client-side.
           </p>
         </div>
         <div className={styles.heroStats}>
           <div className={styles.statCard}>
-            <span className={styles.statValue}>7</span>
+            <span className={styles.statValue}>8</span>
             <span className={styles.statLabel}>categories</span>
           </div>
           <div className={styles.statCard}>
-            <span className={styles.statValue}>50+</span>
+            <span className={styles.statValue}>145</span>
             <span className={styles.statLabel}>units</span>
           </div>
         </div>
