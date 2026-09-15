@@ -1,38 +1,3 @@
-/* ─── Floating trigger button ────────────────────────────────────────────── */
-
-.trigger {
-  position: fixed;
-  bottom: 28px;
-  left: 28px;
-  z-index: 90;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 18px;
-  background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-light));
-  color: #fff;
-  border: none;
-  border-radius: 999px;
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 4px 20px rgba(59, 111, 212, 0.35);
-  transition: transform 140ms, box-shadow 140ms;
-  user-select: none;
-}
-
-.trigger:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(59, 111, 212, 0.5);
-}
-
-.trigger:active {
-  transform: translateY(-1px);
-}
-
-.triggerIcon { font-size: 1rem; line-height: 1; }
-.triggerLabel { letter-spacing: 0.01em; }
-
 /* ─── Overlay ────────────────────────────────────────────────────────────── */
 
 .overlay {

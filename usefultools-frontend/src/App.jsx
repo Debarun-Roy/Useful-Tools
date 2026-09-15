@@ -4,7 +4,6 @@ import { AuthProvider }       from './auth/AuthContext'
 import ProtectedRoute         from './components/ProtectedRoute'
 import AdminRoute             from './components/AdminRoute/AdminRoute'
 import { ThemeProvider }      from './theme/ThemeContext'
-import FeedbackModal          from './components/FeedbackModal/FeedbackModal'
 
 // ── Public routes — kept eager so the login screen renders instantly ───────
 import LoginPage          from './pages/LoginPage/LoginPage'
@@ -156,8 +155,6 @@ export default function App() {
 
             </Routes>
           </Suspense>
-
-          <FeedbackModal />
 
         </ThemeProvider>
       </AuthProvider>

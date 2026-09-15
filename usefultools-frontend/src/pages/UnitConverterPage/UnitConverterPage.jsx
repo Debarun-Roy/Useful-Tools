@@ -76,7 +76,6 @@ const CATEGORIES = {
       F: { label: 'Fahrenheit', symbol: '°F' },
       K: { label: 'Kelvin',     symbol: 'K'  },
       R: { label: 'Rankine',    symbol: '°R' },
-
     }
   },
   time: {

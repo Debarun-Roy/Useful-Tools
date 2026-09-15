@@ -4,6 +4,7 @@ import { fetchUserProfile, logoutUser, deleteUserData, removeUserAccount } from 
 import { useAuth }             from '../../auth/useAuth'
 import LockedResourceOverlay from '../../components/LockedResourceOverlay/LockedResourceOverlay'
 import UserMenu from '../../components/UserMenu/UserMenu'
+import FeedbackModal from '../../components/FeedbackModal/FeedbackModal'
 import styles                  from './ProfilePage.module.css'
 
 // ── Confirmation copy for the two destructive Settings actions ─────────────
@@ -32,6 +33,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState('')
   const isGuest = username === 'Guest User'
+
+  // ── Feedback modal ───────────────────────────────────────────────────────
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
 
   // ── Settings dropdown ───────────────────────────────────────────────────
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -247,7 +251,16 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className={styles.settingsWrap} ref={settingsRef}>
+              <div className={styles.actionsCol}>
+                <button
+                  type="button"
+                  className={styles.feedbackBtn}
+                  onClick={() => setFeedbackOpen(true)}
+                >
+                  <span aria-hidden="true">💬</span> Give Feedback
+                </button>
+
+                <div className={styles.settingsWrap} ref={settingsRef}>
                 <button
                   type="button"
                   className={styles.settingsBtn}
@@ -299,6 +312,7 @@ export default function ProfilePage() {
                     </button>
                   </div>
                 )}
+                </div>
               </div>
             </div>
 
@@ -342,6 +356,9 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
+      {/* Feedback modal — opened via the "Give Feedback" button above */}
+      <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   )
 }

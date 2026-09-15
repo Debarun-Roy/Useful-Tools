@@ -10,7 +10,7 @@
  *   1. Builder   — choose chart type, enter / paste / import data, preview
  *   2. Import    — CSV or JSON array import wizard with column mapping
  *   3. Analysis  — statistical summary of the current dataset
- *   4. Export    — download chart as PNG or SVG; export data as CSV/JSON
+ *   4. Export    — download chart as PNG or SVG; export data as CSV/JSON/Excel
  *
  * Activity logging:  'chart.build'  (on render)
  *                    'chart.export' (on download)
@@ -23,6 +23,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import * as XLSX from 'xlsx'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
 import UserMenu from '../../components/UserMenu/UserMenu'
@@ -614,6 +615,7 @@ export default function DataVisualizationPage() {
     a.click()
     URL.revokeObjectURL(url)
     setExportMsg('CSV downloaded.')
+    logActivity('chart.export', 'Exported data as CSV', { format: 'csv' })
   }
 
   function exportDataJSON() {
@@ -631,6 +633,23 @@ export default function DataVisualizationPage() {
     a.click()
     URL.revokeObjectURL(url)
     setExportMsg('JSON downloaded.')
+    logActivity('chart.export', 'Exported data as JSON', { format: 'json' })
+  }
+
+  function exportDataExcel() {
+    if (!chartData) return
+    const { labels, datasets } = chartData
+    const rows = labels.map((lbl, i) => ({
+      Label: lbl,
+      ...Object.fromEntries(datasets.map(d => [d.name, d.values[i] ?? ''])),
+    }))
+    const worksheet = XLSX.utils.json_to_sheet(rows)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Chart Data')
+    // writeFile handles Blob creation and the download click internally.
+    XLSX.writeFile(workbook, `data-${Date.now()}.xlsx`)
+    setExportMsg('Excel file downloaded.')
+    logActivity('chart.export', 'Exported data as Excel', { format: 'xlsx' })
   }
 
   async function handleLogout() {
@@ -1035,11 +1054,19 @@ export default function DataVisualizationPage() {
                     </button>
                   </div>
                   <div className={styles.exportCard}>
-                    <span className={styles.exportIcon}>{ }</span>
+                    <span className={styles.exportIcon}>{'{ }'}</span>
                     <span className={styles.exportTitle}>JSON</span>
                     <span className={styles.exportDesc}>Array of objects, one object per label</span>
                     <button type="button" className={styles.secondaryBtn} onClick={exportDataJSON}>
                       Download JSON
+                    </button>
+                  </div>
+                  <div className={styles.exportCard}>
+                    <span className={styles.exportIcon}>📊</span>
+                    <span className={styles.exportTitle}>Excel</span>
+                    <span className={styles.exportDesc}>Native .xlsx workbook, one row per label</span>
+                    <button type="button" className={styles.secondaryBtn} onClick={exportDataExcel}>
+                      Download Excel
                     </button>
                   </div>
                 </div>

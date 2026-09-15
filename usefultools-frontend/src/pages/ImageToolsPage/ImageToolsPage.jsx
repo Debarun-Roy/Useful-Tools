@@ -17,13 +17,31 @@ import { trackTool } from '../../utils/logMetric'
  *
  * Tools:
  *   resize     Change width/height, optionally preserving aspect ratio.
- *   convert    Re-encode between PNG / JPG / WebP with quality slider.
- *   compress   Target-size JPEG/WebP compression by binary-searching quality.
+ *   convert    Re-encode between PNG / JPG / WebP / BMP / AVIF with quality slider.
+ *   compress   Target-size JPEG/WebP/AVIF compression by binary-searching quality.
  *   crop       Pick a rectangle using four numeric sliders.
  *   rotate     90° rotations and horizontal / vertical flip.
  *   filters    Grayscale / sepia / invert / brightness / contrast.
  *   info       Human-readable metadata (dimensions, size, MIME type).
  *   dataurl    Base64 data-URL export.
+ *
+ * ── Output format support ─────────────────────────────────────────────────
+ * PNG / JPEG / WebP are natively supported by canvas.toBlob() in every
+ * browser. Two more formats are added on top of that:
+ *   - BMP  — canvas.toBlob() has never supported 'image/bmp' in any browser
+ *            (PNG/JPEG/WebP already cover lossless/lossy needs, so it was
+ *            never added to the spec). canvasToBmpBlob() below builds a
+ *            standard uncompressed 24-bit BMP directly from ImageData.
+ *   - AVIF — supported by canvas.toBlob() in Chromium/Firefox but not
+ *            Safari as of this writing. Per the HTML spec an unsupported
+ *            type silently falls back to PNG rather than throwing, so
+ *            encodeCanvas() always derives the download extension from the
+ *            blob it actually got back, never from the format that was
+ *            requested.
+ * Formats without an alpha channel (JPEG, BMP) are flattened onto a solid
+ * background first via flattenToBackground() — otherwise transparent areas
+ * turn black, since canvas pixels for fully-transparent regions carry no
+ * real colour information.
  *
  * ── Activity logging (Sprint 15, privacy-critical) ────────────────────────
  * The six TRANSFORMATION tools (resize, convert, compress, crop, rotate,
@@ -78,7 +96,140 @@ function formatLabel(mime) {
   if (mime === 'image/png')  return 'PNG'
   if (mime === 'image/jpeg') return 'JPEG'
   if (mime === 'image/webp') return 'WebP'
+  if (mime === 'image/bmp')  return 'BMP'
+  if (mime === 'image/avif') return 'AVIF'
   return mime || 'image'
+}
+
+// ─── Format allow-list (single source of truth) ────────────────────────────
+// Every tool's "Output format" <select> and its filename-extension / quality
+// logic previously duplicated this same PNG/JPEG/WebP list six times
+// (Resize, Convert, Compress, Crop, Rotate, Filters) via copy-pasted ternary
+// chains. Centralising it here means adding a format is a one-place change
+// that reaches every tool automatically, instead of a six-place edit that
+// can silently drift out of sync.
+
+const MIME_EXTENSIONS = {
+  'image/png':  'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+  'image/bmp':  'bmp',
+  'image/avif': 'avif',
+}
+
+function extensionForMime(mime) {
+  return MIME_EXTENSIONS[mime] || 'png'
+}
+
+// Formats whose quality slider actually does something. PNG and BMP are
+// always lossless, so a "quality" value would be meaningless for them.
+const LOSSY_FORMATS = new Set(['image/jpeg', 'image/webp', 'image/avif'])
+
+// Formats with no alpha channel — need flattenToBackground() before encoding
+// or transparent regions turn black.
+const NO_ALPHA_FORMATS = new Set(['image/jpeg', 'image/bmp'])
+
+// Full option list — used by every tool except Compress, where a lossless
+// format wouldn't compress anything.
+const RASTER_FORMAT_OPTIONS = [
+  { value: 'image/png',  label: 'PNG (lossless)' },
+  { value: 'image/jpeg', label: 'JPEG' },
+  { value: 'image/webp', label: 'WebP' },
+  { value: 'image/bmp',  label: 'BMP (lossless)' },
+  { value: 'image/avif', label: 'AVIF (not supported by every browser)' },
+]
+
+// Lossy-only subset — used by Compress, where quality tuning is the point.
+const LOSSY_FORMAT_OPTIONS = RASTER_FORMAT_OPTIONS.filter(o => LOSSY_FORMATS.has(o.value))
+
+/** Renders a shared list of <option> tags so it never drifts between tools. */
+function FormatOptions({ options }) {
+  return options.map(o => (
+    <option key={o.value} value={o.value}>{o.label}</option>
+  ))
+}
+
+/**
+ * Encodes a canvas as an uncompressed 24-bit BMP Blob.
+ *
+ * BMP is a very simple, well-documented container — a 14-byte file header,
+ * a 40-byte DIB header, then raw bottom-up BGR pixel rows padded to a
+ * 4-byte boundary — so it's built directly from ImageData rather than
+ * pulling in an image-encoding library for one format that no browser's
+ * canvas.toBlob() supports.
+ */
+function canvasToBmpBlob(canvas) {
+  const w = canvas.width, h = canvas.height
+  const ctx = canvas.getContext('2d')
+  const { data } = ctx.getImageData(0, 0, w, h)
+
+  const rowSize = Math.ceil((w * 3) / 4) * 4 // rows pad to a 4-byte boundary
+  const pixelArraySize = rowSize * h
+  const fileSize = 54 + pixelArraySize
+
+  const buffer = new ArrayBuffer(fileSize)
+  const view = new DataView(buffer)
+
+  // BITMAPFILEHEADER (14 bytes)
+  view.setUint8(0, 0x42) // 'B'
+  view.setUint8(1, 0x4D) // 'M'
+  view.setUint32(2, fileSize, true)
+  view.setUint32(6, 0, true)     // reserved
+  view.setUint32(10, 54, true)   // pixel data offset
+
+  // BITMAPINFOHEADER (40 bytes)
+  view.setUint32(14, 40, true)   // header size
+  view.setInt32(18, w, true)
+  view.setInt32(22, h, true)     // positive height = bottom-up row order
+  view.setUint16(26, 1, true)    // colour planes
+  view.setUint16(28, 24, true)   // bits per pixel
+  view.setUint32(30, 0, true)    // no compression
+  view.setUint32(34, pixelArraySize, true)
+  view.setInt32(38, 2835, true)  // ~72 DPI
+  view.setInt32(42, 2835, true)
+  view.setUint32(46, 0, true)    // colours in palette
+  view.setUint32(50, 0, true)    // important colours
+
+  // Pixel data — bottom-up, BGR, row-padded
+  let offset = 54
+  for (let y = h - 1; y >= 0; y--) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4
+      view.setUint8(offset++, data[i + 2]) // B
+      view.setUint8(offset++, data[i + 1]) // G
+      view.setUint8(offset++, data[i])     // R
+    }
+    offset += rowSize - w * 3 // row padding
+  }
+
+  return new Blob([buffer], { type: 'image/bmp' })
+}
+
+/**
+ * Draws sourceCanvas onto a same-sized canvas pre-filled with bgColor.
+ * Used before encoding to a format with no alpha channel (JPEG, BMP) so
+ * transparent regions become the chosen background colour instead of black.
+ */
+function flattenToBackground(sourceCanvas, bgColor = '#ffffff') {
+  const out = document.createElement('canvas')
+  out.width = sourceCanvas.width
+  out.height = sourceCanvas.height
+  const ctx = out.getContext('2d')
+  ctx.fillStyle = bgColor
+  ctx.fillRect(0, 0, out.width, out.height)
+  ctx.drawImage(sourceCanvas, 0, 0)
+  return out
+}
+
+/**
+ * Encodes canvas to mimeType, filling in what canvas.toBlob() can't do
+ * natively (see the "Output format support" note in the file docblock).
+ * Always flattens no-alpha formats first.
+ */
+async function encodeCanvas(canvas, mimeType, quality, bgColor = '#ffffff') {
+  const src = NO_ALPHA_FORMATS.has(mimeType) ? flattenToBackground(canvas, bgColor) : canvas
+  if (mimeType === 'image/bmp') return canvasToBmpBlob(src)
+  return canvasToBlob(src, mimeType, LOSSY_FORMATS.has(mimeType) ? quality : undefined)
 }
 
 /**
@@ -159,7 +310,7 @@ function FilePicker({ onFile, label = 'Drop an image or click to browse', accept
     setError('')
     if (!file) return
     if (!file.type.startsWith('image/')) {
-      setError('Please select an image file (PNG, JPG, WebP, GIF, BMP, SVG).')
+      setError('Please select an image file (PNG, JPG, WebP, GIF, BMP, SVG, AVIF).')
       return
     }
     try {
@@ -196,7 +347,7 @@ function FilePicker({ onFile, label = 'Drop an image or click to browse', accept
       >
         <span className={styles.dropIcon} aria-hidden="true">🖼</span>
         <p className={styles.dropLabel}>{label}</p>
-        <p className={styles.dropHint}>PNG · JPG · WebP · GIF · BMP up to ~50MB</p>
+        <p className={styles.dropHint}>PNG · JPG · WebP · GIF · BMP · SVG · AVIF up to ~50MB</p>
         <input
           ref={inputRef}
           type="file"
@@ -265,14 +416,18 @@ function ResizeTool() {
     setWorking(true); setError('')
     try {
       const canvas = canvasFromImage(source.img, w, h)
-      const blob = await canvasToBlob(canvas, format, format === 'image/png' ? undefined : quality)
-      const ext = format === 'image/png' ? 'png' : format === 'image/jpeg' ? 'jpg' : 'webp'
+      const blob = await encodeCanvas(canvas, format, quality)
+      // Derived from the actual blob, not the requested format: if the
+      // browser doesn't support AVIF encoding it silently falls back to
+      // PNG, and the filename should reflect what was really produced.
+      const ext = extensionForMime(blob.type)
       triggerDownload(blob, `${baseName(source.file.name)}-${w}x${h}.${ext}`)
 
       // ── Activity log ─────────────────────────────────────────────────────
       // Target dimensions + format (+ quality for lossy codecs). NEVER the
       // source filename and NEVER the image bytes.
-      const qualityStr = format === 'image/png' ? '' : ` ${Math.round(quality * 100)}%`
+      const isLossy = LOSSY_FORMATS.has(format)
+      const qualityStr = isLossy ? ` ${Math.round(quality * 100)}%` : ''
       logActivity(
         'image.process',
         `Resized image to ${w}×${h} · ${formatLabel(format)}${qualityStr}`,
@@ -281,7 +436,7 @@ function ResizeTool() {
           width:   w,
           height:  h,
           format,
-          quality: format === 'image/png' ? null : quality,
+          quality: isLossy ? quality : null,
         }
       )
     } catch (err) {
@@ -331,12 +486,10 @@ function ResizeTool() {
             <div className={styles.field}>
               <label className={styles.fieldLabel}>Output format</label>
               <select className={styles.textInput} value={format} onChange={e => setFormat(e.target.value)}>
-                <option value="image/png">PNG (lossless)</option>
-                <option value="image/jpeg">JPEG</option>
-                <option value="image/webp">WebP</option>
+                <FormatOptions options={RASTER_FORMAT_OPTIONS} />
               </select>
             </div>
-            {format !== 'image/png' && (
+            {LOSSY_FORMATS.has(format) && (
               <div className={styles.field}>
                 <label className={styles.fieldLabel}>Quality ({Math.round(quality * 100)}%)</label>
                 <input
@@ -379,17 +532,14 @@ function ConvertTool() {
     setWorking(true); setError('')
     try {
       const { img } = source
-      const canvas = canvasFromImage(img, img.naturalWidth, img.naturalHeight, (ctx, c) => {
-        // When converting to JPEG (which has no alpha), flatten onto a solid
-        // background colour so transparent PNG areas do not become black.
-        if (target === 'image/jpeg') {
-          ctx.fillStyle = bg
-          ctx.fillRect(0, 0, c.width, c.height)
-        }
-        ctx.drawImage(img, 0, 0)
-      })
-      const blob = await canvasToBlob(canvas, target, target === 'image/png' ? undefined : quality)
-      const ext = target === 'image/png' ? 'png' : target === 'image/jpeg' ? 'jpg' : 'webp'
+      const canvas = canvasFromImage(img, img.naturalWidth, img.naturalHeight)
+      // encodeCanvas flattens formats with no alpha channel (JPEG, BMP) onto
+      // `bg` automatically — transparent PNG areas would otherwise turn black.
+      const blob = await encodeCanvas(canvas, target, quality, bg)
+      // Derived from the actual blob, not the requested target: if the
+      // browser doesn't support AVIF encoding it silently falls back to
+      // PNG, and the filename should reflect what was really produced.
+      const ext = extensionForMime(blob.type)
       triggerDownload(blob, `${baseName(source.file.name)}.${ext}`)
 
       // ── Activity log ─────────────────────────────────────────────────────
@@ -397,14 +547,15 @@ function ConvertTool() {
       // logged — it doesn't affect interpretation of the summary, and while
       // it isn't strictly private it's a UI detail that doesn't belong on
       // the Dashboard timeline.
-      const qualityStr = target === 'image/png' ? '' : ` ${Math.round(quality * 100)}%`
+      const isLossy = LOSSY_FORMATS.has(target)
+      const qualityStr = isLossy ? ` ${Math.round(quality * 100)}%` : ''
       logActivity(
         'image.process',
         `Converted image to ${formatLabel(target)}${qualityStr}`,
         {
           operation: 'convert',
           target,
-          quality: target === 'image/png' ? null : quality,
+          quality: isLossy ? quality : null,
         }
       )
     } catch (err) {
@@ -430,12 +581,10 @@ function ConvertTool() {
             <div className={styles.field}>
               <label className={styles.fieldLabel}>Convert to</label>
               <select className={styles.textInput} value={target} onChange={e => setTarget(e.target.value)}>
-                <option value="image/png">PNG</option>
-                <option value="image/jpeg">JPEG</option>
-                <option value="image/webp">WebP</option>
+                <FormatOptions options={RASTER_FORMAT_OPTIONS} />
               </select>
             </div>
-            {target !== 'image/png' && (
+            {LOSSY_FORMATS.has(target) && (
               <div className={styles.field}>
                 <label className={styles.fieldLabel}>Quality ({Math.round(quality * 100)}%)</label>
                 <input
@@ -445,9 +594,9 @@ function ConvertTool() {
                 />
               </div>
             )}
-            {target === 'image/jpeg' && (
+            {NO_ALPHA_FORMATS.has(target) && (
               <div className={styles.field}>
-                <label className={styles.fieldLabel}>Background (JPEG has no alpha)</label>
+                <label className={styles.fieldLabel}>Background ({formatLabel(target)} has no alpha)</label>
                 <input type="color" value={bg} onChange={e => setBg(e.target.value)} />
               </div>
             )}
@@ -484,7 +633,9 @@ function CompressTool() {
   async function compressAtQuality(q) {
     const { img } = source
     const canvas = canvasFromImage(img, img.naturalWidth, img.naturalHeight)
-    return canvasToBlob(canvas, format, q)
+    // encodeCanvas flattens JPEG (no alpha) onto white automatically —
+    // otherwise a transparent source would compress to a black background.
+    return encodeCanvas(canvas, format, q)
   }
 
   async function handleCompress() {
@@ -546,7 +697,7 @@ function CompressTool() {
 
   function handleDownload() {
     if (!result || !source) return
-    const ext = format === 'image/jpeg' ? 'jpg' : 'webp'
+    const ext = extensionForMime(result.blob.type)
     triggerDownload(result.blob, `${baseName(source.file.name)}-compressed.${ext}`)
   }
 
@@ -570,8 +721,7 @@ function CompressTool() {
             <div className={styles.field}>
               <label className={styles.fieldLabel}>Format</label>
               <select className={styles.textInput} value={format} onChange={e => setFormat(e.target.value)}>
-                <option value="image/jpeg">JPEG</option>
-                <option value="image/webp">WebP</option>
+                <FormatOptions options={LOSSY_FORMAT_OPTIONS} />
               </select>
             </div>
             <div className={styles.field}>
@@ -655,8 +805,10 @@ function CropTool() {
       const canvas = canvasFromImage(img, w, h, (ctx) => {
         ctx.drawImage(img, x, y, w, h, 0, 0, w, h)
       })
-      const blob = await canvasToBlob(canvas, format, 0.95)
-      const ext = format === 'image/png' ? 'png' : format === 'image/jpeg' ? 'jpg' : 'webp'
+      // encodeCanvas flattens no-alpha formats (JPEG, BMP) onto white
+      // automatically — otherwise a transparent crop would turn black.
+      const blob = await encodeCanvas(canvas, format, 0.95)
+      const ext = extensionForMime(blob.type)
       triggerDownload(blob, `${baseName(source.file.name)}-cropped.${ext}`)
 
       // ── Activity log ─────────────────────────────────────────────────────
@@ -739,9 +891,7 @@ function CropTool() {
           <div className={styles.field}>
             <label className={styles.fieldLabel}>Output format</label>
             <select className={styles.textInput} value={format} onChange={e => setFormat(e.target.value)}>
-              <option value="image/png">PNG</option>
-              <option value="image/jpeg">JPEG</option>
-              <option value="image/webp">WebP</option>
+              <FormatOptions options={RASTER_FORMAT_OPTIONS} />
             </select>
           </div>
           {error && <div className={styles.errorBanner} role="alert">{error}</div>}
@@ -809,8 +959,10 @@ function RotateTool() {
     try {
       const canvas = document.createElement('canvas')
       render(canvas)
-      const blob = await canvasToBlob(canvas, format, 0.95)
-      const ext = format === 'image/png' ? 'png' : format === 'image/jpeg' ? 'jpg' : 'webp'
+      // encodeCanvas flattens no-alpha formats (JPEG, BMP) onto white
+      // automatically — otherwise a transparent source would turn black.
+      const blob = await encodeCanvas(canvas, format, 0.95)
+      const ext = extensionForMime(blob.type)
       triggerDownload(blob, `${baseName(source.file.name)}-transformed.${ext}`)
 
       // ── Activity log ─────────────────────────────────────────────────────
@@ -863,9 +1015,7 @@ function RotateTool() {
           <div className={styles.field}>
             <label className={styles.fieldLabel}>Output format</label>
             <select className={styles.textInput} value={format} onChange={e => setFormat(e.target.value)}>
-              <option value="image/png">PNG</option>
-              <option value="image/jpeg">JPEG</option>
-              <option value="image/webp">WebP</option>
+              <FormatOptions options={RASTER_FORMAT_OPTIONS} />
             </select>
           </div>
           {error && <div className={styles.errorBanner} role="alert">{error}</div>}
@@ -938,8 +1088,10 @@ function FiltersTool() {
     try {
       const canvas = document.createElement('canvas')
       render(canvas)
-      const blob = await canvasToBlob(canvas, format, 0.95)
-      const ext = format === 'image/png' ? 'png' : format === 'image/jpeg' ? 'jpg' : 'webp'
+      // encodeCanvas flattens no-alpha formats (JPEG, BMP) onto white
+      // automatically — otherwise a transparent source would turn black.
+      const blob = await encodeCanvas(canvas, format, 0.95)
+      const ext = extensionForMime(blob.type)
       triggerDownload(blob, `${baseName(source.file.name)}-filtered.${ext}`)
 
       // ── Activity log ─────────────────────────────────────────────────────
@@ -1018,9 +1170,7 @@ function FiltersTool() {
             <div className={styles.field}>
               <label className={styles.fieldLabel}>Output format</label>
               <select className={styles.textInput} value={format} onChange={e => setFormat(e.target.value)}>
-                <option value="image/png">PNG</option>
-                <option value="image/jpeg">JPEG</option>
-                <option value="image/webp">WebP</option>
+                <FormatOptions options={RASTER_FORMAT_OPTIONS} />
               </select>
             </div>
           </div>
