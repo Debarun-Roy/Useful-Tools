@@ -41,7 +41,7 @@ const CATEGORIES = {
       ly:  { label: 'Light years',       symbol: 'ly',  factor: 9.46e15 },
       pc:  { label: 'Parsec',            symbol: 'pc',  factor: 3.086e16 },
       a0:  { label: 'Bohr Radius',       symbol: 'a₀',  factor: 5.291772109e-11 },
-      lp:  { label: 'Planck Length',     symbol: '\(\ell _{p}\)', factor: 1.6e-35 },
+      lp:  { label: 'Planck Length',     symbol: 'ℓₚ', factor: 1.616255e-35 },
     }
   },
   mass: {
@@ -63,9 +63,9 @@ const CATEGORIES = {
       st:  { label: 'Stone',             symbol: 'st',  factor: 6.35029 },
       ozt: { label: 'Troy Ounces',       symbol: 'ozt', factor: 0.031103 },
       dwt: { label: 'Pennyweight',       symbol: 'dwt', factor: 0.00155515 },
-      mp:  { label: 'Planck Mass',       symbol: '\(m_{P}\)', factor: 2.176e-8 },
-      mSun:{ label: 'Solar Mass',        symbol: '\(M_{\odot }\)', factor: 1.989e30 },
-      mEarth:{ label: 'Earth Mass',      symbol: '\(M_{\oplus }\)', factor: 5.972e24 },
+      mp:  { label: 'Planck Mass',       symbol: 'mₚ', factor: 2.176434e-8 },
+      mSun:{ label: 'Solar Mass',        symbol: 'M☉', factor: 1.989e30 },
+      mEarth:{ label: 'Earth Mass',      symbol: 'M⊕', factor: 5.972e24 },
       q:   { label: 'Quintals',          symbol: 'q',   factor: 100 },
     }
   },
@@ -83,7 +83,7 @@ const CATEGORIES = {
     label: 'Time', icon: '⏱️', baseLabel: 'Seconds',
     units: {
       ms:   { label: 'Milliseconds',     symbol: 'ms',   factor: 0.001 },
-      μs:   { label: 'Microseconds',     symbol: 'μs',   factor: 1e-6 },
+      μs:   { label: 'Microseconds',     symbol: 'µs',   factor: 1e-6 },
       ns:   { label: 'Nanoseconds',      symbol: 'ns',   factor: 1e-9 },
       ps:   { label: 'Picoseconds',      symbol: 'ps',   factor: 1e-12 },
       s:    { label: 'Seconds',          symbol: 's',    factor: 1 },
@@ -92,7 +92,7 @@ const CATEGORIES = {
       d:    { label: 'Days',             symbol: 'd',    factor: 86400 },
       week: { label: 'Weeks',            symbol: 'wk',   factor: 604800 },
       year: { label: 'Years (365.25d)',  symbol: 'yr',   factor: 31557600 },
-      pt:   { label: 'Planck Time',      symbol: '\(t_{P}\)', factor: 5.39e-44 },
+      pt:   { label: 'Planck Time',      symbol: 'tₚ', factor: 5.391247e-44 },
       c:    { label: 'Century',          symbol: 'c',    factor: 3.1556926e9 },
       m:    { label: 'Millenium',        symbol: 'm',    factor: 3.1556926e10 },
       Ma:   { label: 'Mega annum',       symbol: 'Ma',   factor: 3.1556926e13 },
@@ -134,7 +134,7 @@ const CATEGORIES = {
     }
   },
   acceleration: {
-    label: 'Acceleration', icon: '<Aclr>', baseLabel: 'm/s²',
+    label: 'Acceleration', icon: '🚀', baseLabel: 'm/s²',
     units: {
       ms2: { label: 'Metres/sq. seconds', symbol: 'm/s²',  factor: 1 },
       cms2:{ label: 'Centimetres/sq. seconds', symbol: 'cm/s²', factor: 0.01 },
@@ -147,10 +147,10 @@ const CATEGORIES = {
       mis2:{ label: 'Miles/sq. seconds',  symbol: 'mi/s²', factor: 1609.344 },
       kms2:{ label: 'Kilometres/sq. seconds', symbol: 'km/s²', factor: 1000 },
       mph2:{ label: 'Miles/sq. hours',    symbol: 'mi/h²', factor: 0.00012418 },
-      g:   { label: 'Standard gravity (g-force)', symbol: 'g', factor: 9.81 },
-      mg:  { label: 'Milligravity',       symbol: 'mg',    factor: 0.00981 },
+      g:   { label: 'Standard gravity (g-force)', symbol: 'g', factor: 9.80665 },
+      mg:  { label: 'Milligravity',       symbol: 'mg',    factor: 0.00980665 },
       kns: { label: 'Knots/second',       symbol: 'kn/s',  factor: 0.514444 },
-      pa:  { label: 'Planck Acceleration',symbol: 'pa',    factor: 5.56e51 },
+      pa:  { label: 'Planck Acceleration',symbol: 'aₚ',    factor: 5.5608e51 },
     }
   },
   area: {
@@ -169,7 +169,7 @@ const CATEGORIES = {
       yd2:  { label: 'Sq. Yards',        symbol: 'yd²',    factor: 0.836127 },
       mi2:  { label: 'Sq. Miles',        symbol: 'mi²',    factor: 2.59e6 },
       b:    { label: 'Barn',             symbol: 'b',      factor: 1e-28 },
-      pa:   { label: 'Planck Area',      symbol: '\(A_{p}\)', factor: 2.61e-70 },
+      pa:   { label: 'Planck Area',      symbol: 'Aₚ', factor: 2.612e-70 },
     }
   },
   volume: {
@@ -183,12 +183,12 @@ const CATEGORIES = {
       in3:  { label: 'Cu. Inches',       symbol: 'in³',    factor: 0.000016387064 },
       L:    { label: 'Liters',           symbol: 'L',      factor: 0.001 },
       mL:   { label: 'Milliliters',      symbol: 'mL',     factor: 1e-6 },
-      µL:   { label: 'Microliters',      symbol: 'µL',     factor: 1e-12 },
-      nL:   { label: 'Nanoliters',       symbol: 'nL',     factor: 1e-18 },
+      µL:   { label: 'Microliters',      symbol: 'µL',     factor: 1e-9 },
+      nL:   { label: 'Nanoliters',       symbol: 'nL',     factor: 1e-12 },
       dL:   { label: 'Deciliters',       symbol: 'dL',     factor: 0.0001 },
       kL:   { label: 'Kiloliters',       symbol: 'kL',     factor: 1 },
       ML:   { label: 'Megaliters',       symbol: 'ML',     factor: 1000 },
-      GL:   { label: 'Gigaliters',       symbol: 'GL',     factor: 1e9 },
+      GL:   { label: 'Gigaliters',       symbol: 'GL',     factor: 1e6 },
       tsp:  { label: 'Teaspoons',        symbol: 'tsp',    factor: 4.9e-6 },
       tbsp: { label: 'Tablespoons',      symbol: 'tbsp',   factor: 14.8e-6 },
       floz: { label: 'Fluid ounces',     symbol: 'fl oz',  factor: 2.95735e-5 },
@@ -200,7 +200,7 @@ const CATEGORIES = {
       yd3:  { label: 'Cu. Yards',        symbol: 'yd³',    factor: 0.764555 },
       bbl:  { label: 'Oil barrels',      symbol: 'bbl',    factor: 0.159 },
       acft: { label: 'Acre-Foot',        symbol: 'ac-ft',  factor: 1233.48 },
-      pv:   { label: 'Planck volume',    symbol: 'Vp',     factor: 4.22e-105 },
+      pv:   { label: 'Planck volume',    symbol: 'Vₚ',     factor: 4.222e-105 },
     }
   }
 }
@@ -343,13 +343,13 @@ export default function UnitConverterPage() {
             <span className={styles.heroAccent}>Converter</span>
           </h1>
           <p className={styles.heroSub}>
-            Instant conversion across 7 categories: length, mass, temperature,
-            time, data size, speed, area and volume — all calculated client-side.
+            Instant conversion across 9 categories: length, mass, temperature,
+            time, data size, speed, acceleration, area and volume — all calculated client-side.
           </p>
         </div>
         <div className={styles.heroStats}>
           <div className={styles.statCard}>
-            <span className={styles.statValue}>8</span>
+            <span className={styles.statValue}>9</span>
             <span className={styles.statLabel}>categories</span>
           </div>
           <div className={styles.statCard}>
