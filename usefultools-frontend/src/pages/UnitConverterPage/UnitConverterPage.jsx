@@ -1,244 +1,111 @@
-import { useEffect, useRef, useState } from 'react'
+/**
+ * UnitConverterPage — Sprint 17 tool, migrated in Sprint 26 off its static
+ * CATEGORIES object onto the `units` database table.
+ *
+ * ── Data source (Sprint 26) ──────────────────────────────────────────────
+ * Previously this file hardcoded a ~200-line CATEGORIES object containing
+ * every unit's label/symbol/factor. That's now server data: GET
+ * /api/units/list returns the full reference table once on mount, and
+ * everything below (tabs, filters, the combobox, the browse table) is
+ * derived from that fetched array. Adding, correcting, or recategorizing a
+ * unit is now a database edit, not a frontend redeploy.
+ *
+ * The one thing that DIDN'T move to the database: unit-type icons (📏, ⚖️,
+ * etc.) and the preferred display ordering for tabs/category chips. Those
+ * are presentation concerns, not data, so they stay here as lookup tables
+ * (UNIT_TYPE_ICONS, UNIT_TYPE_ORDER, CATEGORY_ORDER) with sane fallbacks —
+ * a brand-new unit_type added straight to the database still renders
+ * correctly, just with a generic icon and alphabetical placement until
+ * this file is updated to recognize it by name.
+ *
+ * ── Conversion formula (Sprint 26) ───────────────────────────────────────
+ * Every unit row now carries both `factor` and `offset`. The generic
+ * formula handles every unit_type, including Temperature, with no
+ * special-casing:
+ *
+ *     base   = value * fromUnit.factor + fromUnit.offset
+ *     result = (base - toUnit.offset) / toUnit.factor
+ *
+ * A plain multiplicative factor can't represent Celsius/Fahrenheit/
+ * Kelvin/Rankine converting correctly, since those scales have different
+ * zero points — offset defaults to 0 for every non-temperature unit, so
+ * for them this reduces exactly to the old value*factorA/factorB formula.
+ * The previous convertTemperature() special case has been removed
+ * entirely; Kelvin is the anchor for Temperature (factor=1, offset=0),
+ * matching the convention that every unit_type's SI unit is its factor=1
+ * row.
+ *
+ * ── Three modes of navigating ~164 units (Sprint 26) ─────────────────────
+ *   1. Unit-type tabs (Length, Mass, ...) — same as before, still the
+ *      PRIMARY navigation for the converter, since unit_type is what makes
+ *      two units convertible at all (dimensional compatibility).
+ *   2. An optional category filter chip row WITHIN the active unit-type
+ *      tab (All / SI / Imperial / Scientific / ...) — narrows the from/to
+ *      combobox options without leaving the converter.
+ *   3. A separate "Browse Units" mode — a flat, independently-filterable
+ *      (unit_type AND category, no pairing required) searchable reference
+ *      table across all units. This is where "show me everything in one
+ *      category, regardless of type" lives, since that view doesn't try to
+ *      pair a from/to conversion — mixing unit_types there would produce
+ *      dimensionally meaningless pairs (e.g. Å and Planck mass share the
+ *      "Scientific" category but obviously can't convert to each other).
+ */
+
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
-import { logoutUser } from '../../api/apiClient'
+import { logoutUser, fetchUnits } from '../../api/apiClient'
 import UserMenu from '../../components/UserMenu/UserMenu'
 import styles from './UnitConverterPage.module.css'
 import { trackTool } from '../../utils/logMetric'
 import { logActivity } from '../../utils/logActivity'
 
-// ── Conversion data ───────────────────────────────────────────────────────────
-// factor = "how many SI base units in 1 unit of this type"
-// Base units: m (length), kg (mass), s (time), bits (data), m/s (speed), m² (area)
+// ── Presentation-only lookups (not data — see file docblock) ───────────────
 
-const CATEGORIES = {
-  length: {
-    label: 'Length', icon: '📏', baseLabel: 'Meters',
-    units: {
-      m:   { label: 'Meters',            symbol: 'm',   factor: 1 },
-      dam: { label: 'Decameters',        symbol: 'dam', factor: 10 },
-      hm:  { label: 'Hectometers',       symbol: 'hm',  factor: 100 },
-      km:  { label: 'Kilometers',        symbol: 'km',  factor: 1000 },
-      Mm:  { label: 'Megameters',        symbol: 'Mm',  factor: 1e6 },
-      Gm:  { label: 'Gigameters',        symbol: 'Gm',  factor: 1e9 },
-      dm:  { label: 'Decimeters',        symbol: 'dm',  factor: 0.1 },
-      cm:  { label: 'Centimeters',       symbol: 'cm',  factor: 0.01 },
-      mm:  { label: 'Millimeters',       symbol: 'mm',  factor: 0.001 },
-      µm:  { label: 'Micrometers (Microns)', symbol: 'µm', factor: 1e-6 },
-      nm:  { label: 'Nanometers',        symbol: 'nm',  factor: 1e-9 },
-      pm:  { label: 'Picometers',         symbol: 'pm',  factor: 1e-12 },
-      Å:   { label: 'Angstrom',          symbol: 'Å',   factor: 1e-10 },
-      fm:  { label: 'Fermi',             symbol: 'fm',  factor: 1e-15 },
-      ft:  { label: 'Feet',              symbol: 'ft',  factor: 0.3048 },
-      in:  { label: 'Inches',            symbol: 'in',  factor: 0.0254 },
-      th:  { label: 'Thou / Mil',        symbol: 'th',  factor: 0.0000254 },
-      yd:  { label: 'Yards',             symbol: 'yd',  factor: 0.9144 },
-      mi:  { label: 'Miles',             symbol: 'mi',  factor: 1609.344 },
-      nmi: { label: 'Nautical Miles',    symbol: 'nmi', factor: 1852 },
-      ftm: { label: 'Fathom',            symbol: 'ftm', factor: 1.8288 },
-      LD:  { label: 'Lunar Distance',    symbol: 'LD',  factor: 3.844e8 },
-      AU:  { label: 'Astronomical Units',symbol: 'AU',  factor: 1.496e11 },
-      ly:  { label: 'Light years',       symbol: 'ly',  factor: 9.46e15 },
-      pc:  { label: 'Parsec',            symbol: 'pc',  factor: 3.086e16 },
-      a0:  { label: 'Bohr Radius',       symbol: 'a₀',  factor: 5.291772109e-11 },
-      lp:  { label: 'Planck Length',     symbol: 'ℓₚ', factor: 1.616255e-35 },
-    }
-  },
-  mass: {
-    label: 'Mass', icon: '⚖️', baseLabel: 'Kilograms',
-    units: {
-      kg:  { label: 'Kilograms',         symbol: 'kg',  factor: 1 },
-      g:   { label: 'Grams',             symbol: 'g',   factor: 0.001 },
-      mg:  { label: 'Milligrams',        symbol: 'mg',  factor: 1e-6 },
-      t:   { label: 'Metric Tons',       symbol: 't',   factor: 1000 },
-      dag: { label: 'Decagrams',         symbol: 'dag', factor: 0.01 },
-      Gg:  { label: 'Gigagrams',         symbol: 'Gg',  factor: 1e6 },
-      Tg:  { label: 'Teragrams',         symbol: 'Tg',  factor: 1e9 },
-      µg:  { label: 'Micrograms',        symbol: 'µg',  factor: 1e-9 },
-      ng:  { label: 'Nanograms',         symbol: 'ng',  factor: 1e-12 },
-      pg:  { label: 'Picograms',         symbol: 'pg',  factor: 1e-15 },
-      fg:  { label: 'Femtograms',        symbol: 'fg',  factor: 1e-18 },
-      lb:  { label: 'Pounds',            symbol: 'lb',  factor: 0.453592 },
-      oz:  { label: 'Ounces',            symbol: 'oz',  factor: 0.0283495 },
-      st:  { label: 'Stone',             symbol: 'st',  factor: 6.35029 },
-      ozt: { label: 'Troy Ounces',       symbol: 'ozt', factor: 0.031103 },
-      dwt: { label: 'Pennyweight',       symbol: 'dwt', factor: 0.00155515 },
-      mp:  { label: 'Planck Mass',       symbol: 'mₚ', factor: 2.176434e-8 },
-      mSun:{ label: 'Solar Mass',        symbol: 'M☉', factor: 1.989e30 },
-      mEarth:{ label: 'Earth Mass',      symbol: 'M⊕', factor: 5.972e24 },
-      q:   { label: 'Quintals',          symbol: 'q',   factor: 100 },
-    }
-  },
-  temperature: {
-    label: 'Temperature', icon: '🌡️',
-    units: {
-      C: { label: 'Celsius',    symbol: '°C' },
-      F: { label: 'Fahrenheit', symbol: '°F' },
-      K: { label: 'Kelvin',     symbol: 'K'  },
-      R: { label: 'Rankine',    symbol: '°R' },
-    }
-  },
-  time: {
-    label: 'Time', icon: '⏱️', baseLabel: 'Seconds',
-    units: {
-      ms:   { label: 'Milliseconds',     symbol: 'ms',   factor: 0.001 },
-      μs:   { label: 'Microseconds',     symbol: 'µs',   factor: 1e-6 },
-      ns:   { label: 'Nanoseconds',      symbol: 'ns',   factor: 1e-9 },
-      ps:   { label: 'Picoseconds',      symbol: 'ps',   factor: 1e-12 },
-      s:    { label: 'Seconds',          symbol: 's',    factor: 1 },
-      min:  { label: 'Minutes',          symbol: 'min',  factor: 60 },
-      h:    { label: 'Hours',            symbol: 'h',    factor: 3600 },
-      d:    { label: 'Days',             symbol: 'd',    factor: 86400 },
-      week: { label: 'Weeks',            symbol: 'wk',   factor: 604800 },
-      year: { label: 'Years (365.25d)',  symbol: 'yr',   factor: 31557600 },
-      pt:   { label: 'Planck Time',      symbol: 'tₚ', factor: 5.391247e-44 },
-      c:    { label: 'Century',          symbol: 'c',    factor: 3.1556926e9 },
-      m:    { label: 'Millenium',        symbol: 'm',    factor: 3.1556926e10 },
-      Ma:   { label: 'Mega annum',       symbol: 'Ma',   factor: 3.1556926e13 },
-      Ga:   { label: 'Giga annum',       symbol: 'Ga',   factor: 3.1556926e16 },
-    }
-  },
-  data: {
-    label: 'Data Size', icon: '💾', baseLabel: 'Bits',
-    units: {
-      b:   { label: 'Bits',              symbol: 'b',  factor: 1 },
-      B:   { label: 'Bytes',             symbol: 'B',  factor: 8 },
-      KB:  { label: 'Kilobytes (decimal)',         symbol: 'KB', factor: 8000 },
-      MB:  { label: 'Megabytes (decimal)',         symbol: 'MB', factor: 8e6 },
-      GB:  { label: 'Gigabytes (decimal)',         symbol: 'GB', factor: 8e9 },
-      TB:  { label: 'Terabytes (decimal)',         symbol: 'TB', factor: 8e12 },
-      PB:  { label: 'Petabytes (decimal)',         symbol: 'PB', factor: 8e15 },
-      EB:  { label: 'Exabytes (decimal)',          symbol: 'EB', factor: 8e18 },
-      KiB:  { label: 'Kilobytes (binary)',         symbol: 'KiB', factor: 8192 },
-      MiB:  { label: 'Megabytes (binary)',         symbol: 'MiB', factor: 8388608 },
-      GiB:  { label: 'Gigabytes (binary)',         symbol: 'GiB', factor: 8589934592 },
-      TiB:  { label: 'Terabytes (binary)',         symbol: 'TiB', factor: 8796093022208 },
-      PiB:  { label: 'Petabytes (binary)',         symbol: 'PiB', factor: 9007199254740992 },
-      EiB:  { label: 'Exabytes (binary)',          symbol: 'EiB', factor: 9007199254740992000 },
-    }
-  },
-  speed: {
-    label: 'Speed', icon: '💨', baseLabel: 'm/s',
-    units: {
-      ms:   { label: 'Metres/second',    symbol: 'm/s',   factor: 1 },
-      kmh:  { label: 'Kilometres/hour',  symbol: 'km/h',  factor: 1 / 3.6 },
-      mph:  { label: 'Miles/hour',       symbol: 'mph',   factor: 0.44704 },
-      knot: { label: 'Knots',            symbol: 'kn',    factor: 0.514444 },
-      fts:  { label: 'Feet/second',      symbol: 'ft/s',  factor: 0.3048 },
-      kms:  { label: 'Kilometres/second',symbol: 'km/s',  factor: 1000 },
-      cms:  { label: 'Centimetres/second',symbol: 'cm/s', factor: 0.01 },
-      ips:  { label: 'Inches/second',    symbol: 'ips',   factor: 0.0254000000001016 },
-      c:    { label: 'Speed of light',   symbol: 'c',     factor: 299792458 },
-      Mach: { label: 'Mach Number',      symbol: 'Mach',  factor: 343 },
-    }
-  },
-  acceleration: {
-    label: 'Acceleration', icon: '🚀', baseLabel: 'm/s²',
-    units: {
-      ms2: { label: 'Metres/sq. seconds', symbol: 'm/s²',  factor: 1 },
-      cms2:{ label: 'Centimetres/sq. seconds', symbol: 'cm/s²', factor: 0.01 },
-      fts2:{ label: 'Feet/sq. seconds',   symbol: 'ft/s²', factor: 0.3048 },
-      kmh2:{ label: 'Kilometres/sq. hours',symbol: 'km/h²',factor: 0.0000772 },
-      mms2:{ label: 'Millimetres/sq. seconds', symbol: 'mm/s²', factor: 0.001 },
-      Gal: { label: 'Galileo',            symbol: 'Gal',   factor: 0.01 },
-      mGal:{ label: 'Milligal',           symbol: 'mGal',  factor: 0.00001 },
-      µGal:{ label: 'Microgal',           symbol: 'µGal',  factor: 1e-8 },
-      mis2:{ label: 'Miles/sq. seconds',  symbol: 'mi/s²', factor: 1609.344 },
-      kms2:{ label: 'Kilometres/sq. seconds', symbol: 'km/s²', factor: 1000 },
-      mph2:{ label: 'Miles/sq. hours',    symbol: 'mi/h²', factor: 0.00012418 },
-      g:   { label: 'Standard gravity (g-force)', symbol: 'g', factor: 9.80665 },
-      mg:  { label: 'Milligravity',       symbol: 'mg',    factor: 0.00980665 },
-      kns: { label: 'Knots/second',       symbol: 'kn/s',  factor: 0.514444 },
-      pa:  { label: 'Planck Acceleration',symbol: 'aₚ',    factor: 5.5608e51 },
-    }
-  },
-  area: {
-    label: 'Area', icon: '📐', baseLabel: 'Square meters',
-    units: {
-      m2:   { label: 'Sq. Meters',       symbol: 'm²',     factor: 1 },
-      km2:  { label: 'Sq. Kilometers',   symbol: 'km²',    factor: 1e6 },
-      cm2:  { label: 'Sq. Centimeters',  symbol: 'cm²',    factor: 1e-4 },
-      ft2:  { label: 'Sq. Feet',         symbol: 'ft²',    factor: 0.092903 },
-      in2:  { label: 'Sq. Inches',       symbol: 'in²',    factor: 0.000645 },
-      acre: { label: 'Acres',            symbol: 'ac',     factor: 4046.86 },
-      a:    { label: 'Ares',             symbol: 'a',      factor: 100 },
-      ha:   { label: 'Hectares',         symbol: 'ha',     factor: 10000 },
-      mm2:  { label: 'Sq. Millimeters',  symbol: 'mm²',    factor: 1e-6 },
-      dm2:  { label: 'Sq. Decimeters',   symbol: 'dm²',    factor: 0.01 },
-      yd2:  { label: 'Sq. Yards',        symbol: 'yd²',    factor: 0.836127 },
-      mi2:  { label: 'Sq. Miles',        symbol: 'mi²',    factor: 2.59e6 },
-      b:    { label: 'Barn',             symbol: 'b',      factor: 1e-28 },
-      pa:   { label: 'Planck Area',      symbol: 'Aₚ', factor: 2.612e-70 },
-    }
-  },
-  volume: {
-    label: 'Volume', icon: '🧊', baseLabel: 'Cubic meters',
-    units: {
-      m3:   { label: 'Cu. Meters',       symbol: 'm³',     factor: 1 },
-      km3:  { label: 'Cu. Kilometers',   symbol: 'km³',    factor: 1e9 },
-      cm3:  { label: 'Cu. Centimeters',  symbol: 'cm³',    factor: 1e-6 },
-      dm3:  { label: 'Cu. Decimeters',   symbol: 'dm³',    factor: 0.001 },
-      ft3:  { label: 'Cu. Feet',         symbol: 'ft³',    factor: 0.0283168 },
-      in3:  { label: 'Cu. Inches',       symbol: 'in³',    factor: 0.000016387064 },
-      L:    { label: 'Liters',           symbol: 'L',      factor: 0.001 },
-      mL:   { label: 'Milliliters',      symbol: 'mL',     factor: 1e-6 },
-      µL:   { label: 'Microliters',      symbol: 'µL',     factor: 1e-9 },
-      nL:   { label: 'Nanoliters',       symbol: 'nL',     factor: 1e-12 },
-      dL:   { label: 'Deciliters',       symbol: 'dL',     factor: 0.0001 },
-      kL:   { label: 'Kiloliters',       symbol: 'kL',     factor: 1 },
-      ML:   { label: 'Megaliters',       symbol: 'ML',     factor: 1000 },
-      GL:   { label: 'Gigaliters',       symbol: 'GL',     factor: 1e6 },
-      tsp:  { label: 'Teaspoons',        symbol: 'tsp',    factor: 4.9e-6 },
-      tbsp: { label: 'Tablespoons',      symbol: 'tbsp',   factor: 14.8e-6 },
-      floz: { label: 'Fluid ounces',     symbol: 'fl oz',  factor: 2.95735e-5 },
-      shot: { label: 'Shots',            symbol: 'shot',   factor: 0.00004436025 },
-      c:    { label: 'Cups',             symbol: 'c',      factor: 0.000236588 },
-      pt:   { label: 'Pints',            symbol: 'pt',     factor: 0.000473176 },
-      qt:   { label: 'Quarts',           symbol: 'qt',     factor: 0.000946352 },
-      gal:  { label: 'Gallons',          symbol: 'gal',    factor: 0.003785408 },
-      yd3:  { label: 'Cu. Yards',        symbol: 'yd³',    factor: 0.764555 },
-      bbl:  { label: 'Oil barrels',      symbol: 'bbl',    factor: 0.159 },
-      acft: { label: 'Acre-Foot',        symbol: 'ac-ft',  factor: 1233.48 },
-      pv:   { label: 'Planck volume',    symbol: 'Vₚ',     factor: 4.222e-105 },
-    }
-  }
+const UNIT_TYPE_ICONS = {
+  Length: '📏',
+  Mass: '⚖️',
+  Temperature: '🌡️',
+  Time: '⏱️',
+  'Data Size': '💾',
+  Speed: '💨',
+  Acceleration: '🚀',
+  Area: '📐',
+  Volume: '🧊',
+  Force: '💪',
+}
+const DEFAULT_UNIT_TYPE_ICON = '🔢'
+
+const UNIT_TYPE_ORDER = [
+  'Length', 'Mass', 'Temperature', 'Time', 'Data Size',
+  'Speed', 'Acceleration', 'Area', 'Volume', 'Force',
+]
+const CATEGORY_ORDER = [
+  'SI', 'Imperial', 'Scientific', 'Common', 'Ocean Navigation', 'Binary', 'Decimal',
+]
+
+/** Sorts `values` by `order`; anything not in `order` is appended alphabetically. */
+function sortByPreferredOrder(values, order) {
+  return [...values].sort((a, b) => {
+    const ia = order.indexOf(a)
+    const ib = order.indexOf(b)
+    if (ia === -1 && ib === -1) return a.localeCompare(b)
+    if (ia === -1) return 1
+    if (ib === -1) return -1
+    return ia - ib
+  })
 }
 
 // ── Conversion logic ──────────────────────────────────────────────────────────
 
-function convertTemperature(value, from, to) {
-  if (from === to) return value;
-  
-  // Step 1: Convert source unit to Celsius
-  let c;
-  if (from === 'C') {
-    c = value;
-  } else if (from === 'F') {
-    c = (value - 32) * 5 / 9;
-  } else if (from === 'K') {
-    c = value - 273.15;
-  } else if (from === 'R') {
-    c = (value - 491.67) * 5 / 9;
-  } else {
-    throw new Error(`Unsupported input unit: ${from}`);
-  }
-  
-  // Step 2: Convert Celsius to the target unit
-  if (to === 'C') return c;
-  if (to === 'F') return (c * 9 / 5) + 32;
-  if (to === 'K') return c + 273.15;
-  if (to === 'R') return (c + 273.15) * 9 / 5;
-  
-  throw new Error(`Unsupported output unit: ${to}`);
-}
-
-function convert(value, fromKey, toKey, categoryKey) {
-  if (isNaN(value)) return NaN
-  if (categoryKey === 'temperature') {
-    return convertTemperature(value, fromKey, toKey)
-  }
-  const units = CATEGORIES[categoryKey].units
-  return value * units[fromKey].factor / units[toKey].factor
+/**
+ * Generic conversion for any two units of the same unit_type. See the file
+ * docblock for why this needs both factor and offset.
+ */
+function convertGeneric(value, fromUnit, toUnit) {
+  if (!fromUnit || !toUnit || !isFinite(value)) return NaN
+  const base = value * fromUnit.factor + fromUnit.offset
+  return (base - toUnit.offset) / toUnit.factor
 }
 
 function formatResult(value) {
@@ -253,6 +120,102 @@ function formatResult(value) {
   return parseFloat(value.toPrecision(12)).toString()
 }
 
+// ── Searchable unit combobox ────────────────────────────────────────────────
+//
+// Replaces the old plain <select>. Shows the selected unit's label+symbol
+// when idle; typing filters the candidate list (against label, symbol, and
+// unitId) live. `units` is whatever subset the caller has already narrowed
+// down (current unit-type tab + active category filter chip).
+
+function UnitCombobox({ id, units, value, onChange, placeholder }) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const wrapRef = useRef(null)
+
+  const selected = units.find(u => u.unitId === value) || null
+  const displayValue = open ? query : (selected ? `${selected.label} (${selected.symbol})` : '')
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return units
+    return units.filter(u =>
+      u.label.toLowerCase().includes(q) ||
+      u.symbol.toLowerCase().includes(q) ||
+      u.unitId.toLowerCase().includes(q)
+    )
+  }, [units, query])
+
+  useEffect(() => {
+    if (!open) return
+    function handleOutside(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
+        setOpen(false)
+        setQuery('')
+      }
+    }
+    function handleKey(e) {
+      if (e.key === 'Escape') { setOpen(false); setQuery('') }
+    }
+    document.addEventListener('mousedown', handleOutside)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleOutside)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [open])
+
+  function selectUnit(u) {
+    onChange(u.unitId)
+    setOpen(false)
+    setQuery('')
+  }
+
+  return (
+    <div className={styles.comboWrap} ref={wrapRef}>
+      <input
+        id={id}
+        type="text"
+        className={styles.unitSelect}
+        role="combobox"
+        aria-expanded={open}
+        aria-autocomplete="list"
+        value={displayValue}
+        onFocus={e => { setOpen(true); setQuery(''); e.target.select() }}
+        onChange={e => { setOpen(true); setQuery(e.target.value) }}
+        onKeyDown={e => {
+          if (e.key === 'Enter' && filtered.length === 1) {
+            selectUnit(filtered[0])
+            e.target.blur()
+          }
+        }}
+        placeholder={placeholder}
+        autoComplete="off"
+      />
+      {open && (
+        <div className={styles.comboList} role="listbox">
+          {filtered.length === 0 && (
+            <div className={styles.comboEmpty}>No matching units</div>
+          )}
+          {filtered.map(u => (
+            <button
+              type="button"
+              key={u.unitId}
+              role="option"
+              aria-selected={u.unitId === value}
+              className={u.unitId === value ? styles.comboOptionActive : styles.comboOption}
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => selectUnit(u)}
+            >
+              <span className={styles.comboLabel}>{u.label}</span>
+              <span className={styles.comboMeta}>{u.symbol} · {u.category}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function UnitConverterPage() {
@@ -260,36 +223,100 @@ export default function UnitConverterPage() {
   const navigate = useNavigate()
   const isGuest = username === 'Guest User'
 
-  const [category, setCategory] = useState('length')
-  const [fromUnit, setFromUnit] = useState('m')
-  const [toUnit,   setToUnit]   = useState('km')
+  // ── Fetch the unit reference table once ─────────────────────────────────
+  const [units, setUnits] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+
+  useEffect(() => {
+    fetchUnits()
+      .then(({ data }) => {
+        if (data.success) setUnits(data.data)
+        else setLoadError(data.error || 'Failed to load unit data.')
+      })
+      .catch(() => setLoadError('Could not reach the server.'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const unitTypes = useMemo(
+    () => sortByPreferredOrder([...new Set(units.map(u => u.unitType))], UNIT_TYPE_ORDER),
+    [units]
+  )
+  const allCategories = useMemo(
+    () => sortByPreferredOrder([...new Set(units.map(u => u.category))], CATEGORY_ORDER),
+    [units]
+  )
+
+  // ── Mode: convert vs browse ──────────────────────────────────────────────
+  const [mode, setMode] = useState('convert')
+
+  // ── Convert mode state ───────────────────────────────────────────────────
+  const [unitType, setUnitType] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
+  const [fromUnitId, setFromUnitId] = useState('')
+  const [toUnitId, setToUnitId] = useState('')
   const [inputVal, setInputVal] = useState('1')
 
-  const catData  = CATEGORIES[category]
-  const unitKeys = Object.keys(catData.units)
+  // Once the fetch resolves, default to the first unit type + first two units.
+  const didInit = useRef(false)
+  useEffect(() => {
+    if (didInit.current || unitTypes.length === 0) return
+    didInit.current = true
+    const firstType = unitTypes[0]
+    const inType = units.filter(u => u.unitType === firstType)
+    setUnitType(firstType)
+    setFromUnitId(inType[0]?.unitId ?? '')
+    setToUnitId(inType[1]?.unitId ?? inType[0]?.unitId ?? '')
+  }, [units, unitTypes])
 
-  // When category changes, reset units to first two available.
-  function handleCategoryChange(newCat) {
-    const keys = Object.keys(CATEGORIES[newCat].units)
-    setCategory(newCat)
-    setFromUnit(keys[0])
-    setToUnit(keys[1] ?? keys[0])
+  const unitsInType = useMemo(
+    () => units.filter(u => u.unitType === unitType),
+    [units, unitType]
+  )
+  const categoriesInType = useMemo(
+    () => sortByPreferredOrder([...new Set(unitsInType.map(u => u.category))], CATEGORY_ORDER),
+    [unitsInType]
+  )
+  const unitsForConverter = useMemo(
+    () => (categoryFilter ? unitsInType.filter(u => u.category === categoryFilter) : unitsInType),
+    [unitsInType, categoryFilter]
+  )
+
+  function handleUnitTypeChange(newType) {
+    setUnitType(newType)
+    setCategoryFilter('')
+    const inType = units.filter(u => u.unitType === newType)
+    setFromUnitId(inType[0]?.unitId ?? '')
+    setToUnitId(inType[1]?.unitId ?? inType[0]?.unitId ?? '')
     setInputVal('1')
   }
 
-  function handleSwap() {
-    setFromUnit(toUnit)
-    setToUnit(fromUnit)
+  function handleCategoryFilterChange(newFilter) {
+    setCategoryFilter(newFilter)
+    const filtered = newFilter ? unitsInType.filter(u => u.category === newFilter) : unitsInType
+    if (!filtered.some(u => u.unitId === fromUnitId)) {
+      setFromUnitId(filtered[0]?.unitId ?? '')
+    }
+    if (!filtered.some(u => u.unitId === toUnitId)) {
+      setToUnitId(filtered[1]?.unitId ?? filtered[0]?.unitId ?? '')
+    }
   }
 
+  function handleSwap() {
+    setFromUnitId(toUnitId)
+    setToUnitId(fromUnitId)
+  }
+
+  const fromUnit = unitsInType.find(u => u.unitId === fromUnitId) || null
+  const toUnit   = unitsInType.find(u => u.unitId === toUnitId) || null
+
   const numericInput = parseFloat(inputVal)
-  const resultValue  = trackTool(
-    'converter.convert',
-    () => convert(numericInput, fromUnit, toUnit, category)
-  )
-  const resultStr    = formatResult(resultValue)
-  const fromSymbol   = catData.units[fromUnit]?.symbol ?? fromUnit
-  const toSymbol     = catData.units[toUnit]?.symbol   ?? toUnit
+  const resultValue  = (fromUnit && toUnit)
+    ? trackTool('converter.convert', () => convertGeneric(numericInput, fromUnit, toUnit))
+    : NaN
+  const resultStr  = formatResult(resultValue)
+  const fromSymbol = fromUnit?.symbol ?? ''
+  const toSymbol   = toUnit?.symbol ?? ''
 
   // Log activity once the user has settled on a real conversion. logActivity
   // is debounced per-tool (1500 ms) so rapid input changes coalesce into one
@@ -298,14 +325,36 @@ export default function UnitConverterPage() {
   const didMount = useRef(false)
   useEffect(() => {
     if (!didMount.current) { didMount.current = true; return }
+    if (!fromUnit || !toUnit) return
     if (!isFinite(resultValue) || isNaN(resultValue)) return
     if (!isFinite(numericInput)) return
     logActivity(
       'converter.convert',
-      `Converted ${inputVal} ${fromSymbol} → ${resultStr} ${toSymbol} (${catData.label})`,
-      { category, fromUnit, toUnit }
+      `Converted ${inputVal} ${fromSymbol} → ${resultStr} ${toSymbol} (${unitType})`,
+      { unitType, fromUnit: fromUnitId, toUnit: toUnitId }
     )
-  }, [inputVal, fromUnit, toUnit, category, resultValue, resultStr, fromSymbol, toSymbol, catData.label, numericInput])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputVal, fromUnitId, toUnitId, unitType, resultValue, resultStr, fromSymbol, toSymbol, numericInput])
+
+  // ── Browse mode state ────────────────────────────────────────────────────
+  const [browseType, setBrowseType] = useState('')
+  const [browseCategory, setBrowseCategory] = useState('')
+  const [browseSearch, setBrowseSearch] = useState('')
+
+  const browseFiltered = useMemo(() => {
+    let list = units
+    if (browseType) list = list.filter(u => u.unitType === browseType)
+    if (browseCategory) list = list.filter(u => u.category === browseCategory)
+    const q = browseSearch.trim().toLowerCase()
+    if (q) {
+      list = list.filter(u =>
+        u.label.toLowerCase().includes(q) ||
+        u.symbol.toLowerCase().includes(q) ||
+        u.unitId.toLowerCase().includes(q)
+      )
+    }
+    return list
+  }, [units, browseType, browseCategory, browseSearch])
 
   async function handleLogout() {
     try { await logoutUser() } catch { /* ignore */ }
@@ -342,17 +391,17 @@ export default function UnitConverterPage() {
             <span className={styles.heroAccent}>Converter</span>
           </h1>
           <p className={styles.heroSub}>
-            Instant conversion across 9 categories: length, mass, temperature,
-            time, data size, speed, acceleration, area and volume — all calculated client-side.
+            Instant conversion across {unitTypes.length || '—'} categories —
+            all calculated client-side.
           </p>
         </div>
         <div className={styles.heroStats}>
           <div className={styles.statCard}>
-            <span className={styles.statValue}>9</span>
+            <span className={styles.statValue}>{unitTypes.length || '—'}</span>
             <span className={styles.statLabel}>categories</span>
           </div>
           <div className={styles.statCard}>
-            <span className={styles.statValue}>145</span>
+            <span className={styles.statValue}>{units.length || '—'}</span>
             <span className={styles.statLabel}>units</span>
           </div>
         </div>
@@ -360,116 +409,228 @@ export default function UnitConverterPage() {
 
       <main className={styles.main}>
 
-        {/* ── Category tabs ───────────────────────────────────────── */}
-        <nav className={styles.categoryTabs} aria-label="Unit categories">
-          {Object.entries(CATEGORIES).map(([key, cat]) => (
-            <button
-              key={key}
-              className={category === key ? styles.catTabActive : styles.catTab}
-              onClick={() => handleCategoryChange(key)}
-            >
-              <span aria-hidden="true">{cat.icon}</span>
-              {cat.label}
-            </button>
-          ))}
-        </nav>
+        {loading && (
+          <div className={styles.loading}>Loading unit data…</div>
+        )}
 
-        {/* ── Converter card ──────────────────────────────────────── */}
-        <div className={styles.converterCard}>
+        {!loading && loadError && (
+          <div className={styles.errorBanner} role="alert">{loadError}</div>
+        )}
 
-          {/* From */}
-          <div className={styles.converterRow}>
-            <div className={styles.converterField}>
-              <label className={styles.fieldLabel}>From</label>
-              <select
-                className={styles.unitSelect}
-                value={fromUnit}
-                onChange={e => setFromUnit(e.target.value)}
+        {!loading && !loadError && (
+          <>
+            {/* ── Mode toggle ──────────────────────────────────────── */}
+            <div className={styles.modeToggle} role="tablist" aria-label="Unit converter mode">
+              <button
+                role="tab"
+                aria-selected={mode === 'convert'}
+                className={mode === 'convert' ? styles.modeBtnActive : styles.modeBtn}
+                onClick={() => setMode('convert')}
               >
-                {unitKeys.map(k => (
-                  <option key={k} value={k}>
-                    {catData.units[k].label} ({catData.units[k].symbol})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className={styles.inputWrap}>
-              <input
-                type="number"
-                className={styles.numInput}
-                value={inputVal}
-                onChange={e => setInputVal(e.target.value)}
-                placeholder="Enter value"
-                aria-label="Value to convert"
-              />
-              <span className={styles.unitTag}>{fromSymbol}</span>
-            </div>
-          </div>
-
-          {/* Swap button */}
-          <div className={styles.swapRow}>
-            <button
-              className={styles.swapBtn}
-              onClick={handleSwap}
-              aria-label="Swap units"
-              title="Swap from and to units"
-            >
-              ⇅ Swap
-            </button>
-          </div>
-
-          {/* To */}
-          <div className={styles.converterRow}>
-            <div className={styles.converterField}>
-              <label className={styles.fieldLabel}>To</label>
-              <select
-                className={styles.unitSelect}
-                value={toUnit}
-                onChange={e => setToUnit(e.target.value)}
+                🔄 Convert
+              </button>
+              <button
+                role="tab"
+                aria-selected={mode === 'browse'}
+                className={mode === 'browse' ? styles.modeBtnActive : styles.modeBtn}
+                onClick={() => setMode('browse')}
               >
-                {unitKeys.map(k => (
-                  <option key={k} value={k}>
-                    {catData.units[k].label} ({catData.units[k].symbol})
-                  </option>
-                ))}
-              </select>
+                📋 Browse Units
+              </button>
             </div>
-            <div className={styles.resultWrap}>
-              <span className={styles.resultNum}>{resultStr}</span>
-              <span className={styles.unitTag}>{toSymbol}</span>
-            </div>
-          </div>
 
-          {/* Formula line */}
-          {isFinite(resultValue) && !isNaN(numericInput) && (
-            <div className={styles.formulaLine}>
-              {inputVal} {fromSymbol} = {resultStr} {toSymbol}
-            </div>
-          )}
-        </div>
+            {mode === 'convert' && (
+              <>
+                {/* ── Unit-type tabs ─────────────────────────────── */}
+                <nav className={styles.categoryTabs} aria-label="Unit categories">
+                  {unitTypes.map(t => (
+                    <button
+                      key={t}
+                      className={unitType === t ? styles.catTabActive : styles.catTab}
+                      onClick={() => handleUnitTypeChange(t)}
+                    >
+                      <span aria-hidden="true">{UNIT_TYPE_ICONS[t] ?? DEFAULT_UNIT_TYPE_ICON}</span>
+                      {t}
+                    </button>
+                  ))}
+                </nav>
 
-        {/* ── Quick reference table ─────────────────────────────────── */}
-        <div className={styles.referenceCard}>
-          <h3 className={styles.refTitle}>Quick reference — common values</h3>
-          <div className={styles.refTable}>
-            {[1, 10, 100, 1000].map(v => {
-              const res = convert(v, fromUnit, toUnit, category)
-              return (
-                <div key={v} className={styles.refRow}
-                     onClick={() => setInputVal(String(v))}
-                     title="Click to use this value">
-                  <span className={styles.refFrom}>
-                    {v} {fromSymbol}
-                  </span>
-                  <span className={styles.refEq}>=</span>
-                  <span className={styles.refTo}>
-                    {formatResult(res)} {toSymbol}
-                  </span>
+                {/* ── Category filter chips (within the active tab) ─ */}
+                {categoriesInType.length > 1 && (
+                  <div className={styles.categoryChips} role="group" aria-label="Filter by category">
+                    <button
+                      className={categoryFilter === '' ? styles.chipActive : styles.chip}
+                      onClick={() => handleCategoryFilterChange('')}
+                    >
+                      All
+                    </button>
+                    {categoriesInType.map(c => (
+                      <button
+                        key={c}
+                        className={categoryFilter === c ? styles.chipActive : styles.chip}
+                        onClick={() => handleCategoryFilterChange(c)}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* ── Converter card ─────────────────────────────── */}
+                <div className={styles.converterCard}>
+
+                  {/* From */}
+                  <div className={styles.converterRow}>
+                    <div className={styles.converterField}>
+                      <label className={styles.fieldLabel} htmlFor="from-unit">From</label>
+                      <UnitCombobox
+                        id="from-unit"
+                        units={unitsForConverter}
+                        value={fromUnitId}
+                        onChange={setFromUnitId}
+                        placeholder="Search units…"
+                      />
+                    </div>
+                    <div className={styles.inputWrap}>
+                      <input
+                        type="number"
+                        className={styles.numInput}
+                        value={inputVal}
+                        onChange={e => setInputVal(e.target.value)}
+                        placeholder="Enter value"
+                        aria-label="Value to convert"
+                      />
+                      <span className={styles.unitTag}>{fromSymbol}</span>
+                    </div>
+                  </div>
+
+                  {/* Swap button */}
+                  <div className={styles.swapRow}>
+                    <button
+                      className={styles.swapBtn}
+                      onClick={handleSwap}
+                      aria-label="Swap units"
+                      title="Swap from and to units"
+                    >
+                      ⇅ Swap
+                    </button>
+                  </div>
+
+                  {/* To */}
+                  <div className={styles.converterRow}>
+                    <div className={styles.converterField}>
+                      <label className={styles.fieldLabel} htmlFor="to-unit">To</label>
+                      <UnitCombobox
+                        id="to-unit"
+                        units={unitsForConverter}
+                        value={toUnitId}
+                        onChange={setToUnitId}
+                        placeholder="Search units…"
+                      />
+                    </div>
+                    <div className={styles.resultWrap}>
+                      <span className={styles.resultNum}>{resultStr}</span>
+                      <span className={styles.unitTag}>{toSymbol}</span>
+                    </div>
+                  </div>
+
+                  {/* Formula line */}
+                  {fromUnit && toUnit && isFinite(resultValue) && !isNaN(numericInput) && (
+                    <div className={styles.formulaLine}>
+                      {inputVal} {fromSymbol} = {resultStr} {toSymbol}
+                    </div>
+                  )}
                 </div>
-              )
-            })}
-          </div>
-        </div>
+
+                {/* ── Quick reference table ───────────────────────── */}
+                {fromUnit && toUnit && (
+                  <div className={styles.referenceCard}>
+                    <h3 className={styles.refTitle}>Quick reference — common values</h3>
+                    <div className={styles.refTable}>
+                      {[1, 10, 100, 1000].map(v => {
+                        const res = convertGeneric(v, fromUnit, toUnit)
+                        return (
+                          <div key={v} className={styles.refRow}
+                               onClick={() => setInputVal(String(v))}
+                               title="Click to use this value">
+                            <span className={styles.refFrom}>
+                              {v} {fromSymbol}
+                            </span>
+                            <span className={styles.refEq}>=</span>
+                            <span className={styles.refTo}>
+                              {formatResult(res)} {toSymbol}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {mode === 'browse' && (
+              <div className={styles.browsePanel}>
+                <div className={styles.browseFilters}>
+                  <select
+                    className={styles.unitSelect}
+                    value={browseType}
+                    onChange={e => setBrowseType(e.target.value)}
+                    aria-label="Filter by unit type"
+                  >
+                    <option value="">All types</option>
+                    {unitTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <select
+                    className={styles.unitSelect}
+                    value={browseCategory}
+                    onChange={e => setBrowseCategory(e.target.value)}
+                    aria-label="Filter by category"
+                  >
+                    <option value="">All categories</option>
+                    {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <input
+                    type="text"
+                    className={styles.unitSelect}
+                    value={browseSearch}
+                    onChange={e => setBrowseSearch(e.target.value)}
+                    placeholder="Search by name or symbol…"
+                    aria-label="Search units"
+                  />
+                </div>
+
+                <div className={styles.browseTableWrap}>
+                  <table className={styles.browseTable}>
+                    <thead>
+                      <tr>
+                        <th>Unit</th>
+                        <th>Symbol</th>
+                        <th>Type</th>
+                        <th>Category</th>
+                        <th>Factor</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {browseFiltered.map(u => (
+                        <tr key={`${u.unitType}-${u.unitId}`}>
+                          <td>{u.label}</td>
+                          <td className={styles.browseSymbol}>{u.symbol}</td>
+                          <td>{u.unitType}</td>
+                          <td>{u.category}</td>
+                          <td className={styles.browseFactor}>{formatResult(u.factor)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {browseFiltered.length === 0 && (
+                    <div className={styles.browseEmpty}>No units match your filters.</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        )}
 
       </main>
     </div>
