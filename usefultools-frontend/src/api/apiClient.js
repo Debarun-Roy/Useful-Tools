@@ -603,6 +603,18 @@ export const reorderFavorites =
 
 
 // ─────────────────────────────────────────────────────────────
+// UNIT CONVERTER (SPRINT 26)
+// ─────────────────────────────────────────────────────────────
+
+// Fetches the full unit-conversion reference table once. UnitConverterPage
+// calls this on mount and does all grouping, filtering, and conversion
+// arithmetic client-side — this is a plain GET, no CSRF token needed, and
+// reachable by guest sessions like the calculators/analyzers.
+export const fetchUnits =
+  () => request('/units/list')
+
+
+// ─────────────────────────────────────────────────────────────
 // ADMIN APIs (SPRINT 17)
 // ─────────────────────────────────────────────────────────────
 
@@ -823,3 +835,4 @@ export const deleteRegexPattern = (id) =>
   request(`/regex/user/${encodeURIComponent(id)}`, {
     method: 'DELETE',
   })
+  

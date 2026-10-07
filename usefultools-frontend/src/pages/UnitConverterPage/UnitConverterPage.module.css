@@ -215,6 +215,173 @@ font-weight: 600; color: var(--clr-text);
 flex: 1; text-align: right; font-family: var(--font-mono);
 font-size: var(--fs-sm); font-weight: 700; color: var(--clr-primary);
 }
+/* ─── Loading / error states ──────────────────────────────────────────────── */
+.loading {
+  text-align: center;
+  color: var(--clr-text-muted);
+  padding: var(--space-2xl);
+}
+.errorBanner {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--clr-error-bg);
+  border: 1px solid var(--clr-error-border);
+  border-radius: 10px;
+  color: var(--clr-error);
+  font-size: var(--fs-sm);
+}
+/* ─── Mode toggle (Convert / Browse Units) ───────────────────────────────── */
+.modeToggle {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 14px;
+  align-self: flex-start;
+}
+.modeBtn, .modeBtnActive {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border: none;
+  border-radius: 10px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 130ms, color 130ms, box-shadow 130ms;
+}
+.modeBtn { background: transparent; color: var(--clr-text-muted); }
+.modeBtn:hover { background: var(--clr-bg); color: var(--clr-text); }
+.modeBtnActive { background: var(--clr-primary); color: #fff; box-shadow: var(--shadow-glow); }
+/* ─── Category filter chips (within a unit-type tab) ─────────────────────── */
+.categoryChips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.chip, .chipActive {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms, color 120ms;
+}
+.chip {
+  background: transparent;
+  border: 1.5px solid var(--clr-border);
+  color: var(--clr-text-muted);
+}
+.chip:hover { border-color: var(--clr-primary); color: var(--clr-primary); }
+.chipActive {
+  background: var(--clr-primary);
+  border: 1.5px solid var(--clr-primary);
+  color: #fff;
+}
+/* ─── Searchable unit combobox ────────────────────────────────────────────── */
+.comboWrap { position: relative; }
+.comboList {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0; right: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.08);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.comboEmpty {
+  padding: 12px 14px;
+  font-size: var(--fs-sm);
+  color: var(--clr-text-muted);
+  text-align: center;
+}
+.comboOption, .comboOptionActive {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 9px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font);
+  text-align: left;
+  cursor: pointer;
+  transition: background 100ms;
+}
+.comboOption:hover, .comboOption:focus-visible { background: var(--clr-bg); }
+.comboOptionActive { background: var(--clr-bg); }
+.comboLabel {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--clr-text);
+}
+.comboMeta {
+  font-size: var(--fs-xs);
+  font-family: var(--font-mono);
+  color: var(--clr-text-muted);
+  flex-shrink: 0;
+}
+/* ─── Browse Units mode ───────────────────────────────────────────────────── */
+.browsePanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+.browseFilters {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+.browseFilters .unitSelect { flex: 1; min-width: 160px; }
+.browseTableWrap {
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+  overflow-x: auto;
+}
+.browseTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+.browseTable th {
+  text-align: left;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--clr-text-muted);
+  border-bottom: 1px solid var(--clr-border);
+  white-space: nowrap;
+}
+.browseTable td {
+  padding: 10px var(--space-md);
+  border-bottom: 1px solid var(--clr-border);
+  color: var(--clr-text);
+  white-space: nowrap;
+}
+.browseTable tr:last-child td { border-bottom: none; }
+.browseTable tr:hover td { background: var(--clr-bg); }
+.browseSymbol { font-family: var(--font-mono); font-weight: 700; color: var(--clr-primary); }
+.browseFactor { font-family: var(--font-mono); color: var(--clr-text-muted); }
+.browseEmpty {
+  padding: var(--space-2xl);
+  text-align: center;
+  color: var(--clr-text-muted);
+  font-size: var(--fs-sm);
+}
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 720px) {
   .header {
@@ -229,6 +396,10 @@ font-size: var(--fs-sm); font-weight: 700; color: var(--clr-primary);
   .converterField { width: 100%; min-width: unset; flex: none; }
   .inputWrap, .resultWrap { min-width: unset; width: 100%; }
   .categoryTabs { overflow-x: auto; }
+  .modeToggle { width: 100%; }
+  .modeBtn, .modeBtnActive { flex: 1; justify-content: center; }
+  .browseFilters { flex-direction: column; }
+  .browseFilters .unitSelect { width: 100%; min-width: unset; }
 }
 
 @media (max-width: 480px) {
@@ -236,4 +407,6 @@ font-size: var(--fs-sm); font-weight: 700; color: var(--clr-primary);
   .main { width: calc(100% - 16px); }
   .catTab, .catTabActive { padding: 9px 12px; font-size: var(--fs-xs); }
   .statCard { min-width: 80px; }
+  .chip, .chipActive { padding: 5px 11px; font-size: 0.68rem; }
+  .browseTable { font-size: var(--fs-xs); }
 }
