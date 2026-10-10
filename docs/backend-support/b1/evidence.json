@@ -1,0 +1,507 @@
+{
+  "sprint": "B1",
+  "verdict": "PASS",
+  "timestamp": "2026-09-19T08:38:09.018806+00:00",
+  "head": "b36265e70701221a748b3f4881524c289bf32dd6",
+  "branch": "main",
+  "dirty": "M .gitignore\n M Useful-Tools/pom.xml\n M Useful-Tools/src/main/java/common/ApiResponse.java\n M Useful-Tools/src/main/java/common/dao/ActivityDAO.java\n M Useful-Tools/src/main/java/common/dao/FavoritesDAO.java\n M Useful-Tools/src/main/java/common/dao/ToolToggleDAO.java\n M Useful-Tools/src/main/java/common/filter/SameSiteFilter.java\n M Useful-Tools/src/main/java/common/startup/DatabaseInitializer.java\n M Useful-Tools/src/main/java/formatter/controller/SearchController.java\n M Useful-Tools/src/main/webapp/WEB-INF/web.xml\n M usefultools-frontend/package-lock.json\n M usefultools-frontend/package.json\n M usefultools-frontend/src/App.jsx\n M usefultools-frontend/src/api/apiClient.js\n M usefultools-frontend/src/components/RecentActivity/RecentActivity.jsx\n M usefultools-frontend/src/hooks/useFavorites.js\n M usefultools-frontend/src/index.css\n M usefultools-frontend/src/pages/AdminPage/AdminPage.jsx\n M usefultools-frontend/src/pages/AdminPage/AdminPage.module.css\n M usefultools-frontend/src/pages/DashboardPage/DashboardPage.jsx\n?? .github/\n?? Useful-Tools/src/main/java/backendsupport/\n?? Useful-Tools/src/main/resources/backendsupport/\n?? Useful-Tools/src/test/\n?? contracts/\n?? docs/\n?? scripts/\n?? spikes/\n?? usefultools-frontend/.node-version\n?? usefultools-frontend/src/pages/BackendSupportPage/\n?? usefultools-frontend/tests/b0-browser.mjs\n?? usefultools-frontend/tests/b1-browser.mjs\n?? usefultools-frontend/tests/b1-tests.mjs",
+  "inputFingerprint": "32750477c5a016426752df6036b75042107017f822ed91a8d53c92f2b1e0448e",
+  "finalInputFingerprint": "32750477c5a016426752df6036b75042107017f822ed91a8d53c92f2b1e0448e",
+  "browserChannel": "chrome",
+  "checks": [
+    {
+      "name": "b0-regression",
+      "status": "PASS",
+      "exitCode": 0,
+      "command": [
+        "C:\\Python314\\python.exe",
+        "-X",
+        "utf8",
+        "scripts/b0/verify.py",
+        "--browser-channel",
+        "chrome"
+      ],
+      "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+      "log": ".b1\\20260919T083526Z\\b0-regression.log"
+    },
+    {
+      "name": "b1-frontend-tests",
+      "status": "PASS",
+      "exitCode": 0,
+      "command": [
+        "C:\\Program Files\\nodejs\\npm.CMD",
+        "run",
+        "test:b1"
+      ],
+      "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\usefultools-frontend",
+      "log": ".b1\\20260919T083526Z\\b1-frontend-tests.log"
+    },
+    {
+      "name": "b1-runtime-build",
+      "status": "PASS",
+      "exitCode": 0,
+      "command": [
+        "C:\\Program Files\\Apache\\Maven\\apache-maven-3.9.14\\bin\\mvn.CMD",
+        "-B",
+        "-ntp",
+        "test-compile",
+        "org.apache.maven.plugins:maven-dependency-plugin:3.8.1:build-classpath",
+        "-Dmdep.outputFile=classpath.txt"
+      ],
+      "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\scripts\\b1\\runtime",
+      "log": ".b1\\20260919T083526Z\\b1-runtime-build.log"
+    },
+    {
+      "name": "b1-http-browser",
+      "status": "PASS",
+      "exitCode": 0,
+      "command": [
+        "C:\\Python314\\python.exe",
+        "-X",
+        "utf8",
+        "scripts/b1/runtime_checks.py",
+        "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b1\\20260919T083526Z\\application",
+        "--browser-channel",
+        "chrome"
+      ],
+      "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+      "log": ".b1\\20260919T083526Z\\b1-http-browser.log"
+    },
+    {
+      "name": "test-counts",
+      "status": "PASS",
+      "exitCode": 0,
+      "detail": {
+        "backendsupport.ValidationTest": 11,
+        "backendsupport.AvailabilityTest": 1,
+        "baseline.BaselineTest": 3
+      }
+    },
+    {
+      "name": "documentation-and-production-isolation",
+      "status": "PASS",
+      "exitCode": 0,
+      "detail": "Docs, separate transport, production WAR excludes test session/SPA fixtures"
+    },
+    {
+      "name": "diff-check",
+      "status": "PASS",
+      "exitCode": 0,
+      "command": [
+        "C:\\Program Files\\Git\\cmd\\git.EXE",
+        "-c",
+        "safe.directory=C:/Users/royta/eclipse-workspace/UsefulTools.exe_production - Copy (3)/Useful-Tools",
+        "diff",
+        "--check"
+      ],
+      "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+      "log": ".b1\\20260919T083526Z\\diff-check.log"
+    },
+    {
+      "name": "inputs-unchanged",
+      "status": "PASS",
+      "exitCode": 0,
+      "detail": "stable"
+    }
+  ],
+  "gates": {
+    "G1": "PASS",
+    "G2": "PASS",
+    "G3": "PASS",
+    "G4": "PASS",
+    "G5": "PASS",
+    "G6": "PASS",
+    "G7": "PASS",
+    "G8": "PASS",
+    "G9": "PASS",
+    "G10": "PASS"
+  },
+  "runDirectory": ".b1\\20260919T083526Z",
+  "limitations": [
+    "Hosted CI not executed",
+    "No production deployment, generated code, live PostgreSQL/Redis or Java 17 runtime execution",
+    "Synthetic sessions bypass account login only in external test container; real application filters execute",
+    "External fonts/CAPTCHA inert; error scenarios use explicit browser fault injection"
+  ],
+  "http-results.json": {
+    "status": "PASS",
+    "checks": [
+      "catalog roles, default disabled, admin preview",
+      "absent and failed availability fail closed for every role",
+      "real filter authentication, stored/header CSRF and Origin",
+      "admin toggle, enabled roles, immutable samples and guest bypass attempts",
+      "malformed, duplicate, media, version, unknown fields, target, references and bounded findings",
+      "raw body cap with Content-Length and chunked transfer, depth/string/collection caps",
+      "explicit 40 per session rate limit counts rejected attempts",
+      "actual search, favorites and metadata-only activity"
+    ],
+    "count": 8,
+    "requestCount": 111
+  },
+  "browser-results.json": {
+    "status": "PASS",
+    "browserVersion": "153.0.8010.48",
+    "channel": "chrome",
+    "themes": 10,
+    "checks": [
+      "protected deep link",
+      "catalog, sample specification, custom input and accessible findings",
+      "network errors preserve input and retry succeeds",
+      "in-flight responses cannot restore stale findings after edits",
+      "unavailable catalog and retry preserve the draft",
+      "guest immutable samples and selection invalidation",
+      "ten themes, desktop/mobile layouts, keyboard focus and status announcements",
+      "dashboard card, favorites, backend search and activity label",
+      "disabled direct link, dashboard and admin preview/toggle"
+    ],
+    "count": 9,
+    "unexpectedErrors": []
+  },
+  "b0Regression": {
+    "status": "PASS",
+    "utc": "2026-09-19T08:37:30.687267+00:00",
+    "head": "b36265e70701221a748b3f4881524c289bf32dd6",
+    "branch": "main",
+    "dirty": "M .gitignore\n M Useful-Tools/pom.xml\n M Useful-Tools/src/main/java/common/ApiResponse.java\n M Useful-Tools/src/main/java/common/dao/ActivityDAO.java\n M Useful-Tools/src/main/java/common/dao/FavoritesDAO.java\n M Useful-Tools/src/main/java/common/dao/ToolToggleDAO.java\n M Useful-Tools/src/main/java/common/filter/SameSiteFilter.java\n M Useful-Tools/src/main/java/common/startup/DatabaseInitializer.java\n M Useful-Tools/src/main/java/formatter/controller/SearchController.java\n M Useful-Tools/src/main/webapp/WEB-INF/web.xml\n M usefultools-frontend/package-lock.json\n M usefultools-frontend/package.json\n M usefultools-frontend/src/App.jsx\n M usefultools-frontend/src/api/apiClient.js\n M usefultools-frontend/src/components/RecentActivity/RecentActivity.jsx\n M usefultools-frontend/src/hooks/useFavorites.js\n M usefultools-frontend/src/index.css\n M usefultools-frontend/src/pages/AdminPage/AdminPage.jsx\n M usefultools-frontend/src/pages/AdminPage/AdminPage.module.css\n M usefultools-frontend/src/pages/DashboardPage/DashboardPage.jsx\n?? .github/\n?? Useful-Tools/src/main/java/backendsupport/\n?? Useful-Tools/src/main/resources/backendsupport/\n?? Useful-Tools/src/test/\n?? contracts/\n?? docs/\n?? scripts/\n?? spikes/\n?? usefultools-frontend/.node-version\n?? usefultools-frontend/src/pages/BackendSupportPage/\n?? usefultools-frontend/tests/b0-browser.mjs\n?? usefultools-frontend/tests/b1-browser.mjs\n?? usefultools-frontend/tests/b1-tests.mjs",
+    "inputFingerprint": "76d3b6f72942bc50d435f002070442a31058700e1f881d4e469b12ebf6167cf0",
+    "fingerprintAlgorithm": "SHA256(sorted path NUL SHA256(bytes)); tracked and nonignored untracked files excluding generated sprint-pass.md and evidence.json",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "verificationCommand": [
+      "C:\\Python314\\python.exe",
+      "scripts/b0/verify.py",
+      "--browser-channel",
+      "chrome"
+    ],
+    "browserChannel": "chrome",
+    "checks": [
+      {
+        "name": "node-version",
+        "command": [
+          "C:\\Program Files\\nodejs\\node.EXE",
+          "--version"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\node-version.log"
+      },
+      {
+        "name": "npm-version",
+        "command": [
+          "C:\\Program Files\\nodejs\\npm.CMD",
+          "--version"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\npm-version.log"
+      },
+      {
+        "name": "maven-version",
+        "command": [
+          "C:\\Program Files\\Apache\\Maven\\apache-maven-3.9.14\\bin\\mvn.CMD",
+          "--version"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\maven-version.log"
+      },
+      {
+        "name": "java-version",
+        "command": [
+          "C:\\Program Files\\Java\\jdk-25\\bin\\java.EXE",
+          "-version"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\java-version.log"
+      },
+      {
+        "name": "python-version",
+        "command": [
+          "C:\\Python314\\python.exe",
+          "--version"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\python-version.log"
+      },
+      {
+        "name": "layout-and-docs",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "frontend-install",
+        "command": [
+          "C:\\Program Files\\nodejs\\npm.CMD",
+          "ci",
+          "--no-audit",
+          "--no-fund"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\usefultools-frontend",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\frontend-install.log"
+      },
+      {
+        "name": "frontend-tests",
+        "command": [
+          "C:\\Program Files\\nodejs\\npm.CMD",
+          "test"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\usefultools-frontend",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\frontend-tests.log"
+      },
+      {
+        "name": "frontend-build",
+        "command": [
+          "C:\\Program Files\\nodejs\\npm.CMD",
+          "run",
+          "build"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\usefultools-frontend",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\frontend-build.log"
+      },
+      {
+        "name": "backend-build",
+        "command": [
+          "C:\\Program Files\\Apache\\Maven\\apache-maven-3.9.14\\bin\\mvn.CMD",
+          "-B",
+          "clean",
+          "verify"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\Useful-Tools",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\backend-build.log"
+      },
+      {
+        "name": "war-integrity",
+        "command": [
+          "C:\\Python314\\python.exe",
+          "scripts/b0/war.py",
+          "Useful-Tools/target/UsefulTools.war"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\war-integrity.log"
+      },
+      {
+        "name": "java-reference",
+        "command": [
+          "C:\\Program Files\\Apache\\Maven\\apache-maven-3.9.14\\bin\\mvn.CMD",
+          "-B",
+          "clean",
+          "verify",
+          "-Db0.applicationWar=C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\Useful-Tools\\target\\UsefulTools.war"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\spikes\\backend-support\\java-servlet",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\java-reference.log"
+      },
+      {
+        "name": "test-execution-counts",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "initialization-logs",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "database-initialization",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "python-venv",
+        "command": [
+          "C:\\Python314\\python.exe",
+          "-m",
+          "venv",
+          "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b0\\20260919T083527Z\\venv"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\python-venv.log"
+      },
+      {
+        "name": "python-download",
+        "command": [
+          "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b0\\20260919T083527Z\\venv\\Scripts\\python.exe",
+          "-m",
+          "pip",
+          "download",
+          "--disable-pip-version-check",
+          "--retries",
+          "2",
+          "--timeout",
+          "20",
+          "-r",
+          "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\spikes\\backend-support\\python-fastapi\\requirements.txt",
+          "-d",
+          "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b0\\wheels"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\python-download.log"
+      },
+      {
+        "name": "python-install",
+        "command": [
+          "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b0\\20260919T083527Z\\venv\\Scripts\\python.exe",
+          "-m",
+          "pip",
+          "install",
+          "--disable-pip-version-check",
+          "--no-index",
+          "--find-links",
+          "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b0\\wheels",
+          "-r",
+          "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\spikes\\backend-support\\python-fastapi\\requirements.txt"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\python-install.log"
+      },
+      {
+        "name": "python-dependencies",
+        "command": [
+          "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b0\\20260919T083527Z\\venv\\Scripts\\python.exe",
+          "-m",
+          "pip",
+          "check"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\python-dependencies.log"
+      },
+      {
+        "name": "python-reference",
+        "command": [
+          "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b0\\20260919T083527Z\\venv\\Scripts\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\spikes\\backend-support\\python-fastapi"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\python-reference.log"
+      },
+      {
+        "name": "contracts",
+        "command": [
+          "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b0\\20260919T083527Z\\venv\\Scripts\\python.exe",
+          "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\scripts\\b0\\contracts.py"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\contracts.log"
+      },
+      {
+        "name": "java-classpath",
+        "command": [
+          "C:\\Program Files\\Apache\\Maven\\apache-maven-3.9.14\\bin\\mvn.CMD",
+          "-B",
+          "org.apache.maven.plugins:maven-dependency-plugin:3.8.1:build-classpath",
+          "-Dmdep.outputFile=C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b0\\20260919T083527Z\\classpath.txt"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\spikes\\backend-support\\java-servlet",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\java-classpath.log"
+      },
+      {
+        "name": "browser-smoke",
+        "command": [
+          "C:\\Program Files\\nodejs\\node.EXE",
+          "tests/b0-browser.mjs"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\usefultools-frontend",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\browser-smoke.log"
+      },
+      {
+        "name": "browser-startup",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "diff-review",
+        "command": [
+          "C:\\Program Files\\Git\\cmd\\git.EXE",
+          "-c",
+          "safe.directory=C:/Users/royta/eclipse-workspace/UsefulTools.exe_production - Copy (3)/Useful-Tools",
+          "diff",
+          "--check"
+        ],
+        "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+        "exitCode": 0,
+        "status": "PASS",
+        "log": ".b0\\20260919T083527Z\\diff-review.log"
+      },
+      {
+        "name": "inputs-unchanged",
+        "status": "PASS",
+        "exitCode": 0
+      }
+    ],
+    "gates": {
+      "G1": "PASS",
+      "G2": "PASS",
+      "G3": "PASS",
+      "G4": "PASS",
+      "G5": "PASS",
+      "G6": "PASS",
+      "G7": "PASS",
+      "G8": "PASS",
+      "G9": "PASS",
+      "G10": "PASS"
+    },
+    "runDirectory": ".b0\\20260919T083527Z"
+  },
+  "versions": {
+    "node-version": "v24.16.0",
+    "npm-version": "11.16.0",
+    "maven-version": "Apache Maven 3.9.14 (996c630dbc656c76214ce58821dcc58be960875b)\nMaven home: C:\\Program Files\\Apache\\Maven\\apache-maven-3.9.14\nJava version: 25, vendor: Oracle Corporation, runtime: C:\\Program Files\\Java\\jdk-25\nDefault locale: en_IN, platform encoding: UTF-8\nOS name: \"windows 11\", version: \"10.0\", arch: \"amd64\", family: \"windows\"",
+    "java-version": "java version \"25\" 2025-09-16 LTS\nJava(TM) SE Runtime Environment (build 25+37-LTS-3491)\nJava HotSpot(TM) 64-Bit Server VM (build 25+37-LTS-3491, mixed mode, sharing)",
+    "python-version": "Python 3.14.3"
+  },
+  "finalReview": {
+    "status": "PASS",
+    "scope": "Final diff reviewed for B1 scope, preserved B0 contracts, privacy, filter registration, production fixture exclusion and integration parity.",
+    "screenshots": [
+      ".b1/20260919T083526Z/application/observatory-1280.png",
+      ".b1/20260919T083526Z/application/synthwave-390.png"
+    ],
+    "sessionFixtureRemoved": true,
+    "b2Ready": true,
+    "reportOnlyUpdates": [
+      "sprint-pass.md",
+      "evidence.json",
+      "continuation.md"
+    ],
+    "submittedSentinelsAbsentFromLogs": true
+  }
+}

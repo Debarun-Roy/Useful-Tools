@@ -1,0 +1,19 @@
+# B7 decisions
+
+1. Preserve all historical B0–B6 certificates and template bytes. B6 baseline matched exactly before B7 changes; new fingerprints must cover new UI/dependency/deployment changes. Normal B6 entry point runs once under B7; no temporary driver or unchecked certificate reuse.
+2. Correct inventory in this dossier with an erratum, rather than rewriting a historical handoff. Six families; auth profile is optional functionality in REST.
+3. Keep proposed p95<2s and80% of five participants explicitly unaccepted until product/QA approves. Fix workload before observing results; no threshold relaxation.
+4. B7 local server uses an owned .b6/b7-* fixture because the existing harness already enforces that isolation root. All B7 results go under .b7; no production services or foreign processes touched.
+5. Scoped contrast and module URL/history corrections are acceptance defects, not a redesign. No source/schema in URL. Remove obsolete REST unavailable copy.
+6. Advisory-driven updates use only existing npm major ranges and named affected packages. Keep generated output pins historical; any generated dependency correction needs a new version, not overwritten frozen bytes. SheetJS export-only usage and pytest Windows/private-temp applicability need explicit dispositions and reviewer acceptance, not scan suppression.
+7. Docker build context must include contracts. Image must not embed account dumps; operator must provision a reviewed persistent database before startup. No deployment executed. Floating base tags/JDK17 runtime and target proxy/TLS remain qualification dependencies.
+8. Automated self-review, axe and browser scripting are not independent review or real UAT. Missing human evidence keeps full certification nonzero and release NOT APPROVED.
+
+9. Existing application logging corrections remove credential values without changing cookie policy. Actual-login fixture uses production controller/DAO/BCrypt and only substitutes a local CAPTCHA endpoint in the disposable expanded WAR. Synthetic-session browser coverage stays separately labeled.
+10. CI invokes the complete B7 engineering graph with --engineering-only; a green CI job can establish engineering evidence only. Full command remains nonzero for external release gates. Hosted job has not run. Operational owner and target alert validation remain G8 blockers.
+
+11. B7 --resume reuses only the completed ordinary B0–B6 chain, never a failed B7 check. It verifies the source manifest/certificate, identical non-B7 inputs/HEAD, actual WAR/frontend bytes, host identity, JDK/Maven/Node/Python/Chrome versions and all prior gatesPASS. Only B7 tooling/dossier/CI may differ; every B7 check reruns. Proof and source hashes are retained. Native PowerShell instrumentation avoids bundled-shell startup variability; metadata remains bounded and aggregate. Each theme gets a fresh browser context and one axe load while retaining all seven per-theme scans. Explicit host resource exhaustion/timeouts are BLOCKED and nonzero, not successful checks.
+
+12. A later non-B7 units.sql edit invalidated chain reuse. Preserve it, correct only initializer compatibility, and run the full ordinary chain again; do not broaden the resume allowlist or certify a stale WAR. The seed matcher recognizes explicit INSERT/INSERT OR IGNORE into the bundled units table and preserves the existing skip-nonempty behavior.
+
+2026-10-06 recovery: B7 full-chain preflight requires8GiB free (more than twice the approximately3GiB retained output of a complete chain). This is a local safety margin, not an accepted staging capacity target. Historical restoration uses complete sibling copies plus atomic replacement; simulated ENOSPC leaves the original intact. Stopped generated B4 PostgreSQL data can be reclaimed with an exact path manifest, retaining logs/exports/results. No old failed chain is reused.

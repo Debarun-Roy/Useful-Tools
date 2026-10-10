@@ -1,0 +1,459 @@
+{
+  "sprint": "B7",
+  "timestamp": "2026-10-06T06:05:05.257192+00:00",
+  "head": "b36265e70701221a748b3f4881524c289bf32dd6",
+  "branch": "main",
+  "dirty": "M .gitignore\n M Useful-Tools/Dockerfile\n M Useful-Tools/pom.xml\n M Useful-Tools/src/main/java/common/ApiResponse.java\n M Useful-Tools/src/main/java/common/dao/ActivityDAO.java\n M Useful-Tools/src/main/java/common/dao/FavoritesDAO.java\n M Useful-Tools/src/main/java/common/dao/ToolToggleDAO.java\n M Useful-Tools/src/main/java/common/filter/SameSiteFilter.java\n M Useful-Tools/src/main/java/common/startup/DatabaseInitializer.java\n M Useful-Tools/src/main/java/formatter/controller/SearchController.java\n M Useful-Tools/src/main/java/passwordgenerator/controller/LoginController.java\n M Useful-Tools/src/main/java/passwordgenerator/utilities/RecaptchaUtils.java\n M Useful-Tools/src/main/resources/units.sql\n M Useful-Tools/src/main/webapp/WEB-INF/web.xml\n M railway.json\n M usefultools-frontend/package-lock.json\n M usefultools-frontend/package.json\n M usefultools-frontend/src/App.jsx\n M usefultools-frontend/src/api/apiClient.js\n M usefultools-frontend/src/components/RecentActivity/RecentActivity.jsx\n M usefultools-frontend/src/hooks/useFavorites.js\n M usefultools-frontend/src/index.css\n M usefultools-frontend/src/pages/AdminPage/AdminPage.jsx\n M usefultools-frontend/src/pages/AdminPage/AdminPage.module.css\n M usefultools-frontend/src/pages/DashboardPage/DashboardPage.jsx\n M usefultools-frontend/src/pages/NumberAnalyzerPage/NumberAnalyzerPage.module.css\n?? .github/\n?? Useful-Tools/src/main/java/backendsupport/\n?? Useful-Tools/src/main/resources/backendsupport/\n?? Useful-Tools/src/test/\n?? contracts/\n?? docs/\n?? scripts/\n?? spikes/\n?? usefultools-frontend/.node-version\n?? usefultools-frontend/src/pages/BackendSupportPage/\n?? usefultools-frontend/tests/b0-browser.mjs\n?? usefultools-frontend/tests/b1-browser.mjs\n?? usefultools-frontend/tests/b1-tests.mjs\n?? usefultools-frontend/tests/b2-browser.mjs\n?? usefultools-frontend/tests/b2-tests.mjs\n?? usefultools-frontend/tests/b3-browser.mjs\n?? usefultools-frontend/tests/b4-browser.mjs\n?? usefultools-frontend/tests/b5-application-browser.mjs\n?? usefultools-frontend/tests/b5-browser.mjs\n?? usefultools-frontend/tests/b6-browser.mjs",
+  "inputFingerprint": "9f4d16b23d3a0116448a5f67b30c1a00c06c5c6779fe63214d3a13682cb1c7ca",
+  "finalInputFingerprint": "9f4d16b23d3a0116448a5f67b30c1a00c06c5c6779fe63214d3a13682cb1c7ca",
+  "engineeringQualification": "PASS",
+  "verdict": "BLOCKED",
+  "releaseApproval": "NOT APPROVED",
+  "deployment": "NOT EXECUTED",
+  "runDirectory": ".b7\\20261006T051951458194Z",
+  "host": {
+    "os": "Windows-11-10.0.26300-SP0",
+    "processor": "AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD",
+    "logicalCpus": 16,
+    "python": "3.14.3"
+  },
+  "command": [
+    "scripts/b7/verify.py",
+    "--browser-channel",
+    "chrome"
+  ],
+  "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+  "checks": [
+    {
+      "name": "b0-b6-regression-chain",
+      "status": "PASS",
+      "command": [
+        "C:\\Python314\\python.exe",
+        "-X",
+        "utf8",
+        "scripts/b6/verify.py",
+        "--browser-channel",
+        "chrome"
+      ],
+      "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+      "exitCode": 0,
+      "log": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b7\\20261006T051951458194Z\\b0-b6-regression-chain.log"
+    },
+    {
+      "name": "accessibility-tooling",
+      "status": "PASS",
+      "command": [
+        "C:\\Program Files\\nodejs\\npm.CMD",
+        "install",
+        "--prefix",
+        "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b7\\tools",
+        "--no-audit",
+        "--no-fund",
+        "--save-exact",
+        "axe-core@4.13.0"
+      ],
+      "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+      "exitCode": 0,
+      "log": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b7\\20261006T051951458194Z\\accessibility-tooling.log"
+    },
+    {
+      "name": "integrated-load-browser",
+      "status": "PASS",
+      "command": [
+        "C:\\Python314\\python.exe",
+        "-X",
+        "utf8",
+        "scripts/b7/local_checks.py",
+        "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b7\\20261006T051951458194Z\\local",
+        "--browser-channel",
+        "chrome"
+      ],
+      "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+      "exitCode": 0,
+      "log": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b7\\20261006T051951458194Z\\integrated-load-browser.log"
+    },
+    {
+      "name": "dependency-secret-security",
+      "status": "PASS",
+      "command": [
+        "C:\\Python314\\python.exe",
+        "-X",
+        "utf8",
+        "scripts/b7/security_checks.py",
+        "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b7\\20261006T051951458194Z\\security"
+      ],
+      "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+      "exitCode": 0,
+      "log": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b7\\20261006T051951458194Z\\dependency-secret-security.log"
+    },
+    {
+      "name": "actual-login-privacy",
+      "status": "PASS",
+      "command": [
+        "C:\\Python314\\python.exe",
+        "-X",
+        "utf8",
+        "scripts/b7/login_checks.py",
+        "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b7\\20261006T051951458194Z\\login"
+      ],
+      "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+      "exitCode": 0,
+      "log": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b7\\20261006T051951458194Z\\actual-login-privacy.log"
+    },
+    {
+      "name": "delivery-package",
+      "status": "PASS",
+      "command": [
+        "C:\\Python314\\python.exe",
+        "-X",
+        "utf8",
+        "scripts/b7/package_checks.py",
+        "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b7\\20261006T051951458194Z\\package"
+      ],
+      "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+      "exitCode": 0,
+      "log": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b7\\20261006T051951458194Z\\delivery-package.log"
+    },
+    {
+      "name": "diff-check",
+      "status": "PASS",
+      "command": [
+        "C:\\Program Files\\Git\\cmd\\git.EXE",
+        "-c",
+        "safe.directory=C:/Users/royta/eclipse-workspace/UsefulTools.exe_production - Copy (3)/Useful-Tools",
+        "diff",
+        "--check"
+      ],
+      "cwd": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools",
+      "exitCode": 0,
+      "log": "C:\\Users\\royta\\eclipse-workspace\\UsefulTools.exe_production - Copy (3)\\Useful-Tools\\.b7\\20261006T051951458194Z\\diff-check.log"
+    },
+    {
+      "name": "unchanged-inputs",
+      "status": "PASS",
+      "exitCode": 0
+    },
+    {
+      "name": "historical-certificates",
+      "status": "PASS"
+    },
+    {
+      "name": "external-release-evidence",
+      "status": "BLOCKED",
+      "detail": {
+        "G3": "Assign an independent security reviewer; provide signed scope/findings tied to final fingerprint; remediate and retest.",
+        "G4": "Product/QA must accept the proposed p95 target and workload; supply documented staging hardware and run the workload there.",
+        "G5": "Complete real login-provider acceptance and human keyboard/assistive-technology usability review; close automated findings.",
+        "G6": "Authorize invitations separately, recruit five consenting developers, execute pilot tasks and record unaided completion; product accepts proposed80% target.",
+        "G7": "Supply intended service/Java/Python/Redis topology and disposable target access; qualify TLS/ACL/persistence/backup/rollback there.",
+        "G9": "Authorize push/CI dispatch separately and capture successful hosted equivalent checks; no dispatch performed.",
+        "G10": "Product owner reviews fingerprinted dossier and records explicit staged-rollout approval and release owner.",
+        "G8": "Assign support/on-call/security owners and validate proposed metadata-only alert thresholds in the intended environment."
+      }
+    }
+  ],
+  "gates": {
+    "G1": {
+      "title": "Inventory/traceability and B0\u2013B6 regressions",
+      "status": "PASS",
+      "source": "Original requirements/verification plan and B7 implementation prompt",
+      "evidence": [
+        "b0-b6-regression-chain"
+      ],
+      "environment": "local Windows; external target unavailable",
+      "owner": "Engineering",
+      "remainingAction": "None"
+    },
+    "G2": {
+      "title": "Six-module exports, integration and auth parity",
+      "status": "PASS",
+      "source": "Original requirements/verification plan and B7 implementation prompt",
+      "evidence": [
+        "b0-b6-regression-chain",
+        "integrated-load-browser"
+      ],
+      "environment": "local Windows; external target unavailable",
+      "owner": "Engineering",
+      "remainingAction": "None"
+    },
+    "G3": {
+      "title": "Security remediation and independent sign-off",
+      "status": "BLOCKED",
+      "source": "Original requirements/verification plan and B7 implementation prompt",
+      "evidence": [
+        "dependency-secret-security"
+      ],
+      "environment": "local Windows; external target unavailable",
+      "owner": "QA/security/product/deployment owners (unassigned)",
+      "remainingAction": "Assign an independent security reviewer; provide signed scope/findings tied to final fingerprint; remediate and retest."
+    },
+    "G4": {
+      "title": "Accepted staging performance/resource/fault criteria",
+      "status": "BLOCKED",
+      "source": "Original requirements/verification plan and B7 implementation prompt",
+      "evidence": [
+        "integrated-load-browser"
+      ],
+      "environment": "local Windows; external target unavailable",
+      "owner": "QA/security/product/deployment owners (unassigned)",
+      "remainingAction": "Product/QA must accept the proposed p95 target and workload; supply documented staging hardware and run the workload there."
+    },
+    "G5": {
+      "title": "Browser/accessibility and existing-tool acceptance",
+      "status": "BLOCKED",
+      "source": "Original requirements/verification plan and B7 implementation prompt",
+      "evidence": [
+        "accessibility-tooling",
+        "integrated-load-browser",
+        "actual-login-privacy",
+        "b0-b6-regression-chain"
+      ],
+      "environment": "local Windows; external target unavailable",
+      "owner": "QA/security/product/deployment owners (unassigned)",
+      "remainingAction": "Complete real login-provider acceptance and human keyboard/assistive-technology usability review; close automated findings."
+    },
+    "G6": {
+      "title": "Five-developer real pilot/UAT acceptance",
+      "status": "BLOCKED",
+      "source": "Original requirements/verification plan and B7 implementation prompt",
+      "evidence": [],
+      "environment": "local Windows; external target unavailable",
+      "owner": "QA/security/product/deployment owners (unassigned)",
+      "remainingAction": "Authorize invitations separately, recruit five consenting developers, execute pilot tasks and record unaided completion; product accepts proposed80% target."
+    },
+    "G7": {
+      "title": "Intended deployment and rollback/restore qualification",
+      "status": "BLOCKED",
+      "source": "Original requirements/verification plan and B7 implementation prompt",
+      "evidence": [
+        "integrated-load-browser",
+        "delivery-package"
+      ],
+      "environment": "local Windows; external target unavailable",
+      "owner": "QA/security/product/deployment owners (unassigned)",
+      "remainingAction": "Supply intended service/Java/Python/Redis topology and disposable target access; qualify TLS/ACL/persistence/backup/rollback there."
+    },
+    "G8": {
+      "title": "Monitoring/support/maintenance procedures",
+      "status": "BLOCKED",
+      "source": "Original requirements/verification plan and B7 implementation prompt",
+      "evidence": [
+        "actual-login-privacy",
+        "dependency-secret-security",
+        "delivery-package"
+      ],
+      "environment": "local Windows; external target unavailable",
+      "owner": "Engineering",
+      "remainingAction": "Assign support/on-call/security owners and validate proposed metadata-only alert thresholds in the intended environment."
+    },
+    "G9": {
+      "title": "Reproducible evidence and required hosted CI",
+      "status": "BLOCKED",
+      "source": "Original requirements/verification plan and B7 implementation prompt",
+      "evidence": [
+        "diff-check",
+        "unchanged-inputs",
+        "historical-certificates"
+      ],
+      "environment": "local Windows; external target unavailable",
+      "owner": "Engineering",
+      "remainingAction": "Authorize push/CI dispatch separately and capture successful hosted equivalent checks; no dispatch performed."
+    },
+    "G10": {
+      "title": "Product-owner staged rollout approval",
+      "status": "BLOCKED",
+      "source": "Original requirements/verification plan and B7 implementation prompt",
+      "evidence": [],
+      "environment": "local Windows; external target unavailable",
+      "owner": "QA/security/product/deployment owners (unassigned)",
+      "remainingAction": "Product owner reviews fingerprinted dossier and records explicit staged-rollout approval and release owner."
+    }
+  },
+  "mode": "full certification",
+  "limitations": [
+    "Independent security review and real UAT unavailable",
+    "Target deployment/staging and hosted CI unexecuted",
+    "No production access or deployment"
+  ],
+  "checkGraph": {
+    "b0-b6-regression-chain": [],
+    "accessibility-tooling": [],
+    "integrated-load-browser": [
+      "b0-b6-regression-chain",
+      "accessibility-tooling"
+    ],
+    "dependency-secret-security": [
+      "b0-b6-regression-chain"
+    ],
+    "actual-login-privacy": [
+      "b0-b6-regression-chain"
+    ],
+    "delivery-package": [
+      "b0-b6-regression-chain"
+    ],
+    "diff-check": [],
+    "unchanged-inputs": [],
+    "historical-certificates": [],
+    "external-release-evidence": []
+  },
+  "resultFiles": {
+    "b0-evidence.json": {
+      "sha256": "af5391c3c79be1bddf3a4ce0bce60f503526d467d7c787fc891a6eb0532f84b5",
+      "bytes": 11765
+    },
+    "b1-evidence.json": {
+      "sha256": "f8c84c23c07c70cb322e68d67824adda13e1178cf2c3caa5d9bea6f31c7de173",
+      "bytes": 21992
+    },
+    "b2-evidence.json": {
+      "sha256": "55a1679bbdcdabc5cd3bb30ebb00b9219d3a13ad7d3225bacca85c34b92cba5e",
+      "bytes": 36325
+    },
+    "b3-evidence.json": {
+      "sha256": "e524a6cc13d01d2d128b18d1889c2a00f8c5dbf1cc2cf5a1ff303a02bf91d1da",
+      "bytes": 49817
+    },
+    "b4-evidence.json": {
+      "sha256": "ab3c66c09f24674a7dc61a8d579e0922048bde0f0af69a949d15ad5e269f6d5e",
+      "bytes": 281983
+    },
+    "b5-evidence.json": {
+      "sha256": "5ad88d216a0874da17823b9dc0e809070e2ba7372598873ab8164c9da4e8c74a",
+      "bytes": 485554
+    },
+    "b6-evidence.json": {
+      "sha256": "4326b41b0919f9529b9d0d5248a97b6311e2b6aea776ef49ee6c40e8ab7665af",
+      "bytes": 2526753
+    },
+    "current-b6-evidence.json": {
+      "sha256": "3a072ed8963a77eb930323c1d59ec606b5bd79e697a900841039659bd31fb7c2",
+      "bytes": 2530724
+    },
+    "input-files.json": {
+      "sha256": "ff89243be95c9998f659e78f6964abb3ccdf00f01386e738d89ac7c8e34a588a",
+      "bytes": 86789
+    },
+    "progress.json": {
+      "sha256": "5bb4d9a0ac732e5230403f650a4bfc641d9fd1ccde863eca8a5ff9a48a860939",
+      "bytes": 4269
+    },
+    "local/accessibility-results.json": {
+      "sha256": "f83ea5ab9f399a947f3c8656cd328d38cc9ecdda02a06c817e60edef90df52e9",
+      "bytes": 14282
+    },
+    "local/etl-config-shape.json": {
+      "sha256": "520697f62ea4faffc9fba9d659dea063b8b3bc615540e49b0d88887e637b9bb5",
+      "bytes": 102
+    },
+    "local/journey-etl-artifact.json": {
+      "sha256": "1db5d5d7a40dcc68ec3802b3f414bdfc6816c04ee8d8d64a688357bf14f95016",
+      "bytes": 1401
+    },
+    "local/journey-schema-artifact.json": {
+      "sha256": "be226cd6e14792d56b6d5c7572322c41c76561eeb95bd169227ecb51baca01aa",
+      "bytes": 785
+    },
+    "local/journey-view-artifact.json": {
+      "sha256": "e4f3ce18cb9cc25e93411fc438ea059dd6bd6500d2e4792d6bb2b3f7965751f5",
+      "bytes": 785
+    },
+    "local/local-results.json": {
+      "sha256": "580a1b9d5bfceb3a57098b06cf0568d1dcae558e214d655840c0d4253b37e75d",
+      "bytes": 8244
+    },
+    "local/maximum-schema-artifact.json": {
+      "sha256": "8f27b0061ada3db2e6115e7050fe0d64dfc2f5babd1d6081caabc8790a943a25",
+      "bytes": 788
+    },
+    "local/performance-results.json": {
+      "sha256": "8950c0036d7351ff99de6ff0cf97e39316bbf53ce56172a81c505bf587c24498",
+      "bytes": 3216
+    },
+    "login/login-results.json": {
+      "sha256": "b30fe491d05cc32ba8a4cff3df9482d7791705ac1a9968102f3affc282b3341d",
+      "bytes": 3522
+    },
+    "package/package-results.json": {
+      "sha256": "fbb33f82466cd673178fcdc797f32efbed23c876c739cf5730a00b2f65a55eba",
+      "bytes": 772
+    },
+    "security/dependency-inventory.json": {
+      "sha256": "a80ca4c9234bddf00cfb0d437f73d4b6d235894dfa2c4c738996520bfc3a3796",
+      "bytes": 24906
+    },
+    "security/dependency-scan.json": {
+      "sha256": "0b571c2596fe732980f5dfbc05bc621c688382d42e66a93b2048aafa1410193d",
+      "bytes": 3673
+    },
+    "security/npm-assessment.json": {
+      "sha256": "73fa003f5a80e4f12b9d20e0918633621b818939f7aac5fbafa75f9b3b090909",
+      "bytes": 339
+    },
+    "security/npm-audit.json": {
+      "sha256": "6ae9ece9c997f444752fe00af6334687fbc12adc1dfd324ebdf6b95065775343",
+      "bytes": 1653
+    },
+    "security/secret-scan.json": {
+      "sha256": "f7f043314cadef8ece822e9deacb4ab1b63b072a9633cabe25d9907f4c860fde",
+      "bytes": 213
+    },
+    "local/journey/checkpoint.json": {
+      "sha256": "b1684678b9a7ff18244c3d1c2f0bdeee77a1560c760d99286889d03b48cb79ef",
+      "bytes": 473
+    },
+    "local/journey/configuration.json": {
+      "sha256": "cb1c78028ab1d33e9e7a67ddbabae8f70057c09b77592da84fb188d9a2cb9a63",
+      "bytes": 138
+    },
+    "local/journey/input.json": {
+      "sha256": "b8a6be272865c169a06b86ddced6da6329ae2899e94836a1ebe967f932ea42e5",
+      "bytes": 163786
+    },
+    "local/bundles/journey-etl/configuration.example.json": {
+      "sha256": "35563cb4cfa2cad360cc8bab579672b4a00b9714881ce678a024b4d5dbd4b531",
+      "bytes": 132
+    },
+    "local/bundles/journey-etl/etl.spec.json": {
+      "sha256": "87502309728fa6ba6f6d8654a726e86bc80c016abbe535f53b7d436daedbd533",
+      "bytes": 2635
+    },
+    "local/bundles/journey-etl/example.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "local/bundles/journey-etl/manifest.json": {
+      "sha256": "e1a77deec2b74be239315e650697b9cd9fa36ff60c6951495603ccd2658bcd0c",
+      "bytes": 1594
+    },
+    "local/bundles/journey-schema/manifest.json": {
+      "sha256": "c18bbbc2bd8dc8ff4c8cf7d596120b10e93cbf50e158e92ec2b7636c44099bf8",
+      "bytes": 1020
+    },
+    "local/bundles/journey-schema/schema.json": {
+      "sha256": "abaae64598bff2d438b4fe318e41337e4787016c0061ac6f5ad691ced0fca90a",
+      "bytes": 1123
+    },
+    "local/bundles/journey-view/manifest.json": {
+      "sha256": "e2d4fff5d81a56c5a27d55b18b45d1aa8d693ee8a3e057347063c046c564c007",
+      "bytes": 1001
+    },
+    "local/bundles/journey-view/view.spec.json": {
+      "sha256": "72499d7be31b16d79f90e0747cdeb8c7c4bdc6ee804a258dff37689ef64b3541",
+      "bytes": 1426
+    },
+    "local/bundles/maximum-schema/manifest.json": {
+      "sha256": "ca36ad3ca253b45419a57972290a549f3f7dda440dfc467757b5618eb3eddbc7",
+      "bytes": 1023
+    },
+    "local/bundles/maximum-schema/schema.json": {
+      "sha256": "fc038be77cbbc7b658d6c06b7db7254891c0b6d3e11bc0ea4a2f971cb6f007c6",
+      "bytes": 81709
+    }
+  },
+  "finalReview": {
+    "path": ".b7\\20261006T051951458194Z\\final-review.json",
+    "sha256": "e396233dff01a6eee620c5a738b2e1a35c1f455fcabbe9552b7d083594cdb482",
+    "status": "PASS",
+    "reportOnly": true
+  }
+}

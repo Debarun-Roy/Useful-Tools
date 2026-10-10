@@ -1,0 +1,7 @@
+# Independent security review packet
+
+Reviewer: unassigned. Status: BLOCKED. Scope must include generator, both starter adapters, packaging/deployment and privacy, with exact final input/artifact fingerprints from B7 evidence. Automated second passes and implementation authors do not sign for this gate.
+
+Read capability-matrix, security-review, defect-register, B5/B6 threat models/reviews/decisions, contracts0.2–0.6 and current dependency inventories. Reproduce `python -X utf8 scripts/b7/verify.py --browser-channel chrome` on an isolated host. Examine generator GenerationController/GenerationAccess/strict decoder/archive path handling and fixed template resources; independently attack parser/resource limits, Origin/CSRF/cookies, session lifecycle races, DB initialization/transactions, password/ownership, provider transports and Redis outages/namespace isolation. Confirm fixture classes are absent from production WAR and generated bundles.
+
+Return: reviewer name/organization, independence statement, UTC date, scope/exclusions, fingerprint, artifact SHA256s, methods/versions, findings with reproduction/impact/severity, residual risks, dispositions, remediation evidence and explicit approve/reject. Review any changed inputs again. Acceptance requires no unresolved release-blocking finding and explicit coverage of both languages/DBs plus intended deployment topology. Do not send this packet without user authorization.

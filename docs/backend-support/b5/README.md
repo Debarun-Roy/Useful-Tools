@@ -1,0 +1,7 @@
+# B5 Java auth starter
+
+Scope is BS07–BS08, depending on B1/B2 and preserving B0–B4. The generator renders fixed source templates; it never executes the exported application in production. Java Servlet/Maven WAR with SQLite or PostgreSQL is the only B5 target. Core authentication is required; profile is optional. Python remains unavailable until B6. No recovery, MFA, email, OAuth, JWT or arbitrary endpoint generation.
+
+Run from the inner Useful-Tools repository: `python -X utf8 scripts/b5/verify.py --browser-channel chrome` (omit the channel for pinned Chromium). The verifier runs B4 once through B3/B2/B1/B0, restores historical reports even on failure, checks earlier bundle bytes, installs pinned verification tooling in a fresh disposable environment, and verifies eight actual HTTP-exported Java projects. It returns nonzero for required failure or missing infrastructure. Diagnostic --only/--no-openapi application runs cannot certify B5.
+
+Status belongs to continuation.md and sprint-pass.md/evidence.json. Certification exercises actual HTTP ZIP exports, release-17 compilation, actual WAR execution on the recorded JDK/Tomcat, both databases and CAPTCHA on/off, with profile present/absent. Existing B4 PASS is historical only. External release still requires independent security review; B5 self-review is not that review. No hosted CI, Java 17 runtime execution or production readiness follows from local checks.

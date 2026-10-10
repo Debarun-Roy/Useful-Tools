@@ -1,0 +1,13 @@
+# B4 continuation — complete
+
+Active scope: B4 / BS06 Python ETL. Authoritative user prompt: attachment 811fe3a6-ad79-49aa-98a8-c7389ea1c9c2; latest recovery request d4baf521-5229-43b4-9e3a-f15016bc7ab7. Six original planning documents, B3 final handoff, B4 decisions and requirements-to-tests.md define the scope. No AGENTS.md found. B5 remains unstarted.
+
+Final verdict PASS: all G1–G10. Repository main, HEAD b36265e70701221a748b3f4881524c289bf32dd6; B0–B4 dirty work preserved, no commit/push/branch change/deployment/production access. Certified input/final fingerprint 4949b625ad6da743760cd88719cee845ded2859a9e030a6fbc1c6aea1638b419. Evidence .b4\20260926T053511Z; timestamp 2026-09-26T05:45:22.617925+00:00. Finalization rechecked this fingerprint and historical B0–B3 report bytes.
+
+Classification: all B4 deliverables implemented and verified against final inputs. No partial, unstarted, blocked or pending B4 acceptance work. No owned Java/Python/PostgreSQL verification processes remain; unfamiliar Node processes were left alone. Yesterday's automatic approval review usage-limit failure was resolved on the resumed run.
+
+Command: python -X utf8 scripts/b4/verify.py --browser-channel chrome; cwd inner Useful-Tools repository. It completed the B3/B2/B1/B0 chain once, pinned-byte checks, 45 backend tests, 180 generated-runtime cases/36 groups in four fresh environments, 218 HTTP requests, 36 ETL exports, seven browser groups/ten themes/twenty screenshots and 83 contract assertions. Versions: Python 3.14.3, SQLite 3.50.4, PostgreSQL 17.11, psycopg/psycopg-binary 3.3.6, tzdata 2026.4, Chrome 153.0.8010.54. No skipped required checks.
+
+Last completed action: full certification and report-only handoff finalization. No action in progress. Next action only on a new user request: recover B5's sprint-specific scope using b5-handoff.md. If B4 implementation/configuration/tests change, rerun the complete verifier and refresh evidence; do not reuse old PASS blindly. Review.md preserves test corrections and decisions, including UTC display assertions, CSV versus JSON nested types, Java 17 release compatibility and real textarea change events.
+
+Limits: Windows certification boundary, finite destination metadata checks, SQLite approximate NUMERIC storage, bounded local files, batch rather than whole-file atomicity, external checkpoint replay gap, explicit insert replay acknowledgement and repeated upsert side effects. No exactly-once, hosted CI or production-readiness claim. Final report and machine evidence contain exact commands, cwd, exit codes and installation inventories.
