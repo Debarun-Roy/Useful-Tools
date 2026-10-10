@@ -1,4 +1,18 @@
-/* Use the existing local/system font stacks; the WAR CSP intentionally forbids remote fonts. */
+/* Original application families, self-hosted to preserve CSP and local isolation. */
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('./assets/fonts/plus-jakarta-sans-variable.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('./assets/fonts/jetbrains-mono-variable.ttf') format('truetype');
+}
 
 *,
 *::before,

@@ -1,0 +1,33 @@
+{
+  "commit": "bd8f81ddb5c74d5c8897b36ad88b440266245103",
+  "files": [
+    {
+      "path": "plusjakartasans/PlusJakartaSans[wght].ttf",
+      "url": "https://raw.githubusercontent.com/google/fonts/bd8f81ddb5c74d5c8897b36ad88b440266245103/ofl/plusjakartasans/PlusJakartaSans%5Bwght%5D.ttf",
+      "sha256": "89b3fb38aa0d275d7a731d0d817a4f1622b316b4d7fbdedcf02ee9099ff68bc8",
+      "bytes": 176288,
+      "shippedPath": "plus-jakarta-sans-variable.ttf"
+    },
+    {
+      "path": "plusjakartasans/OFL.txt",
+      "url": "https://raw.githubusercontent.com/google/fonts/bd8f81ddb5c74d5c8897b36ad88b440266245103/ofl/plusjakartasans/OFL.txt",
+      "sha256": "995c7199cab65954f545996326755daee7b63cc6b42b06c13da1f9502ab08a99",
+      "bytes": 4402,
+      "shippedPath": "plusjakartasans-OFL.txt"
+    },
+    {
+      "path": "jetbrainsmono/JetBrainsMono[wght].ttf",
+      "url": "https://raw.githubusercontent.com/google/fonts/bd8f81ddb5c74d5c8897b36ad88b440266245103/ofl/jetbrainsmono/JetBrainsMono%5Bwght%5D.ttf",
+      "sha256": "48715a42ec242c21e9f02692891e147d022299a52e48d5e413e1a942193ffeda",
+      "bytes": 187208,
+      "shippedPath": "jetbrains-mono-variable.ttf"
+    },
+    {
+      "path": "jetbrainsmono/OFL.txt",
+      "url": "https://raw.githubusercontent.com/google/fonts/bd8f81ddb5c74d5c8897b36ad88b440266245103/ofl/jetbrainsmono/OFL.txt",
+      "sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+      "bytes": 4399,
+      "shippedPath": "jetbrainsmono-OFL.txt"
+    }
+  ]
+}

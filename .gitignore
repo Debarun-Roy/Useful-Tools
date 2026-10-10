@@ -129,3 +129,7 @@ remaining_tasks.txt
 /.local/
 /Useful-Tools/usefultools_dump.sql
 /usefultools-frontend/.codex-logs/
+
+# Optional GitHub Actions certification runners (not application runtime).
+# Already tracked workflows remain tracked until explicitly removed from Git.
+/.github/workflows/

@@ -153,3 +153,11 @@
     padding: var(--space-md);
   }
 }
+
+/* Local integration notices are readable on the shared dark auth card. */
+.card > p[role="status"] {
+  color: var(--clr-dark-text);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  margin-bottom: var(--space-lg);
+}
