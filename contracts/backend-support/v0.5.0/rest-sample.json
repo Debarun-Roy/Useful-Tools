@@ -1,0 +1,10 @@
+{
+  "schemaVersion":"0.5.0","templateVersion":"java-auth-0.5.0-b5","module":"rest","target":"java",
+  "database":"sqlite","project":"auth-starter","packageName":"example.auth","container":"tomcat-11",
+  "modules":["core","profile"],"mode":"production","origins":["https://localhost:8443"],
+  "session":{"idleSeconds":900,"absoluteSeconds":28800},
+  "policy":{"username":"ascii-lower-3-32","passwordMin":15,"passwordMax":128},
+  "profile":{"displayNameMax":100,"preferenceCount":20,"preferenceValueMax":200},
+  "captcha":{"mode":"off","secretEnv":"AUTH_CAPTCHA_SECRET","hostname":"localhost","minimumScore":0.5},
+  "runtime":{"databaseEnv":"AUTH_DATABASE","databaseUserEnv":"AUTH_DATABASE_USER","databasePasswordEnv":"AUTH_DATABASE_PASSWORD","initializeEnv":"AUTH_INITIALIZE"}
+}

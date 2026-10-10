@@ -44,6 +44,7 @@ usefultools-frontend/dist/
 .env
 .env.*
 !.env.example
+!.env.*.example
 
 ######################################
 # DOCKER TEMP FILES
@@ -71,7 +72,9 @@ docs/
 #######################################
 # ZIP FILES
 #######################################
-*.zip
+/.b7.zip
+/codebase.zip
+/docs.zip
 
 #######################################
 # DEBUG TXT FILES
@@ -82,8 +85,6 @@ railway_ssh.txt
 #######################################
 # RAILWAY CLI PACKAGE FILES
 #######################################
-package-lock.json
-package.json
 
 #######################################
 # RAILWAY CLI NODE MODULES
@@ -99,3 +100,31 @@ node_modules
 # OTHER TXT FILES
 #######################################
 remaining_tasks.txt
+
+# B0 disposable dependencies and evidence
+**/target/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+/.b0/
+
+# B1 disposable evidence
+/.b1/
+
+/scripts/b1/runtime/classpath.txt
+/.b2/
+
+# B3 disposable verification
+/.b3/
+/.b4/
+/.b5/
+
+/.b6/
+
+# B7 disposable qualification evidence
+/.b7/
+
+# Localhost runtime, private database dump, generated frontend run logs
+/.local/
+/Useful-Tools/usefultools_dump.sql
+/usefultools-frontend/.codex-logs/

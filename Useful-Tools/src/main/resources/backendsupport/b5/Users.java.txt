@@ -1,0 +1,93 @@
+package @PACKAGE@;
+
+import com.google.gson.*;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.sql.*;
+import java.util.*;
+
+/** Both adapters share parameterized SQL and explicit per-operation transactions. */
+public final class Users {
+    public record User(String id,String username,String hash,String displayName,JsonObject preferences) {
+        public Map<String,Object> identity(){return Map.of("id",id,"username",username,"role","user");}
+        public Map<String,Object> profile(){return Map.of("id",id,"username",username,"role","user","displayName",displayName,"preferences",preferences);}
+    }
+    private final Config config;
+    public Users(Config config)throws SQLException,IOException {
+        this.config=config;
+        try{Class.forName(config.postgres?"org.postgresql.Driver":"org.sqlite.JDBC");}catch(ClassNotFoundException error){throw new IllegalStateException("MISSING_DATABASE_DRIVER");}
+        try(Connection connection=open()) {
+            connection.setAutoCommit(false);
+            try {
+                boolean version=false;try(ResultSet tables=connection.getMetaData().getTables(null,config.postgres?"public":null,"auth_schema_version",new String[]{"TABLE"})){version=tables.next();}
+                if(!version) {
+                    if(!config.initialize)throw new SQLException("SCHEMA_INITIALIZATION_REQUIRED");
+                    // This is a new-install operation, never a migration over existing application tables.
+                    try(ResultSet tables=connection.getMetaData().getTables(null,config.postgres?"public":null,"%",new String[]{"TABLE"})) {
+                        while(tables.next())if(!tables.getString("TABLE_NAME").startsWith("sqlite_"))throw new SQLException("EMPTY_DATABASE_REQUIRED");
+                    }
+                    try(InputStream in=Users.class.getResourceAsStream("/V001__auth.sql")) {
+                        if(in==null)throw new IOException("MISSING_SCHEMA");
+                        for(String sql:new String(in.readAllBytes(),StandardCharsets.UTF_8).split(";"))if(!sql.isBlank())try(Statement statement=connection.createStatement()){statement.execute(sql);}
+                    }
+                }
+                try(Statement statement=connection.createStatement();ResultSet rows=statement.executeQuery("SELECT version FROM auth_schema_version")) {
+                    if(!rows.next()||rows.getInt(1)!=1||rows.next())throw new SQLException("UNSUPPORTED_SCHEMA_VERSION");
+                }
+                // Required columns must exist before startup succeeds.
+                try(Statement statement=connection.createStatement();ResultSet rows=statement.executeQuery("SELECT id,username,password_hash,role,display_name,preferences FROM auth_users WHERE 1=0")){}
+                connection.commit();
+            }catch(SQLException|IOException error){connection.rollback();throw error;}
+        }
+    }
+    private Connection open()throws SQLException {
+        if(config.postgres) {
+            Properties properties=new Properties();properties.setProperty("user",config.user);properties.setProperty("password",config.password);
+            properties.setProperty("connectTimeout","3");properties.setProperty("socketTimeout","5");properties.setProperty("options","-c search_path=public -c statement_timeout=5000");
+            return DriverManager.getConnection(config.database,properties);
+        }
+        Properties properties=new Properties();properties.setProperty("busy_timeout","5000");properties.setProperty("foreign_keys","true");
+        return DriverManager.getConnection("jdbc:sqlite:"+config.database,properties);
+    }
+    public User find(String username)throws SQLException {return query("SELECT id,username,password_hash,display_name,preferences FROM auth_users WHERE username=?",username);}
+    public User byId(String id)throws SQLException {return query("SELECT id,username,password_hash,display_name,preferences FROM auth_users WHERE id=?",id);}
+    private User query(String sql,String value)throws SQLException {
+        try(Connection connection=open();PreparedStatement statement=connection.prepareStatement(sql)) {
+            statement.setString(1,value);try(ResultSet rows=statement.executeQuery()){return rows.next()?read(rows):null;}
+        }
+    }
+    private static User read(ResultSet row)throws SQLException {
+        return new User(row.getString(1),row.getString(2),row.getString(3),row.getString(4),JsonParser.parseString(row.getString(5)).getAsJsonObject());
+    }
+    public void register(String username,String hash)throws SQLException {
+        try(Connection connection=open()) {
+            connection.setAutoCommit(false);
+            try(PreparedStatement statement=connection.prepareStatement("INSERT INTO auth_users(id,username,password_hash,role,display_name,preferences) VALUES(?,?,?,'user','','{}')")) {
+                statement.setString(1,UUID.randomUUID().toString());statement.setString(2,username);statement.setString(3,hash);statement.executeUpdate();connection.commit();
+            }catch(SQLException error) {
+                connection.rollback();
+                if("23505".equals(error.getSQLState())||!config.postgres&&error.getErrorCode()==19&&error.getMessage()!=null&&error.getMessage().contains("UNIQUE constraint failed: auth_users.username"))throw new Api.Failure(409,"USERNAME_UNAVAILABLE");
+                throw error;
+            }
+        }
+    }
+    public User update(String id,JsonObject patch)throws SQLException {
+        try(Connection connection=open()) {
+            connection.setAutoCommit(false);
+            try {
+                // Each supplied field updates independently; no stale read-modify-write of omitted fields.
+                for(String key:List.of("displayName","preferences"))if(patch.has(key)) {
+                    String column=key.equals("displayName")?"display_name":"preferences";
+                    try(PreparedStatement statement=connection.prepareStatement("UPDATE auth_users SET "+column+"=? WHERE id=?")) {
+                        statement.setString(1,key.equals("displayName")?patch.get(key).getAsString():Api.JSON.toJson(patch.get(key)));statement.setString(2,id);
+                        if(statement.executeUpdate()!=1)throw new Api.Failure(401,"UNAUTHENTICATED");
+                    }
+                }
+                User result;try(PreparedStatement statement=connection.prepareStatement("SELECT id,username,password_hash,display_name,preferences FROM auth_users WHERE id=?")) {
+                    statement.setString(1,id);try(ResultSet rows=statement.executeQuery()){if(!rows.next())throw new Api.Failure(401,"UNAUTHENTICATED");result=read(rows);}
+                }
+                connection.commit();return result;
+            }catch(SQLException|RuntimeException error){connection.rollback();throw error;}
+        }
+    }
+}

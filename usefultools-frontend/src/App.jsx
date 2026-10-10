@@ -15,6 +15,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage'
 // Sprint 24: Code-splitting. Vite 8 automatically creates one JS chunk per
 // dynamic import, so the initial bundle only contains the shell, auth, and
 // public pages. Each tool page is fetched on first navigation to that route.
+const BackendSupportPage = lazy(() => import('./pages/BackendSupportPage/BackendSupportPage'))
 const DashboardPage            = lazy(() => import('./pages/DashboardPage/DashboardPage'))
 const CalculatorPage           = lazy(() => import('./pages/CalculatorPage/CalculatorPage'))
 const NumberAnalyserPage       = lazy(() => import('./pages/NumberAnalyzerPage/NumberAnalyzerPage'))
@@ -77,6 +78,7 @@ export default function App() {
               <Route path="/update-password" element={
                 <ProtectedRoute><UpdatePasswordPage /></ProtectedRoute>
               } />
+              <Route path="/backend-support" element={<ProtectedRoute><BackendSupportPage /></ProtectedRoute>} />
               <Route path="/dashboard" element={
                 <ProtectedRoute><DashboardPage /></ProtectedRoute>
               } />

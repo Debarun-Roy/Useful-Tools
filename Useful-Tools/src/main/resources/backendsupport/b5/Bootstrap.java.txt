@@ -1,0 +1,23 @@
+package @PACKAGE@;
+
+import jakarta.servlet.*;
+import java.time.Clock;
+import java.util.Set;
+
+public final class Bootstrap implements ServletContextListener {
+    public record Application(Config config,Users users,Sessions sessions,Limiter limiter,AuthService auth) {}
+    public static Application application(ServletContext context){return (Application)context.getAttribute(Application.class.getName());}
+    /** External tests supply dependencies through Java wiring, not requests, environment switches or URLs. */
+    public static void initialize(ServletContext context,Config config,Clock clock,Captcha.Transport transport)throws Exception {
+        context.setSessionTrackingModes(Set.of(SessionTrackingMode.COOKIE));
+        SessionCookieConfig cookie=context.getSessionCookieConfig();cookie.setName("JSESSIONID");cookie.setHttpOnly(true);cookie.setSecure(config.production);
+        cookie.setPath(context.getContextPath().isEmpty()?"/":context.getContextPath());cookie.setAttribute("SameSite","Lax");
+        Users users=new Users(config);Limiter limiter=new Limiter(clock);Sessions sessions=new Sessions(config,clock);
+        context.setAttribute(Application.class.getName(),new Application(config,users,sessions,limiter,new AuthService(config,users,new Passwords(config),new Captcha(config,clock,transport),limiter)));
+    }
+    @Override public void contextInitialized(ServletContextEvent event) {
+        try{initialize(event.getServletContext(),Config.load(),Clock.systemUTC(),new Captcha.Google());}
+        catch(Exception error){throw new IllegalStateException("AUTH_STARTUP_FAILED: check required configuration and database initialization");}
+    }
+    @Override public void contextDestroyed(ServletContextEvent event){event.getServletContext().removeAttribute(Application.class.getName());}
+}

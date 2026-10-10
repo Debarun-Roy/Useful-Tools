@@ -1,0 +1,79 @@
+package @PACKAGE@;
+
+import com.google.gson.*;
+import com.google.gson.stream.*;
+import jakarta.servlet.http.*;
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.charset.*;
+import java.math.BigDecimal;
+import java.util.*;
+
+/** Strict JSON and safe response boundary shared by every endpoint. */
+public final class Api {
+    private Api() {}
+    public static final Gson JSON=new GsonBuilder().disableHtmlEscaping().create();
+    public static final class Failure extends RuntimeException {
+        public final int status;public final String code;public final int retry;
+        public Failure(int status,String code){this(status,code,0);}
+        public Failure(int status,String code,int retry){super(code);this.status=status;this.code=code;this.retry=retry;}
+    }
+    public static void send(HttpServletResponse response,int status,Object value)throws IOException {
+        response.setStatus(status);if(status==204)return;
+        response.setContentType("application/json");response.setCharacterEncoding("UTF-8");
+        response.getWriter().write(JSON.toJson(value));
+    }
+    public static String text(JsonObject body,String key) {
+        if(!(body.get(key) instanceof JsonPrimitive v)||!v.isString())throw new Failure(400,"INVALID_FIELDS");
+        return v.getAsString();
+    }
+    public static void fields(JsonObject body,Set<String> allowed,Set<String> required) {
+        if(!allowed.containsAll(body.keySet())||!body.keySet().containsAll(required))throw new Failure(400,"INVALID_FIELDS");
+    }
+    public static JsonObject body(HttpServletRequest request)throws IOException {
+        String type=request.getContentType();
+        if(type==null||!type.matches("(?i)application/json(?:\\s*;\\s*charset=utf-8)?"))throw new Failure(415,"UNSUPPORTED_MEDIA_TYPE");
+        if(request.getContentLengthLong()>16384)throw new Failure(413,"BODY_TOO_LARGE");
+        JsonElement value=parse(request.getInputStream(),16384);
+        if(!value.isJsonObject())throw new Failure(400,"MALFORMED_JSON");return value.getAsJsonObject();
+    }
+    public static JsonElement parse(InputStream input,int max)throws IOException {
+        byte[] bytes=input.readNBytes(max+1);if(bytes.length>max)throw new Failure(413,"BODY_TOO_LARGE");
+        try {
+            String text=StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(bytes)).toString();
+            try(JsonReader reader=new JsonReader(new StringReader(text))) {
+                reader.setLenient(false);JsonElement value=read(reader,0,new int[1]);
+                if(reader.peek()!=JsonToken.END_DOCUMENT)throw new Failure(400,"MALFORMED_JSON");return value;
+            }
+        }catch(IOException|IllegalStateException|NumberFormatException ex){throw new Failure(400,"MALFORMED_JSON");}
+    }
+    private static String checked(String text) {
+        if(text.length()>4096)throw new Failure(413,"STRING_LIMIT");
+        for(int i=0;i<text.length();i++)if(Character.isSurrogate(text.charAt(i))) {
+            if(!Character.isHighSurrogate(text.charAt(i))||i+1>=text.length()||!Character.isLowSurrogate(text.charAt(++i)))throw new Failure(400,"MALFORMED_JSON");
+        }
+        return text;
+    }
+    private static JsonElement read(JsonReader reader,int depth,int[] nodes)throws IOException {
+        if(depth>8||++nodes[0]>256)throw new Failure(413,"COMPLEXITY_LIMIT");
+        switch(reader.peek()) {
+            case BEGIN_OBJECT: {
+                JsonObject out=new JsonObject();reader.beginObject();while(reader.hasNext()) {
+                    String name=checked(reader.nextName());if(out.has(name))throw new Failure(400,"DUPLICATE_KEY");
+                    out.add(name,read(reader,depth+1,nodes));
+                }reader.endObject();return out;
+            }
+            case BEGIN_ARRAY: {
+                JsonArray out=new JsonArray();reader.beginArray();while(reader.hasNext())out.add(read(reader,depth+1,nodes));reader.endArray();return out;
+            }
+            case STRING:return new JsonPrimitive(checked(reader.nextString()));
+            case NUMBER: {
+                String raw=reader.nextString();if(raw.length()>64)throw new Failure(400,"MALFORMED_JSON");
+                BigDecimal n=new BigDecimal(raw);if(n.precision()>32||Math.abs((long)n.scale())>100)throw new Failure(400,"MALFORMED_JSON");return new JsonPrimitive(n);
+            }
+            case BOOLEAN:return new JsonPrimitive(reader.nextBoolean());
+            case NULL:reader.nextNull();return JsonNull.INSTANCE;
+            default:throw new Failure(400,"MALFORMED_JSON");
+        }
+    }
+}

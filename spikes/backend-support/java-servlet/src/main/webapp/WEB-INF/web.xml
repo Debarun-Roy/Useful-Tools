@@ -1,0 +1,4 @@
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee" version="6.1">
+  <servlet><servlet-name>health</servlet-name><servlet-class>spike.HealthServlet</servlet-class></servlet>
+  <servlet-mapping><servlet-name>health</servlet-name><url-pattern>/health</url-pattern></servlet-mapping>
+</web-app>

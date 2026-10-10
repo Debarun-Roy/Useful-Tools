@@ -1,0 +1,651 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "success": {
+          "const": true
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "manifest": {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "type": "object",
+              "properties": {
+                "core": {
+                  "type": "object",
+                  "properties": {
+                    "manifestVersion": {
+                      "const": "1.1.0"
+                    },
+                    "schemaVersion": {
+                      "const": "0.3.0"
+                    },
+                    "templateVersion": {
+                      "enum": [
+                        "migration-0.3.0-b3",
+                        "view-0.3.0-b3",
+                        "evaluator-0.3.0-b3"
+                      ]
+                    },
+                    "target": {
+                      "enum": [
+                        "sqlite",
+                        "postgresql"
+                      ]
+                    },
+                    "specificationDigest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "verificationDependencies": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "maxItems": 100
+                    },
+                    "limitations": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "maxItems": 100
+                    },
+                    "files": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)+$"
+                          },
+                          "bytes": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 5242880
+                          },
+                          "sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          }
+                        },
+                        "required": [
+                          "path",
+                          "bytes",
+                          "sha256"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "maxItems": 100
+                    },
+                    "verificationRuntime": {
+                      "type": "string"
+                    },
+                    "module": {
+                      "enum": [
+                        "migration",
+                        "view",
+                        "evaluator"
+                      ]
+                    },
+                    "executableSql": {
+                      "type": "boolean"
+                    },
+                    "rulesetVersion": {
+                      "const": "schema-rules-0.3.0"
+                    }
+                  },
+                  "required": [
+                    "manifestVersion",
+                    "schemaVersion",
+                    "templateVersion",
+                    "target",
+                    "specificationDigest",
+                    "verificationDependencies",
+                    "limitations",
+                    "files",
+                    "verificationRuntime",
+                    "module",
+                    "executableSql"
+                  ],
+                  "additionalProperties": false
+                },
+                "digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "core",
+                "digest"
+              ],
+              "additionalProperties": false
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "findings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "ruleId": {
+                    "type": "string"
+                  },
+                  "severity": {
+                    "enum": [
+                      "error",
+                      "warning"
+                    ]
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "suggestion": {
+                    "type": "string"
+                  },
+                  "blocking": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "ruleId",
+                  "severity",
+                  "path",
+                  "message",
+                  "suggestion",
+                  "blocking"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 100
+            },
+            "adminPreview": {
+              "type": "boolean"
+            },
+            "files": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path",
+                  "content"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 100
+            },
+            "details": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "changes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "category": {
+                            "enum": [
+                              "Added",
+                              "Changed",
+                              "Removed",
+                              "Manual"
+                            ]
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "path": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "category",
+                          "code",
+                          "path"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "maxItems": 20000
+                    },
+                    "noOp": {
+                      "type": "boolean"
+                    },
+                    "executableSql": {
+                      "type": "boolean"
+                    },
+                    "automaticDown": {
+                      "type": "boolean"
+                    },
+                    "maintenanceWindowRequired": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "changes",
+                    "noOp",
+                    "executableSql",
+                    "automaticDown",
+                    "maintenanceWindowRequired"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "executableSql": {
+                      "const": true
+                    },
+                    "viewReady": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "executableSql",
+                    "viewReady"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "evaluationCompleted": {
+                      "const": true
+                    },
+                    "executableSql": {
+                      "const": false
+                    },
+                    "generationEligibility": {
+                      "const": "NOT_DETERMINED_RUN_GENERATOR_VALIDATION"
+                    },
+                    "hasErrors": {
+                      "type": "boolean"
+                    },
+                    "rulesetVersion": {
+                      "const": "schema-rules-0.3.0"
+                    },
+                    "findings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ruleId": {
+                            "type": "string"
+                          },
+                          "severity": {
+                            "enum": [
+                              "error",
+                              "warning"
+                            ]
+                          },
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "suggestion": {
+                            "type": "string"
+                          },
+                          "blocking": {
+                            "type": "boolean"
+                          },
+                          "blocks": {
+                            "type": "array",
+                            "items": {
+                              "enum": [
+                                "schema",
+                                "migration",
+                                "view"
+                              ]
+                            },
+                            "maxItems": 3
+                          }
+                        },
+                        "required": [
+                          "ruleId",
+                          "severity",
+                          "path",
+                          "message",
+                          "suggestion",
+                          "blocking",
+                          "blocks"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "maxItems": 100
+                    },
+                    "checksNotRun": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ruleId": {
+                            "type": "string"
+                          },
+                          "path": {
+                            "type": "string"
+                          },
+                          "reasonCode": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "ruleId",
+                          "path",
+                          "reasonCode"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "maxItems": 100
+                    },
+                    "truncated": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "evaluationCompleted",
+                    "executableSql",
+                    "generationEligibility",
+                    "hasErrors",
+                    "rulesetVersion",
+                    "findings",
+                    "checksNotRun",
+                    "truncated"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "manifest",
+            "digest",
+            "findings",
+            "adminPreview",
+            "files",
+            "details"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "success",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "success": {
+          "const": false
+        },
+        "error": {
+          "type": "string"
+        },
+        "errorCode": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "findings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "ruleId": {
+                    "type": "string"
+                  },
+                  "severity": {
+                    "enum": [
+                      "error",
+                      "warning"
+                    ]
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "suggestion": {
+                    "type": "string"
+                  },
+                  "blocking": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "ruleId",
+                  "severity",
+                  "path",
+                  "message",
+                  "suggestion",
+                  "blocking"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 100
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "details": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "changes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "category": {
+                            "enum": [
+                              "Added",
+                              "Changed",
+                              "Removed",
+                              "Manual"
+                            ]
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "path": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "category",
+                          "code",
+                          "path"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "maxItems": 20000
+                    },
+                    "noOp": {
+                      "type": "boolean"
+                    },
+                    "executableSql": {
+                      "type": "boolean"
+                    },
+                    "automaticDown": {
+                      "type": "boolean"
+                    },
+                    "maintenanceWindowRequired": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "changes",
+                    "noOp",
+                    "executableSql",
+                    "automaticDown",
+                    "maintenanceWindowRequired"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "executableSql": {
+                      "const": true
+                    },
+                    "viewReady": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "executableSql",
+                    "viewReady"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "evaluationCompleted": {
+                      "const": true
+                    },
+                    "executableSql": {
+                      "const": false
+                    },
+                    "generationEligibility": {
+                      "const": "NOT_DETERMINED_RUN_GENERATOR_VALIDATION"
+                    },
+                    "hasErrors": {
+                      "type": "boolean"
+                    },
+                    "rulesetVersion": {
+                      "const": "schema-rules-0.3.0"
+                    },
+                    "findings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ruleId": {
+                            "type": "string"
+                          },
+                          "severity": {
+                            "enum": [
+                              "error",
+                              "warning"
+                            ]
+                          },
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "suggestion": {
+                            "type": "string"
+                          },
+                          "blocking": {
+                            "type": "boolean"
+                          },
+                          "blocks": {
+                            "type": "array",
+                            "items": {
+                              "enum": [
+                                "schema",
+                                "migration",
+                                "view"
+                              ]
+                            },
+                            "maxItems": 3
+                          }
+                        },
+                        "required": [
+                          "ruleId",
+                          "severity",
+                          "path",
+                          "message",
+                          "suggestion",
+                          "blocking",
+                          "blocks"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "maxItems": 100
+                    },
+                    "checksNotRun": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ruleId": {
+                            "type": "string"
+                          },
+                          "path": {
+                            "type": "string"
+                          },
+                          "reasonCode": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "ruleId",
+                          "path",
+                          "reasonCode"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "maxItems": 100
+                    },
+                    "truncated": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "evaluationCompleted",
+                    "executableSql",
+                    "generationEligibility",
+                    "hasErrors",
+                    "rulesetVersion",
+                    "findings",
+                    "checksNotRun",
+                    "truncated"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "findings",
+            "truncated"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "success",
+        "error",
+        "errorCode"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

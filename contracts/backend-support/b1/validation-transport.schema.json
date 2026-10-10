@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://usefultools.invalid/contracts/backend-support/b1/validation-transport.schema.json",
+  "title": "B1 validation request transport",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sampleId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 63
+        }
+      },
+      "required": [
+        "sampleId"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "request": {
+          "$ref": "../v0.1.0/models.schema.json#/$defs/GenerationRequest"
+        }
+      },
+      "required": [
+        "request"
+      ]
+    }
+  ]
+}

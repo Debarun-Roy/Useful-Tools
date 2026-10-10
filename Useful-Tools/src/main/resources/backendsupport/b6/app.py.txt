@@ -1,0 +1,209 @@
+"""Single-worker FastAPI application; all public responses cross one safe boundary."""
+import asyncio
+import json
+import re
+import time
+import uuid
+from contextlib import asynccontextmanager
+from pathlib import Path
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, Response
+from .config import Config, LOOPBACK
+from .wire import Failure, body, fields, text, utf16_length
+from .security import Passwords, Limiter
+from .sessions import Sessions
+from .repository import Users, identity, profile
+from .captcha import Captcha, Google
+from .models import Credentials, CaptchaCredentials
+from pydantic import ValidationError
+
+METHODS = {'/api/auth/register': {'POST'}, '/api/auth/login': {'POST'},
+           '/api/auth/logout': {'POST'}, '/api/auth/session': {'GET'},
+           '/api/auth/csrf-token': {'GET'}, '/api/user/profile': {'GET', 'PATCH'}}
+
+class Runtime:
+    def __init__(self, config, clock, transport):
+        self.config, self.clock = config, clock
+        self.users = Users(config)
+        self.passwords = Passwords(config)
+        self.sessions = Sessions(config, clock)
+        self.limiter = Limiter(clock)
+        self.captcha = Captcha(config, clock, transport)
+        self.transport = transport
+
+    async def start(self):
+        await self.users.call('initialize')
+        await self.sessions.start()
+
+    async def close(self):
+        await self.sessions.close()
+        await self.transport.close()
+        self.users.work.close()
+        self.passwords.work.close()
+
+    async def user(self, state):
+        user = await self.users.call('find', 'id', state['userId']) if state and state.get('userId') else None
+        if user is None:
+            raise Failure(401, 'UNAUTHENTICATED')
+        return user
+
+    async def credentials(self, value, action):
+        keys = {'username', 'password'} | ({'captchaToken'} if self.config.captcha else set())
+        fields(value, keys, keys)
+        try:
+            model = (CaptchaCredentials if self.config.captcha else Credentials).model_validate(value)
+        except ValidationError:
+            raise Failure(400, 'INVALID_FIELDS') from None
+        username, password = model.username, model.password
+        if not re.fullmatch('[A-Za-z0-9_]{3,32}', username):
+            raise Failure(400, 'USERNAME_POLICY')
+        username = username.lower()
+        self.passwords.validate(password)
+        self.limiter.take(action + ':account:' + username, 10)
+        if self.config.captcha:
+            await self.captcha.verify(text(value, 'captchaToken'), action)
+        return username, password
+
+    def patch(self, value):
+        fields(value, {'displayName', 'preferences'})
+        if not value:
+            raise Failure(400, 'INVALID_FIELDS')
+        limits = self.config.spec['profile']
+        def controlled(s):
+            return any(ord(c) < 32 or 127 <= ord(c) <= 159 for c in s)
+        if 'displayName' in value:
+            name = text(value, 'displayName')
+            if len(name) > limits['displayNameMax'] or controlled(name):
+                raise Failure(400, 'INVALID_FIELDS')
+        if 'preferences' in value:
+            preferences = value['preferences']
+            if not isinstance(preferences, dict) or len(preferences) > limits['preferenceCount']:
+                raise Failure(400, 'INVALID_FIELDS')
+            for key in preferences:
+                item = text(preferences, key)
+                if not re.fullmatch('[a-z][a-z0-9_]{0,31}', key) or len(item) > limits['preferenceValueMax'] or controlled(item):
+                    raise Failure(400, 'INVALID_FIELDS')
+            # Gson's frozen wire-size policy escapes Unicode line/paragraph separators.
+            serialized = json.dumps(preferences, ensure_ascii=False, separators=(',', ':')).replace('\u2028', '\\u2028').replace('\u2029', '\\u2029')
+            if utf16_length(serialized) > 8192:
+                raise Failure(400, 'INVALID_FIELDS')
+
+    def cookie(self, response, value, clear=False):
+        # Only root deployment is supported; factory/CLI reject root_path configuration.
+        response.set_cookie('JSESSIONID', value, path='/', secure=self.config.production,
+                            httponly=True, samesite='Lax', max_age=0 if clear else None)
+
+    async def handle(self, request):
+        if request.scope.get('root_path'):
+            raise Failure(400, 'INVALID_REQUEST_TARGET')
+        secure = request.scope['scheme'] == 'https'
+        address = request.client.host if request.client else ''
+        if self.config.production and not secure:
+            raise Failure(400, 'HTTPS_REQUIRED')
+        if not self.config.production and not secure and address not in LOOPBACK:
+            raise Failure(400, 'LOOPBACK_REQUIRED')
+        path, method = request.url.path, request.method
+        if ';' in path or request.scope.get('query_string'):
+            raise Failure(400, 'INVALID_REQUEST_TARGET')
+        allowed = METHODS.get(path)
+        if allowed is None or path == '/api/user/profile' and not self.config.profile:
+            raise Failure(404, 'NOT_FOUND')
+        if method not in allowed:
+            response = self.error(405, 'METHOD_NOT_ALLOWED', request.state.request_id)
+            response.headers['Allow'] = ', '.join(sorted(allowed))
+            return response
+        credentials = path in ('/api/auth/login', '/api/auth/register')
+        self.limiter.take(path + ':address:' + address, 30 if credentials else 120)
+        value = await body(request) if method != 'GET' else None
+        supplied = request.cookies.get('JSESSIONID')
+        async with self.sessions.transaction(supplied) as sid:
+            state = await self.sessions.current(sid)
+            if method != 'GET':
+                origins = request.headers.getlist('origin')
+                if len(origins) != 1 or origins[0] not in self.config.origins:
+                    raise Failure(403, 'ORIGIN_REJECTED')
+                if not (path == '/api/auth/logout' and state is None):
+                    tokens = request.headers.getlist('x-csrf-token')
+                    if len(tokens) != 1:
+                        raise Failure(403, 'CSRF_REJECTED')
+                    self.sessions.check(state, tokens[0])
+            if path == '/api/auth/csrf-token':
+                new_sid, state = await self.sessions.bootstrap(sid, state)
+                response = JSONResponse({'csrfToken': state['csrf']})
+                if new_sid != sid:
+                    self.cookie(response, new_sid)
+                return response
+            if path == '/api/auth/session':
+                return JSONResponse({'authenticated': True, 'user': identity(await self.user(state))} if state and state.get('userId') else {'authenticated': False})
+            if credentials:
+                if state.get('userId'):
+                    raise Failure(409, 'ALREADY_AUTHENTICATED')
+                username, password = await self.credentials(value, path.rsplit('/', 1)[1])
+                if path.endswith('register'):
+                    encoded = await self.passwords.hash(password)
+                    await self.users.call('register', username, encoded)
+                    return JSONResponse({'registered': True}, status_code=201)
+                user = await self.users.call('find', 'username', username)
+                if not await self.passwords.verify(password, user['hash'] if user else None):
+                    raise Failure(401, 'INVALID_CREDENTIALS')
+                new_sid, state = await self.sessions.rotate(sid, state, user)
+                response = JSONResponse({'authenticated': True, 'user': identity(user)})
+                self.cookie(response, new_sid)
+                return response
+            if path == '/api/auth/logout':
+                fields(value, set())
+                await self.sessions.remove(sid)
+                response = Response(status_code=204)
+                self.cookie(response, '', clear=True)
+                return response
+            user = await self.user(state)
+            if method == 'PATCH':
+                self.patch(value)
+                user = await self.users.call('update', user['id'], value)
+            return JSONResponse(profile(user))
+
+    @staticmethod
+    def error(status, code, request_id, retry=0):
+        response = JSONResponse({'error': code, 'requestId': request_id}, status_code=status)
+        if retry:
+            response.headers['Retry-After'] = str(retry)
+        return response
+
+def create_app(config=None, *, clock=time.time, transport=None):
+    """External test construction may inject dependencies; no environment bypass flags."""
+    config = config or Config.load()
+    runtime = Runtime(config, clock, transport or Google())
+    @asynccontextmanager
+    async def lifespan(app):
+        try:
+            await runtime.start()
+            yield
+        except Exception:
+            raise RuntimeError('APPLICATION_UNAVAILABLE') from None
+        finally:
+            await runtime.close()
+    app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+    app.state.runtime = runtime
+    @app.middleware('http')
+    async def boundary(request, call_next):
+        request.state.request_id = str(uuid.uuid4())
+        try:
+            response = await call_next(request)
+        except Failure as error:
+            response = runtime.error(error.status, error.code, request.state.request_id, error.retry)
+        except Exception:
+            response = runtime.error(503, 'SERVICE_UNAVAILABLE', request.state.request_id)
+        response.headers.update({'X-Request-ID': request.state.request_id, 'Cache-Control': 'no-store',
+            'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+            'Referrer-Policy': 'no-referrer'})
+        if config.production:
+            response.headers['Strict-Transport-Security'] = 'max-age=31536000'
+        return response
+    @app.api_route('/{path:path}', methods=['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'CONNECT'], include_in_schema=False)
+    async def dispatch(request: Request, path: str):
+        return await runtime.handle(request)
+    @app.exception_handler(405)
+    async def method_error(request, error):
+        return runtime.error(405, 'METHOD_NOT_ALLOWED', request.state.request_id)
+    app.openapi = lambda: json.loads((Path(__file__).parent / 'openapi.json').read_text('utf-8'))
+    return app

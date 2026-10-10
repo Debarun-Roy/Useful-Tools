@@ -1,15 +1,17 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { setDefaultResultOrder } from 'node:dns'
+setDefaultResultOrder('ipv4first')
 
 /**
  * Vite configuration for UsefulTools frontend.
  *
  * THE PROXY — why it exists:
- * During development, Vite runs on port 3000 and Tomcat runs on port 8080.
- * A fetch('/api/auth/login') from React would try to hit localhost:3000/api/...
+ * During development, Vite runs on port 5173 and Tomcat runs on port 8080.
+ * A fetch('/api/auth/login') from React would try to hit localhost:5173/api/...
  * which doesn't exist. The proxy intercepts any request whose path starts with
  * /api and silently forwards it to localhost:8080. The browser never knows —
- * it thinks it's talking to port 3000 the whole time.
+ * it thinks it's talking to port 5173 the whole time.
  *
  * This means:
  *   1. No CORS issues during development (same-origin from the browser's view).
@@ -40,12 +42,15 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3000,
+    host: 'localhost',
+    // API preflight must reach the backend's explicit credentialed-origin policy.
+    cors: false,
+    port: 5173,
     strictPort: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080/UsefulTools',
-        changeOrigin: true,
+        target: 'http://localhost:8080',
+        changeOrigin: false,
         secure: false,
       },
     },

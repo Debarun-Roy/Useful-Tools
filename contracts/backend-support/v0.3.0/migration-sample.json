@@ -1,0 +1,280 @@
+{
+  "schemaVersion": "0.3.0",
+  "module": "migration",
+  "templateVersion": "migration-0.3.0-b3",
+  "target": "sqlite",
+  "before": {
+    "schemaVersion": "0.2.0",
+    "templateVersion": "schema-0.2.0-b2",
+    "module": "schema",
+    "target": "sqlite",
+    "tables": [
+      {
+        "id": "customers",
+        "name": "customers",
+        "columns": [
+          {
+            "id": "id",
+            "name": "id",
+            "type": "integer",
+            "nullable": false
+          },
+          {
+            "id": "name",
+            "name": "name",
+            "type": "varchar",
+            "nullable": false,
+            "length": 80
+          },
+          {
+            "id": "active",
+            "name": "active",
+            "type": "boolean",
+            "nullable": false,
+            "default": {
+              "kind": "literal",
+              "value": true
+            }
+          }
+        ],
+        "primaryKey": [
+          "id"
+        ],
+        "unique": [
+          [
+            "name"
+          ]
+        ],
+        "foreignKeys": [],
+        "indexes": [],
+        "checks": []
+      },
+      {
+        "id": "orders",
+        "name": "orders",
+        "columns": [
+          {
+            "id": "id",
+            "name": "id",
+            "type": "integer",
+            "nullable": false
+          },
+          {
+            "id": "customer_id",
+            "name": "customer_id",
+            "type": "integer",
+            "nullable": false
+          },
+          {
+            "id": "amount",
+            "name": "amount",
+            "type": "decimal",
+            "nullable": false,
+            "precision": 12,
+            "scale": 2,
+            "default": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "id": "created_at",
+            "name": "created_at",
+            "type": "timestamp",
+            "nullable": false,
+            "default": {
+              "kind": "currentTimestamp"
+            }
+          },
+          {
+            "id": "metadata",
+            "name": "metadata",
+            "type": "json",
+            "nullable": false,
+            "default": {
+              "kind": "literal",
+              "value": "{}"
+            }
+          }
+        ],
+        "primaryKey": [
+          "id"
+        ],
+        "unique": [],
+        "foreignKeys": [
+          {
+            "columns": [
+              "customer_id"
+            ],
+            "tableId": "customers",
+            "targetColumns": [
+              "id"
+            ],
+            "onDelete": "CASCADE",
+            "onUpdate": "CASCADE"
+          }
+        ],
+        "indexes": [
+          {
+            "id": "by_customer",
+            "name": "orders_by_customer",
+            "columns": [
+              "customer_id"
+            ],
+            "unique": false
+          }
+        ],
+        "checks": [
+          {
+            "column": "amount",
+            "op": "ge",
+            "value": 0
+          }
+        ]
+      }
+    ]
+  },
+  "after": {
+    "schemaVersion": "0.2.0",
+    "templateVersion": "schema-0.2.0-b2",
+    "module": "schema",
+    "target": "sqlite",
+    "tables": [
+      {
+        "id": "customers",
+        "name": "customers",
+        "columns": [
+          {
+            "id": "id",
+            "name": "id",
+            "type": "integer",
+            "nullable": false
+          },
+          {
+            "id": "name",
+            "name": "name",
+            "type": "varchar",
+            "nullable": false,
+            "length": 80
+          },
+          {
+            "id": "active",
+            "name": "active",
+            "type": "boolean",
+            "nullable": false,
+            "default": {
+              "kind": "literal",
+              "value": true
+            }
+          },
+          {
+            "id": "email",
+            "name": "email",
+            "type": "text",
+            "nullable": true
+          }
+        ],
+        "primaryKey": [
+          "id"
+        ],
+        "unique": [
+          [
+            "name"
+          ]
+        ],
+        "foreignKeys": [],
+        "indexes": [],
+        "checks": []
+      },
+      {
+        "id": "orders",
+        "name": "orders",
+        "columns": [
+          {
+            "id": "id",
+            "name": "id",
+            "type": "integer",
+            "nullable": false
+          },
+          {
+            "id": "customer_id",
+            "name": "customer_id",
+            "type": "integer",
+            "nullable": false
+          },
+          {
+            "id": "amount",
+            "name": "amount",
+            "type": "decimal",
+            "nullable": false,
+            "precision": 12,
+            "scale": 2,
+            "default": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "id": "created_at",
+            "name": "created_at",
+            "type": "timestamp",
+            "nullable": false,
+            "default": {
+              "kind": "currentTimestamp"
+            }
+          },
+          {
+            "id": "metadata",
+            "name": "metadata",
+            "type": "json",
+            "nullable": false,
+            "default": {
+              "kind": "literal",
+              "value": "{}"
+            }
+          }
+        ],
+        "primaryKey": [
+          "id"
+        ],
+        "unique": [],
+        "foreignKeys": [
+          {
+            "columns": [
+              "customer_id"
+            ],
+            "tableId": "customers",
+            "targetColumns": [
+              "id"
+            ],
+            "onDelete": "CASCADE",
+            "onUpdate": "CASCADE"
+          }
+        ],
+        "indexes": [
+          {
+            "id": "by_customer",
+            "name": "orders_by_customer",
+            "columns": [
+              "customer_id"
+            ],
+            "unique": false
+          }
+        ],
+        "checks": [
+          {
+            "column": "amount",
+            "op": "ge",
+            "value": 0
+          }
+        ]
+      }
+    ]
+  },
+  "renames": {
+    "tables": [],
+    "columns": []
+  },
+  "acknowledgeDestructive": false,
+  "externalDependenciesReviewed": false
+}

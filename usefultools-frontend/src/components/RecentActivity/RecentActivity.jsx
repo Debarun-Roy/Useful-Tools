@@ -40,6 +40,7 @@ const LIMIT = 5
 // Metadata per tool name — drives the row icon, label, and click target.
 // The tool_name values here MUST match ActivityDAO.VALID_TOOL_NAMES.
 const TOOL_META = {
+  'backend-support.validate': { icon: '⌘', label: 'Backend Support', path: '/backend-support' },
   'analyzer.classify':  { icon: '🔢', label: 'Number Analyser',       path: '/analyser'   },
   'converter.convert':  { icon: '🔄', label: 'Unit Converter',        path: '/converter'  },
   'text.transform':     { icon: '📝', label: 'Text Utilities',        path: '/text-utils' },

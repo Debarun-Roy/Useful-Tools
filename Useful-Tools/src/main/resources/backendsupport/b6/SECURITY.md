@@ -1,0 +1,9 @@
+# Security and operating boundaries
+
+Independent security review is required before external deployment. One application process and worker only; no shared sessions with Java, no multi-instance revocation or distributed throttling claim. Use the supplied launcher with direct TLS, no proxy headers, bounded concurrency and no access logging. Unrelated log infrastructure must not record bodies, cookies, authorization material or environment secrets. Root-path deployment is rejected.
+
+Argon2id uses m=19456 KiB, t=2, p=1, random 16-byte salt and 32-byte hash. Passwords are unchanged 15–128 Unicode code points by default, at most 512 UTF-8 bytes. Two hash slots reject excess concurrent work without unbounded queueing. Missing/malformed hashes use bounded dummy verification; there is no constant-time HTTP claim. Future hash-policy changes require a reviewed versioned rehash migration after successful login.
+
+Redis should be dedicated or restricted by ACL to the application-owned prefix and required GET/SET/DEL/PING operations. Every boot has a random prefix; old keys expire naturally. No broad cleanup is performed. Memory limits must fail closed, not evict sessions into an insecure fallback. RedisStore is used explicitly, not automatic response persistence. Serialize operations for the presented session through the full handler; logout and rotation revoke old authorization before returning. Failure may revoke a session without completing the response, requiring a new bootstrap.
+
+Use least-privilege database credentials, controlled SQLite directories, protected Redis transport outside loopback, secret injection and bounded request/connectors. The initial schema is for new empty databases; back up and review future migrations separately. Provider outage rejects enabled CAPTCHA operations. No recovery, MFA, email, OAuth, JWT, username change, account deletion or arbitrary endpoint system is included.

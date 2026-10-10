@@ -84,6 +84,11 @@ public class ApiResponse<T> {
         return new ApiResponse<>(false, null, error, errorCode);
     }
 
+    /** Failure with bounded diagnostic data, e.g. specification validation findings. */
+    public static <T> ApiResponse<T> failWithData(T data, String error, String errorCode) {
+        return new ApiResponse<>(false, data, error, errorCode);
+    }
+
     // ── Getters (required by Gson for serialisation) ─────────────────────────
 
     public boolean isSuccess()    { return success;   }

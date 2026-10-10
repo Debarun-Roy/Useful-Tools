@@ -78,6 +78,16 @@ public class DatabaseUtils {
      *   3. config.properties sqlite3_url
      */
     private static String resolveJdbcUrl() {
+        if (AppConfig.isLocal()) {
+            var expected = AppConfig.localDirectory().resolve("data/UsefulTools.db").normalize();
+            String url = System.getenv("SQLITE_DB_URL");
+            String path = System.getenv("SQLITE_DB_PATH");
+            if (url != null && !url.isBlank() || path == null || path.isBlank()
+                    || !java.nio.file.Path.of(path).toAbsolutePath().normalize().equals(expected)) {
+                throw new IllegalStateException("Local profile requires its own .local/data/UsefulTools.db; SQLITE_DB_URL is forbidden");
+            }
+            return "jdbc:sqlite:" + expected;
+        }
         // Tier 1: full JDBC URL from env
         String envUrl = System.getenv("SQLITE_DB_URL");
         if (envUrl != null && !envUrl.isBlank()) {

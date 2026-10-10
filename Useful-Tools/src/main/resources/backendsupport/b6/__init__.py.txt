@@ -1,0 +1,1 @@
+"""Generated auth application. No import-time account or server startup."""

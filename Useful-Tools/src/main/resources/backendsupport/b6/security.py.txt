@@ -1,0 +1,67 @@
+import asyncio
+import math
+import re
+import secrets
+from concurrent.futures import ThreadPoolExecutor
+from argon2 import PasswordHasher, Type
+from argon2.exceptions import VerificationError, InvalidHashError
+from .wire import Failure
+
+class Work:
+    """No unbounded executor queue: reserve capacity synchronously before submitting."""
+    def __init__(self, slots):
+        self.slots = slots
+        self.active = 0
+        self.pool = ThreadPoolExecutor(max_workers=slots, thread_name_prefix='auth-work')
+
+    async def run(self, fn, *args, code='SERVICE_UNAVAILABLE'):
+        if self.active >= self.slots:
+            raise Failure(503, code, 1)
+        self.active += 1
+        future = asyncio.get_running_loop().run_in_executor(self.pool, fn, *args)
+        # Cancellation must not release capacity while underlying blocking work still runs.
+        future.add_done_callback(lambda _: setattr(self, 'active', self.active - 1))
+        return await asyncio.shield(future)
+
+    def close(self):
+        self.pool.shutdown(wait=True, cancel_futures=True)
+
+class Passwords:
+    def __init__(self, config):
+        self.config = config
+        self.hasher = PasswordHasher(time_cost=2, memory_cost=19456, parallelism=1, hash_len=32, salt_len=16, type=Type.ID)
+        self.dummy = self.hasher.hash(secrets.token_urlsafe(32))
+        self.work = Work(2)
+
+    def validate(self, value):
+        if not self.config.minimum <= len(value) <= self.config.maximum or len(value.encode('utf-8')) > 512:
+            raise Failure(400, 'PASSWORD_POLICY')
+
+    async def hash(self, value):
+        self.validate(value)
+        return await self.work.run(self.hasher.hash, value, code='AUTH_BUSY')
+
+    async def verify(self, value, encoded):
+        self.validate(value)
+        valid = isinstance(encoded, str) and re.fullmatch(r'\$argon2id\$v=19\$m=19456,t=2,p=1\$[A-Za-z0-9+/]{22}\$[A-Za-z0-9+/]{43}', encoded)
+        def check():
+            try:
+                matched = self.hasher.verify(encoded if valid else self.dummy, value)
+                return bool(valid and matched)
+            except (VerificationError, InvalidHashError):
+                return False
+        return await self.work.run(check, code='AUTH_BUSY')
+
+class Limiter:
+    def __init__(self, clock):
+        self.clock, self.windows = clock, {}
+
+    def take(self, key, maximum):
+        now = self.clock()
+        self.windows = {k: v for k, v in self.windows.items() if v[0] > now}
+        end, count = self.windows.get(key, (now + 60, 0))
+        if key not in self.windows and len(self.windows) >= 4096:
+            raise Failure(429, 'RATE_LIMITED', 60)
+        if count >= maximum:
+            raise Failure(429, 'RATE_LIMITED', max(1, math.ceil(end - now)))
+        self.windows[key] = (end, count + 1)

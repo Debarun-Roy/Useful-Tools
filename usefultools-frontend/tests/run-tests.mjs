@@ -49,7 +49,7 @@ await run('cross-origin api base is rejected in production-like browser context'
   delete globalThis.window
 })
 
-await run('local development may still use an absolute backend base', () => {
+await run('local development always uses its same-origin proxy', () => {
   globalThis.window = {
     location: {
       origin: 'http://localhost:3000',
@@ -58,8 +58,10 @@ await run('local development may still use an absolute backend base', () => {
 
   assert.equal(
     resolveApiBase('http://localhost:8080/UsefulTools/api'),
-    'http://localhost:8080/UsefulTools/api'
+    '/api'
   )
+  assert.equal(resolveApiBase('https://production.invalid/api'), '/api')
+  assert.equal(resolveApiBase('/api/api'), '/api')
 
   delete globalThis.window
 })

@@ -1,0 +1,382 @@
+[
+  {
+    "name": "sqlite-off-core",
+    "spec": {
+      "captcha": {
+        "hostname": "localhost",
+        "minimumScore": 0.5,
+        "mode": "off",
+        "secretEnv": "AUTH_CAPTCHA_SECRET"
+      },
+      "container": "tomcat-11",
+      "database": "sqlite",
+      "mode": "production",
+      "module": "rest",
+      "modules": [
+        "core"
+      ],
+      "origins": [
+        "https://127.0.0.1:55756"
+      ],
+      "packageName": "example.auth",
+      "policy": {
+        "passwordMax": 128,
+        "passwordMin": 15,
+        "username": "ascii-lower-3-32"
+      },
+      "profile": {
+        "displayNameMax": 100,
+        "preferenceCount": 20,
+        "preferenceValueMax": 200
+      },
+      "project": "auth-starter",
+      "runtime": {
+        "databaseEnv": "AUTH_DATABASE",
+        "databasePasswordEnv": "AUTH_DATABASE_PASSWORD",
+        "databaseUserEnv": "AUTH_DATABASE_USER",
+        "initializeEnv": "AUTH_INITIALIZE"
+      },
+      "schemaVersion": "0.5.0",
+      "session": {
+        "absoluteSeconds": 28800,
+        "idleSeconds": 900
+      },
+      "target": "java",
+      "templateVersion": "java-auth-0.5.0-b5"
+    },
+    "sha256": "b1a004389ef7e9d2e0e1daff4800e30ecc2afe6f0624d825d9b0650f1764db94"
+  },
+  {
+    "name": "sqlite-off-profile",
+    "spec": {
+      "captcha": {
+        "hostname": "localhost",
+        "minimumScore": 0.5,
+        "mode": "off",
+        "secretEnv": "AUTH_CAPTCHA_SECRET"
+      },
+      "container": "tomcat-11",
+      "database": "sqlite",
+      "mode": "production",
+      "module": "rest",
+      "modules": [
+        "core",
+        "profile"
+      ],
+      "origins": [
+        "https://127.0.0.1:55761"
+      ],
+      "packageName": "example.auth",
+      "policy": {
+        "passwordMax": 128,
+        "passwordMin": 15,
+        "username": "ascii-lower-3-32"
+      },
+      "profile": {
+        "displayNameMax": 100,
+        "preferenceCount": 20,
+        "preferenceValueMax": 200
+      },
+      "project": "auth-starter",
+      "runtime": {
+        "databaseEnv": "AUTH_DATABASE",
+        "databasePasswordEnv": "AUTH_DATABASE_PASSWORD",
+        "databaseUserEnv": "AUTH_DATABASE_USER",
+        "initializeEnv": "AUTH_INITIALIZE"
+      },
+      "schemaVersion": "0.5.0",
+      "session": {
+        "absoluteSeconds": 28800,
+        "idleSeconds": 900
+      },
+      "target": "java",
+      "templateVersion": "java-auth-0.5.0-b5"
+    },
+    "sha256": "2e4f4577818edf6bbeb7e14b8497b537084bbdc3c61b06264583a658ed44e177"
+  },
+  {
+    "name": "sqlite-recaptcha-v3-core",
+    "spec": {
+      "captcha": {
+        "hostname": "localhost",
+        "minimumScore": 0.5,
+        "mode": "recaptcha-v3",
+        "secretEnv": "AUTH_CAPTCHA_SECRET"
+      },
+      "container": "tomcat-11",
+      "database": "sqlite",
+      "mode": "production",
+      "module": "rest",
+      "modules": [
+        "core"
+      ],
+      "origins": [
+        "https://127.0.0.1:55766"
+      ],
+      "packageName": "example.auth",
+      "policy": {
+        "passwordMax": 128,
+        "passwordMin": 15,
+        "username": "ascii-lower-3-32"
+      },
+      "profile": {
+        "displayNameMax": 100,
+        "preferenceCount": 20,
+        "preferenceValueMax": 200
+      },
+      "project": "auth-starter",
+      "runtime": {
+        "databaseEnv": "AUTH_DATABASE",
+        "databasePasswordEnv": "AUTH_DATABASE_PASSWORD",
+        "databaseUserEnv": "AUTH_DATABASE_USER",
+        "initializeEnv": "AUTH_INITIALIZE"
+      },
+      "schemaVersion": "0.5.0",
+      "session": {
+        "absoluteSeconds": 28800,
+        "idleSeconds": 900
+      },
+      "target": "java",
+      "templateVersion": "java-auth-0.5.0-b5"
+    },
+    "sha256": "948aafe9a53a85e16b73253b747ce03dd3644fec339d5ddfa6957230b54efcd6"
+  },
+  {
+    "name": "sqlite-recaptcha-v3-profile",
+    "spec": {
+      "captcha": {
+        "hostname": "localhost",
+        "minimumScore": 0.5,
+        "mode": "recaptcha-v3",
+        "secretEnv": "AUTH_CAPTCHA_SECRET"
+      },
+      "container": "tomcat-11",
+      "database": "sqlite",
+      "mode": "production",
+      "module": "rest",
+      "modules": [
+        "core",
+        "profile"
+      ],
+      "origins": [
+        "https://127.0.0.1:55771"
+      ],
+      "packageName": "example.auth",
+      "policy": {
+        "passwordMax": 128,
+        "passwordMin": 15,
+        "username": "ascii-lower-3-32"
+      },
+      "profile": {
+        "displayNameMax": 100,
+        "preferenceCount": 20,
+        "preferenceValueMax": 200
+      },
+      "project": "auth-starter",
+      "runtime": {
+        "databaseEnv": "AUTH_DATABASE",
+        "databasePasswordEnv": "AUTH_DATABASE_PASSWORD",
+        "databaseUserEnv": "AUTH_DATABASE_USER",
+        "initializeEnv": "AUTH_INITIALIZE"
+      },
+      "schemaVersion": "0.5.0",
+      "session": {
+        "absoluteSeconds": 28800,
+        "idleSeconds": 900
+      },
+      "target": "java",
+      "templateVersion": "java-auth-0.5.0-b5"
+    },
+    "sha256": "c8ad554f4481c5e4c32e00db6bda430f6dccd7db728ad5bc3ca43f9c80ffd455"
+  },
+  {
+    "name": "postgresql-off-core",
+    "spec": {
+      "captcha": {
+        "hostname": "localhost",
+        "minimumScore": 0.5,
+        "mode": "off",
+        "secretEnv": "AUTH_CAPTCHA_SECRET"
+      },
+      "container": "tomcat-11",
+      "database": "postgresql",
+      "mode": "production",
+      "module": "rest",
+      "modules": [
+        "core"
+      ],
+      "origins": [
+        "https://127.0.0.1:55776"
+      ],
+      "packageName": "example.auth",
+      "policy": {
+        "passwordMax": 128,
+        "passwordMin": 15,
+        "username": "ascii-lower-3-32"
+      },
+      "profile": {
+        "displayNameMax": 100,
+        "preferenceCount": 20,
+        "preferenceValueMax": 200
+      },
+      "project": "auth-starter",
+      "runtime": {
+        "databaseEnv": "AUTH_DATABASE",
+        "databasePasswordEnv": "AUTH_DATABASE_PASSWORD",
+        "databaseUserEnv": "AUTH_DATABASE_USER",
+        "initializeEnv": "AUTH_INITIALIZE"
+      },
+      "schemaVersion": "0.5.0",
+      "session": {
+        "absoluteSeconds": 28800,
+        "idleSeconds": 900
+      },
+      "target": "java",
+      "templateVersion": "java-auth-0.5.0-b5"
+    },
+    "sha256": "0f591b4a472344af78ad57db0463fabca01445a42a041d1c1c2ff2d3af8fd555"
+  },
+  {
+    "name": "postgresql-off-profile",
+    "spec": {
+      "captcha": {
+        "hostname": "localhost",
+        "minimumScore": 0.5,
+        "mode": "off",
+        "secretEnv": "AUTH_CAPTCHA_SECRET"
+      },
+      "container": "tomcat-11",
+      "database": "postgresql",
+      "mode": "production",
+      "module": "rest",
+      "modules": [
+        "core",
+        "profile"
+      ],
+      "origins": [
+        "https://127.0.0.1:55781"
+      ],
+      "packageName": "example.auth",
+      "policy": {
+        "passwordMax": 128,
+        "passwordMin": 15,
+        "username": "ascii-lower-3-32"
+      },
+      "profile": {
+        "displayNameMax": 100,
+        "preferenceCount": 20,
+        "preferenceValueMax": 200
+      },
+      "project": "auth-starter",
+      "runtime": {
+        "databaseEnv": "AUTH_DATABASE",
+        "databasePasswordEnv": "AUTH_DATABASE_PASSWORD",
+        "databaseUserEnv": "AUTH_DATABASE_USER",
+        "initializeEnv": "AUTH_INITIALIZE"
+      },
+      "schemaVersion": "0.5.0",
+      "session": {
+        "absoluteSeconds": 28800,
+        "idleSeconds": 900
+      },
+      "target": "java",
+      "templateVersion": "java-auth-0.5.0-b5"
+    },
+    "sha256": "05b358ab9c182a3f00117183a530e526511d9ff4110baa5f4193b28bfbc2a6e9"
+  },
+  {
+    "name": "postgresql-recaptcha-v3-core",
+    "spec": {
+      "captcha": {
+        "hostname": "localhost",
+        "minimumScore": 0.5,
+        "mode": "recaptcha-v3",
+        "secretEnv": "AUTH_CAPTCHA_SECRET"
+      },
+      "container": "tomcat-11",
+      "database": "postgresql",
+      "mode": "production",
+      "module": "rest",
+      "modules": [
+        "core"
+      ],
+      "origins": [
+        "https://127.0.0.1:55786"
+      ],
+      "packageName": "example.auth",
+      "policy": {
+        "passwordMax": 128,
+        "passwordMin": 15,
+        "username": "ascii-lower-3-32"
+      },
+      "profile": {
+        "displayNameMax": 100,
+        "preferenceCount": 20,
+        "preferenceValueMax": 200
+      },
+      "project": "auth-starter",
+      "runtime": {
+        "databaseEnv": "AUTH_DATABASE",
+        "databasePasswordEnv": "AUTH_DATABASE_PASSWORD",
+        "databaseUserEnv": "AUTH_DATABASE_USER",
+        "initializeEnv": "AUTH_INITIALIZE"
+      },
+      "schemaVersion": "0.5.0",
+      "session": {
+        "absoluteSeconds": 28800,
+        "idleSeconds": 900
+      },
+      "target": "java",
+      "templateVersion": "java-auth-0.5.0-b5"
+    },
+    "sha256": "dfc722d2f0a2ee6961d2902dce9ee80ccca4424abdba76ab926fa8c5f6f5801c"
+  },
+  {
+    "name": "postgresql-recaptcha-v3-profile",
+    "spec": {
+      "captcha": {
+        "hostname": "localhost",
+        "minimumScore": 0.5,
+        "mode": "recaptcha-v3",
+        "secretEnv": "AUTH_CAPTCHA_SECRET"
+      },
+      "container": "tomcat-11",
+      "database": "postgresql",
+      "mode": "production",
+      "module": "rest",
+      "modules": [
+        "core",
+        "profile"
+      ],
+      "origins": [
+        "https://127.0.0.1:55791"
+      ],
+      "packageName": "example.auth",
+      "policy": {
+        "passwordMax": 128,
+        "passwordMin": 15,
+        "username": "ascii-lower-3-32"
+      },
+      "profile": {
+        "displayNameMax": 100,
+        "preferenceCount": 20,
+        "preferenceValueMax": 200
+      },
+      "project": "auth-starter",
+      "runtime": {
+        "databaseEnv": "AUTH_DATABASE",
+        "databasePasswordEnv": "AUTH_DATABASE_PASSWORD",
+        "databaseUserEnv": "AUTH_DATABASE_USER",
+        "initializeEnv": "AUTH_INITIALIZE"
+      },
+      "schemaVersion": "0.5.0",
+      "session": {
+        "absoluteSeconds": 28800,
+        "idleSeconds": 900
+      },
+      "target": "java",
+      "templateVersion": "java-auth-0.5.0-b5"
+    },
+    "sha256": "795f28a9b61cfe046d4d3d69e7dd28ea9bfdb0a05d5357f7c80dc28b317ec6bb"
+  }
+]

@@ -1,0 +1,85 @@
+import asyncio
+import json
+from pathlib import Path
+from types import SimpleNamespace
+import pytest
+from @MODULE@.wire import Failure, parse
+from @MODULE@.config import Config
+from @MODULE@.security import Passwords, Limiter, Work
+
+def test_strict_wire():
+    cases = [(b'{"a":1,"a":2}', 400, 'DUPLICATE_KEY'),
+             (b'"\\ud800"', 400, 'MALFORMED_JSON'), (b'"\xff"', 400, 'MALFORMED_JSON'),
+             (b'NaN', 400, 'MALFORMED_JSON'), (b'1e101', 400, 'MALFORMED_JSON'),
+             (b'['*10+b'0'+b']'*10, 413, 'COMPLEXITY_LIMIT'),
+             (b'"'+b'a'*4097+b'"', 413, 'STRING_LIMIT'), (b' '*16385, 413, 'BODY_TOO_LARGE')]
+    for raw, status, code in cases:
+        with pytest.raises(Failure) as error:
+            parse(raw)
+        assert (error.value.status, error.value.code) == (status, code)
+    assert parse('"😀"'.encode()) == '😀'
+
+def test_password_policy_salts_and_malformed_phc():
+    async def run():
+        passwords = Passwords(SimpleNamespace(minimum=15, maximum=128))
+        try:
+            value = ' unchanged password 😀 '
+            a, b = await passwords.hash(value), await passwords.hash(value)
+            assert a != b and a.startswith('$argon2id$v=19$m=19456,t=2,p=1$')
+            assert await passwords.verify(value, a)
+            assert not await passwords.verify(value+'x', a)
+            assert not await passwords.verify(value, '$argon2id$v=19$m=999999999,t=2,p=1$bad')
+            assert not await passwords.verify(value, None)
+            await passwords.hash('😀'*128)
+            with pytest.raises(Failure):
+                await passwords.hash('😀'*129)
+        finally:
+            passwords.work.close()
+    asyncio.run(run())
+
+def test_limiter_capacity_reset():
+    now = [0]
+    limiter = Limiter(lambda: now[0])
+    for i in range(4096):
+        limiter.take(str(i), 1)
+    with pytest.raises(Failure) as error:
+        limiter.take('overflow', 1)
+    assert error.value.retry == 60
+    with pytest.raises(Failure):
+        limiter.take('0', 1)
+    now[0] = 60
+    limiter.take('0', 1)
+    assert len(limiter.windows) == 1
+
+def test_configuration_fails_closed(tmp_path):
+    spec = json.loads((Path(__file__).parents[1]/'auth-spec.json').read_text())
+    names = spec['runtime']
+    env = {names['databaseEnv']: str(tmp_path/'users.db'), names['initializeEnv']: 'true', names['redisEnv']: 'redis://127.0.0.1:6379/0',
+           names['databaseUserEnv']: 'synthetic', names['databasePasswordEnv']: 'synthetic', spec['captcha']['secretEnv']: 'synthetic'}
+    if spec['database'] == 'postgresql':
+        env[names['databaseEnv']] = 'postgresql://127.0.0.1:5432/synthetic?sslmode=disable'
+    Config(spec, env)
+    with pytest.raises(RuntimeError):
+        Config(spec, {})
+    for key, bad in [('mode', 'prod'), ('database', 'fallback')]:
+        modified = dict(spec, **{key: bad})
+        with pytest.raises(RuntimeError):
+            Config(modified, env)
+    with pytest.raises(RuntimeError):
+        Config(spec, dict(env, WEB_CONCURRENCY='2'))
+
+def test_executor_is_bounded():
+    import threading
+    async def run():
+        work = Work(1)
+        release = threading.Event()
+        task = asyncio.create_task(work.run(release.wait))
+        await asyncio.sleep(.01)
+        try:
+            with pytest.raises(Failure):
+                await work.run(lambda: None)
+        finally:
+            release.set()
+            await task
+            work.close()
+    asyncio.run(run())

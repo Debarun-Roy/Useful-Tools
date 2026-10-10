@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee" version="6.1" metadata-complete="true">
+  <listener><listener-class>@PACKAGE@.Bootstrap</listener-class></listener>
+  <filter><filter-name>security</filter-name><filter-class>@PACKAGE@.SecurityFilter</filter-class></filter>
+  <filter-mapping><filter-name>security</filter-name><url-pattern>/*</url-pattern><dispatcher>REQUEST</dispatcher></filter-mapping>
+  <servlet><servlet-name>auth</servlet-name><servlet-class>@PACKAGE@.AuthServlet</servlet-class><load-on-startup>1</load-on-startup></servlet>
+  <servlet-mapping><servlet-name>auth</servlet-name>
+    <url-pattern>/api/auth/register</url-pattern><url-pattern>/api/auth/login</url-pattern><url-pattern>/api/auth/logout</url-pattern>
+    <url-pattern>/api/auth/session</url-pattern><url-pattern>/api/auth/csrf-token</url-pattern><url-pattern>/api/user/profile</url-pattern>
+  </servlet-mapping>
+  <session-config><tracking-mode>COOKIE</tracking-mode></session-config>
+</web-app>

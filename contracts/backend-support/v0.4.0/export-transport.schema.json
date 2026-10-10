@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "request": {
+      "$ref": "models.schema.json#/$defs/GenerationRequest"
+    },
+    "expectedDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "request",
+    "expectedDigest"
+  ],
+  "additionalProperties": false
+}

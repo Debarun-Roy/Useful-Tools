@@ -1,0 +1,50 @@
+package @PACKAGE@;
+
+import jakarta.servlet.http.*;
+import java.security.*;
+import java.time.Clock;
+import java.util.*;
+import java.nio.charset.StandardCharsets;
+
+public final class Sessions {
+    private final Config config;private final Clock clock;private final SecureRandom random=new SecureRandom();
+    public Sessions(Config config,Clock clock){this.config=config;this.clock=clock;}
+    private String token(){byte[] value=new byte[32];random.nextBytes(value);return Base64.getUrlEncoder().withoutPadding().encodeToString(value);}
+    public HttpSession current(HttpServletRequest request) {
+        HttpSession session=request.getSession(false);if(session==null)return null;
+        synchronized(session) {
+            try {
+                long now=clock.millis();Object born=session.getAttribute("born"),last=session.getAttribute("last");
+                if(!(born instanceof Long)||!(last instanceof Long)||now-(long)born>=config.absolute*1000L||now-(long)last>=config.idle*1000L||now<(long)last) {session.invalidate();return null;}
+                session.setAttribute("last",now);return session;
+            }catch(IllegalStateException invalid){return null;}
+        }
+    }
+    public HttpSession bootstrap(HttpServletRequest request) {
+        HttpSession session=current(request);
+        if(session==null) {
+            session=request.getSession(true);long now=clock.millis();session.setAttribute("born",now);session.setAttribute("last",now);
+            session.setAttribute("csrf",token());session.setMaxInactiveInterval(config.idle);
+        }
+        // Existing missing security state is never silently repaired.
+        if(!(session.getAttribute("csrf") instanceof String))throw new Api.Failure(403,"CSRF_REJECTED");
+        return session;
+    }
+    public void check(HttpSession session,String submitted) {
+        if(session==null||submitted==null||submitted.length()!=43||!(session.getAttribute("csrf") instanceof String stored)
+            ||!MessageDigest.isEqual(stored.getBytes(StandardCharsets.US_ASCII),submitted.getBytes(StandardCharsets.US_ASCII)))throw new Api.Failure(403,"CSRF_REJECTED");
+    }
+    public void login(HttpServletRequest request,HttpSession session,Users.User user) {
+        synchronized(session) {
+            if(session.getAttribute("userId")!=null)throw new Api.Failure(409,"ALREADY_AUTHENTICATED");
+            request.changeSessionId();session.setAttribute("userId",user.id());session.setAttribute("csrf",token());
+            long now=clock.millis();session.setAttribute("born",now);session.setAttribute("last",now);
+        }
+    }
+    public static String identity(HttpSession session){return session==null?null:(String)session.getAttribute("userId");}
+    public void clear(HttpServletRequest request,HttpServletResponse response) {
+        HttpSession session=request.getSession(false);if(session!=null)try{session.invalidate();}catch(IllegalStateException ignored){}
+        Cookie cookie=new Cookie("JSESSIONID","");cookie.setMaxAge(0);cookie.setPath(request.getContextPath().isEmpty()?"/":request.getContextPath());
+        cookie.setHttpOnly(true);cookie.setSecure(config.production);cookie.setAttribute("SameSite","Lax");response.addCookie(cookie);
+    }
+}

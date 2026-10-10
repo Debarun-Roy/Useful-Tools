@@ -1,0 +1,1107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://usefultools.invalid/contracts/backend-support/0.1.0/models.schema.json",
+  "$defs": {
+    "Target": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dialect": {
+          "enum": [
+            "sqlite",
+            "postgresql"
+          ]
+        },
+        "language": {
+          "enum": [
+            "sql",
+            "python",
+            "java"
+          ]
+        },
+        "framework": {
+          "enum": [
+            "none",
+            "jakarta-servlet",
+            "fastapi"
+          ]
+        }
+      },
+      "required": [
+        "dialect",
+        "language",
+        "framework"
+      ]
+    },
+    "Column": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+        },
+        "type": {
+          "enum": [
+            "integer",
+            "bigint",
+            "decimal",
+            "text",
+            "varchar",
+            "boolean",
+            "date",
+            "timestamp",
+            "json"
+          ]
+        },
+        "nullable": {
+          "type": "boolean"
+        },
+        "precision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 38
+        },
+        "scale": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 38
+        },
+        "default": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type",
+        "nullable"
+      ]
+    },
+    "ForeignKey": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+          },
+          "minItems": 1,
+          "maxItems": 1000
+        },
+        "tableId": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+        },
+        "targetColumns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+          },
+          "minItems": 1,
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "columns",
+        "tableId",
+        "targetColumns"
+      ]
+    },
+    "Index": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+          },
+          "minItems": 1,
+          "maxItems": 1000
+        },
+        "unique": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "columns",
+        "unique"
+      ]
+    },
+    "Table": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Column"
+          },
+          "minItems": 1,
+          "maxItems": 1000
+        },
+        "primaryKey": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "foreignKeys": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ForeignKey"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "unique": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+            },
+            "minItems": 1,
+            "maxItems": 1000
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "indexes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Index"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "columns",
+        "primaryKey",
+        "foreignKeys",
+        "unique",
+        "indexes"
+      ]
+    },
+    "SchemaSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dialect": {
+          "enum": [
+            "sqlite",
+            "postgresql"
+          ]
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Table"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "dialect",
+        "tables"
+      ]
+    },
+    "MigrationSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "before": {
+          "$ref": "#/$defs/SchemaSpec"
+        },
+        "after": {
+          "$ref": "#/$defs/SchemaSpec"
+        },
+        "renames": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+              },
+              "from": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+              },
+              "to": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+              }
+            },
+            "required": [
+              "id",
+              "from",
+              "to"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "destructiveAcknowledged": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "before",
+        "after",
+        "renames",
+        "destructiveAcknowledged"
+      ]
+    },
+    "FieldRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tableId": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+        },
+        "columnId": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+        }
+      },
+      "required": [
+        "tableId",
+        "columnId"
+      ]
+    },
+    "ViewSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "$ref": "#/$defs/SchemaSpec"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+          },
+          "minItems": 1,
+          "maxItems": 1000
+        },
+        "projection": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "field": {
+                "$ref": "#/$defs/FieldRef"
+              },
+              "alias": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+              }
+            },
+            "required": [
+              "field",
+              "alias"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 1000
+        },
+        "joins": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "enum": [
+                  "inner",
+                  "left"
+                ]
+              },
+              "left": {
+                "$ref": "#/$defs/FieldRef"
+              },
+              "right": {
+                "$ref": "#/$defs/FieldRef"
+              }
+            },
+            "required": [
+              "type",
+              "left",
+              "right"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "predicates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "field": {
+                "$ref": "#/$defs/FieldRef"
+              },
+              "operator": {
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "gt"
+                ]
+              },
+              "value": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "field",
+              "operator",
+              "value"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "groupBy": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldRef"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "schema",
+        "name",
+        "sources",
+        "projection",
+        "joins",
+        "predicates",
+        "groupBy"
+      ]
+    },
+    "EvaluatorSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "$ref": "#/$defs/SchemaSpec"
+        },
+        "ruleSetVersion": {
+          "const": "0.1.0"
+        }
+      },
+      "required": [
+        "schema",
+        "ruleSetVersion"
+      ]
+    },
+    "EtlSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "format": {
+              "enum": [
+                "csv",
+                "json"
+              ]
+            },
+            "encoding": {
+              "const": "utf-8"
+            },
+            "delimiter": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1
+            }
+          },
+          "required": [
+            "format",
+            "encoding"
+          ]
+        },
+        "destination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "dialect": {
+              "enum": [
+                "sqlite",
+                "postgresql"
+              ]
+            },
+            "table": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+            },
+            "connectionEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]*$"
+            }
+          },
+          "required": [
+            "dialect",
+            "table",
+            "connectionEnv"
+          ]
+        },
+        "mappings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+              },
+              "target": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+              },
+              "cast": {
+                "enum": [
+                  "integer",
+                  "decimal",
+                  "text",
+                  "date"
+                ]
+              },
+              "trim": {
+                "type": "boolean"
+              },
+              "nullable": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "source",
+              "target",
+              "cast",
+              "trim",
+              "nullable"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 1000
+        },
+        "mode": {
+          "enum": [
+            "insert",
+            "upsert"
+          ]
+        },
+        "uniqueKey": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "batchSize": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "rejectPolicy": {
+          "enum": [
+            "strict",
+            "continue"
+          ]
+        },
+        "checkpoint": {
+          "enum": [
+            "none",
+            "after-commit"
+          ]
+        }
+      },
+      "required": [
+        "source",
+        "destination",
+        "mappings",
+        "mode",
+        "uniqueKey",
+        "batchSize",
+        "rejectPolicy",
+        "checkpoint"
+      ]
+    },
+    "ApiSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "project": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+        },
+        "language": {
+          "enum": [
+            "java",
+            "python"
+          ]
+        },
+        "framework": {
+          "enum": [
+            "jakarta-servlet",
+            "fastapi"
+          ]
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "register",
+              "login",
+              "logout",
+              "session",
+              "profile",
+              "csrf",
+              "captcha"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 7
+        },
+        "sessionStrategy": {
+          "const": "opaque-server-side"
+        },
+        "profileFields": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "displayName",
+              "preferences"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 2
+        },
+        "captcha": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "provider": {
+              "enum": [
+                "none",
+                "recaptcha-v3"
+              ]
+            },
+            "secretEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]*$"
+            }
+          },
+          "required": [
+            "enabled",
+            "provider"
+          ]
+        },
+        "allowedOrigins": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^https?://[^/]+$"
+          },
+          "minItems": 1,
+          "maxItems": 10
+        }
+      },
+      "required": [
+        "project",
+        "language",
+        "framework",
+        "modules",
+        "sessionStrategy",
+        "profileFields",
+        "captcha",
+        "allowedOrigins"
+      ]
+    },
+    "Finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ruleId": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,62}$"
+        },
+        "severity": {
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^/"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "suggestion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "blocking": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "ruleId",
+        "severity",
+        "path",
+        "message",
+        "suggestion",
+        "blocking"
+      ]
+    },
+    "ValidationResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": "0.1.0"
+        },
+        "valid": {
+          "type": "boolean"
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Finding"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "valid",
+        "findings"
+      ]
+    },
+    "ArtifactManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": "0.1.0"
+        },
+        "templateVersion": {
+          "const": "0.1.0-b0"
+        },
+        "target": {
+          "$ref": "#/$defs/Target"
+        },
+        "runtime": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "specDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9_./-]+$"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "path",
+              "sha256",
+              "bytes"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              }
+            },
+            "required": [
+              "name",
+              "version"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Finding"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "destructiveAcknowledged": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "templateVersion",
+        "target",
+        "runtime",
+        "specDigest",
+        "files",
+        "dependencies",
+        "warnings",
+        "destructiveAcknowledged"
+      ]
+    },
+    "GenerationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": "0.1.0"
+        },
+        "templateVersion": {
+          "const": "0.1.0-b0"
+        },
+        "module": {
+          "enum": [
+            "schema",
+            "migration",
+            "view",
+            "evaluator",
+            "etl",
+            "rest"
+          ]
+        },
+        "target": {
+          "$ref": "#/$defs/Target"
+        },
+        "spec": {},
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "includeTests": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "includeTests"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "templateVersion",
+        "module",
+        "target",
+        "spec",
+        "options"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "module": {
+                "const": "schema"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "spec": {
+                "$ref": "#/$defs/SchemaSpec"
+              },
+              "target": {
+                "properties": {
+                  "language": {
+                    "const": "sql"
+                  },
+                  "framework": {
+                    "const": "none"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "module": {
+                "const": "migration"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "spec": {
+                "$ref": "#/$defs/MigrationSpec"
+              },
+              "target": {
+                "properties": {
+                  "language": {
+                    "const": "sql"
+                  },
+                  "framework": {
+                    "const": "none"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "module": {
+                "const": "view"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "spec": {
+                "$ref": "#/$defs/ViewSpec"
+              },
+              "target": {
+                "properties": {
+                  "language": {
+                    "const": "sql"
+                  },
+                  "framework": {
+                    "const": "none"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "module": {
+                "const": "evaluator"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "spec": {
+                "$ref": "#/$defs/EvaluatorSpec"
+              },
+              "target": {
+                "properties": {
+                  "language": {
+                    "const": "sql"
+                  },
+                  "framework": {
+                    "const": "none"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "module": {
+                "const": "etl"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "spec": {
+                "$ref": "#/$defs/EtlSpec"
+              },
+              "target": {
+                "properties": {
+                  "language": {
+                    "const": "python"
+                  },
+                  "framework": {
+                    "const": "none"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "module": {
+                "const": "rest"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "spec": {
+                "$ref": "#/$defs/ApiSpec"
+              },
+              "target": {
+                "properties": {}
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "module": {
+                "const": "rest"
+              }
+            }
+          },
+          "then": {
+            "oneOf": [
+              {
+                "properties": {
+                  "target": {
+                    "properties": {
+                      "language": {
+                        "const": "java"
+                      },
+                      "framework": {
+                        "const": "jakarta-servlet"
+                      }
+                    }
+                  },
+                  "spec": {
+                    "properties": {
+                      "language": {
+                        "const": "java"
+                      },
+                      "framework": {
+                        "const": "jakarta-servlet"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "target": {
+                    "properties": {
+                      "language": {
+                        "const": "python"
+                      },
+                      "framework": {
+                        "const": "fastapi"
+                      }
+                    }
+                  },
+                  "spec": {
+                    "properties": {
+                      "language": {
+                        "const": "python"
+                      },
+                      "framework": {
+                        "const": "fastapi"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

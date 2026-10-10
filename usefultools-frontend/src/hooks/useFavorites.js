@@ -48,6 +48,7 @@ const DEFAULT_MAX = 20
 // extension writing garbage into localStorage shouldn't propagate to the UI
 // or (if the user later registers) to the server.
 const VALID_PATHS = new Set([
+  '/backend-support',
   '/calculator',
   '/analyser',
   '/vault',

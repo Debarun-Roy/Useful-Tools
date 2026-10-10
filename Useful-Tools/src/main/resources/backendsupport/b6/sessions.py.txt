@@ -1,0 +1,103 @@
+"""Maintained RedisStore with explicit single-worker lifecycle; no automatic late save."""
+import asyncio
+import hashlib
+import json
+import math
+import re
+import secrets
+from contextlib import asynccontextmanager
+from redis.asyncio import Redis
+from starsessions.stores.redis import RedisStore
+from .wire import Failure
+
+class Sessions:
+    def __init__(self, config, clock):
+        self.config, self.clock = config, clock
+        self.client = Redis.from_url(config.redis_url, socket_connect_timeout=2, socket_timeout=2,
+                                     max_connections=16, decode_responses=False)
+        # Restart revokes old sessions without touching any other application's keys.
+        self.namespace = 'auth:' + secrets.token_hex(24) + ':'
+        self.store = RedisStore(connection=self.client, prefix=self.namespace)
+        self.active = {}
+        self.locks = [asyncio.Lock() for _ in range(256)]
+
+    async def start(self):
+        await self.client.ping()
+
+    async def close(self):
+        # Old owned records expire naturally; no KEYS, FLUSHDB or shared namespace scan.
+        await self.client.aclose()
+
+    @asynccontextmanager
+    async def transaction(self, supplied):
+        supplied = supplied if supplied and re.fullmatch(r'[A-Za-z0-9_-]{43}', supplied) else ''
+        index = int.from_bytes(hashlib.sha256(supplied.encode()).digest()[:2], 'big') % len(self.locks)
+        async with self.locks[index]:
+            # Kept until handler finishes explicit writes. Late old-ID requests must reread.
+            yield supplied
+
+    async def current(self, sid):
+        now = self.clock()
+        self.active = {k: expiry for k, expiry in self.active.items() if expiry > now}
+        if not sid or sid not in self.active:
+            return None
+        raw = await self.store.read(sid, self.config.idle)
+        if not raw:
+            self.active.pop(sid, None)
+            return None
+        state = json.loads(raw)
+        if (now < state['last'] or now - state['last'] >= self.config.idle
+                or now - state['born'] >= self.config.absolute):
+            await self.remove(sid)
+            return None
+        state['last'] = now
+        # Refresh only a live record under its request lock; no end-of-response persistence.
+        await self.save(sid, state)
+        return state
+
+    async def save(self, sid, state):
+        if sid not in self.active:
+            raise Failure(403, 'CSRF_REJECTED')
+        ttl = max(1, math.ceil(min(self.config.idle, state['born'] + self.config.absolute - self.clock())))
+        await self.store.write(sid, json.dumps(state, separators=(',', ':')).encode(), self.config.absolute, ttl)
+        self.active[sid] = min(state['last'] + self.config.idle, state['born'] + self.config.absolute)
+
+    async def bootstrap(self, sid, state):
+        if state is not None:
+            if not isinstance(state.get('csrf'), str):
+                raise Failure(403, 'CSRF_REJECTED')
+            return sid, state
+        now = self.clock()
+        self.active = {k: expiry for k, expiry in self.active.items() if expiry > now}
+        if len(self.active) >= 4096:
+            raise Failure(503, 'SERVICE_UNAVAILABLE')
+        sid = secrets.token_urlsafe(32)
+        state = dict(born=now, last=now, csrf=secrets.token_urlsafe(32))
+        self.active[sid] = now + self.config.idle
+        try:
+            await self.save(sid, state)
+        except Exception:
+            self.active.pop(sid, None)
+            raise
+        return sid, state
+
+    def check(self, state, submitted):
+        stored = state.get('csrf') if state else None
+        if (not isinstance(stored, str) or not isinstance(submitted, str)
+                or len(submitted) != 43 or not secrets.compare_digest(stored.encode(), submitted.encode())):
+            raise Failure(403, 'CSRF_REJECTED')
+
+    async def rotate(self, sid, state, user):
+        if state.get('userId'):
+            raise Failure(409, 'ALREADY_AUTHENTICATED')
+        await self.remove(sid)
+        sid, state = await self.bootstrap('', None)
+        state['userId'] = user['id']
+        await self.save(sid, state)
+        return sid, state
+
+    async def remove(self, sid):
+        # Remove local authorization before the awaited delete; failure never authorizes fallback.
+        self.active.pop(sid, None)
+        if sid:
+            await self.store.remove(sid)

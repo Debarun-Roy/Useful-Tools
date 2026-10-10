@@ -1,0 +1,593 @@
+{
+  "customers-orders": {
+    "schemaVersion": "0.1.0",
+    "templateVersion": "0.1.0-b0",
+    "module": "schema",
+    "target": {
+      "dialect": "sqlite",
+      "language": "sql",
+      "framework": "none"
+    },
+    "spec": {
+      "dialect": "sqlite",
+      "tables": [
+        {
+          "id": "customers",
+          "name": "customers",
+          "columns": [
+            {
+              "id": "id",
+              "name": "id",
+              "type": "integer",
+              "nullable": false
+            },
+            {
+              "id": "name",
+              "name": "name",
+              "type": "text",
+              "nullable": false
+            }
+          ],
+          "primaryKey": [
+            "id"
+          ],
+          "foreignKeys": [],
+          "unique": [],
+          "indexes": []
+        },
+        {
+          "id": "orders",
+          "name": "orders",
+          "columns": [
+            {
+              "id": "id",
+              "name": "id",
+              "type": "integer",
+              "nullable": false
+            },
+            {
+              "id": "customer_id",
+              "name": "customer_id",
+              "type": "integer",
+              "nullable": false
+            },
+            {
+              "id": "amount",
+              "name": "amount",
+              "type": "decimal",
+              "nullable": false,
+              "precision": 12,
+              "scale": 2
+            }
+          ],
+          "primaryKey": [
+            "id"
+          ],
+          "foreignKeys": [
+            {
+              "columns": [
+                "customer_id"
+              ],
+              "tableId": "customers",
+              "targetColumns": [
+                "id"
+              ]
+            }
+          ],
+          "unique": [],
+          "indexes": []
+        }
+      ]
+    },
+    "options": {
+      "includeTests": true
+    }
+  },
+  "safe-add-column": {
+    "schemaVersion": "0.1.0",
+    "templateVersion": "0.1.0-b0",
+    "module": "migration",
+    "target": {
+      "dialect": "sqlite",
+      "language": "sql",
+      "framework": "none"
+    },
+    "spec": {
+      "before": {
+        "dialect": "sqlite",
+        "tables": [
+          {
+            "id": "customers",
+            "name": "customers",
+            "columns": [
+              {
+                "id": "id",
+                "name": "id",
+                "type": "integer",
+                "nullable": false
+              },
+              {
+                "id": "name",
+                "name": "name",
+                "type": "text",
+                "nullable": false
+              }
+            ],
+            "primaryKey": [
+              "id"
+            ],
+            "foreignKeys": [],
+            "unique": [],
+            "indexes": []
+          },
+          {
+            "id": "orders",
+            "name": "orders",
+            "columns": [
+              {
+                "id": "id",
+                "name": "id",
+                "type": "integer",
+                "nullable": false
+              },
+              {
+                "id": "customer_id",
+                "name": "customer_id",
+                "type": "integer",
+                "nullable": false
+              },
+              {
+                "id": "amount",
+                "name": "amount",
+                "type": "decimal",
+                "nullable": false,
+                "precision": 12,
+                "scale": 2
+              }
+            ],
+            "primaryKey": [
+              "id"
+            ],
+            "foreignKeys": [
+              {
+                "columns": [
+                  "customer_id"
+                ],
+                "tableId": "customers",
+                "targetColumns": [
+                  "id"
+                ]
+              }
+            ],
+            "unique": [],
+            "indexes": []
+          }
+        ]
+      },
+      "after": {
+        "dialect": "sqlite",
+        "tables": [
+          {
+            "id": "customers",
+            "name": "customers",
+            "columns": [
+              {
+                "id": "id",
+                "name": "id",
+                "type": "integer",
+                "nullable": false
+              },
+              {
+                "id": "name",
+                "name": "name",
+                "type": "text",
+                "nullable": false
+              },
+              {
+                "id": "notes",
+                "name": "notes",
+                "type": "text",
+                "nullable": true
+              }
+            ],
+            "primaryKey": [
+              "id"
+            ],
+            "foreignKeys": [],
+            "unique": [],
+            "indexes": []
+          },
+          {
+            "id": "orders",
+            "name": "orders",
+            "columns": [
+              {
+                "id": "id",
+                "name": "id",
+                "type": "integer",
+                "nullable": false
+              },
+              {
+                "id": "customer_id",
+                "name": "customer_id",
+                "type": "integer",
+                "nullable": false
+              },
+              {
+                "id": "amount",
+                "name": "amount",
+                "type": "decimal",
+                "nullable": false,
+                "precision": 12,
+                "scale": 2
+              }
+            ],
+            "primaryKey": [
+              "id"
+            ],
+            "foreignKeys": [
+              {
+                "columns": [
+                  "customer_id"
+                ],
+                "tableId": "customers",
+                "targetColumns": [
+                  "id"
+                ]
+              }
+            ],
+            "unique": [],
+            "indexes": []
+          }
+        ]
+      },
+      "renames": [],
+      "destructiveAcknowledged": false
+    },
+    "options": {
+      "includeTests": true
+    }
+  },
+  "valid-view": {
+    "schemaVersion": "0.1.0",
+    "templateVersion": "0.1.0-b0",
+    "module": "view",
+    "target": {
+      "dialect": "sqlite",
+      "language": "sql",
+      "framework": "none"
+    },
+    "spec": {
+      "schema": {
+        "dialect": "sqlite",
+        "tables": [
+          {
+            "id": "customers",
+            "name": "customers",
+            "columns": [
+              {
+                "id": "id",
+                "name": "id",
+                "type": "integer",
+                "nullable": false
+              },
+              {
+                "id": "name",
+                "name": "name",
+                "type": "text",
+                "nullable": false
+              }
+            ],
+            "primaryKey": [
+              "id"
+            ],
+            "foreignKeys": [],
+            "unique": [],
+            "indexes": []
+          },
+          {
+            "id": "orders",
+            "name": "orders",
+            "columns": [
+              {
+                "id": "id",
+                "name": "id",
+                "type": "integer",
+                "nullable": false
+              },
+              {
+                "id": "customer_id",
+                "name": "customer_id",
+                "type": "integer",
+                "nullable": false
+              },
+              {
+                "id": "amount",
+                "name": "amount",
+                "type": "decimal",
+                "nullable": false,
+                "precision": 12,
+                "scale": 2
+              }
+            ],
+            "primaryKey": [
+              "id"
+            ],
+            "foreignKeys": [
+              {
+                "columns": [
+                  "customer_id"
+                ],
+                "tableId": "customers",
+                "targetColumns": [
+                  "id"
+                ]
+              }
+            ],
+            "unique": [],
+            "indexes": []
+          }
+        ]
+      },
+      "name": "order_amounts",
+      "sources": [
+        "orders"
+      ],
+      "projection": [
+        {
+          "field": {
+            "tableId": "orders",
+            "columnId": "amount"
+          },
+          "alias": "amount"
+        }
+      ],
+      "joins": [],
+      "predicates": [],
+      "groupBy": []
+    },
+    "options": {
+      "includeTests": true
+    }
+  },
+  "evaluator": {
+    "schemaVersion": "0.1.0",
+    "templateVersion": "0.1.0-b0",
+    "module": "evaluator",
+    "target": {
+      "dialect": "sqlite",
+      "language": "sql",
+      "framework": "none"
+    },
+    "spec": {
+      "schema": {
+        "dialect": "sqlite",
+        "tables": [
+          {
+            "id": "customers",
+            "name": "customers",
+            "columns": [
+              {
+                "id": "id",
+                "name": "id",
+                "type": "integer",
+                "nullable": false
+              },
+              {
+                "id": "name",
+                "name": "name",
+                "type": "text",
+                "nullable": false
+              }
+            ],
+            "primaryKey": [
+              "id"
+            ],
+            "foreignKeys": [],
+            "unique": [],
+            "indexes": []
+          },
+          {
+            "id": "orders",
+            "name": "orders",
+            "columns": [
+              {
+                "id": "id",
+                "name": "id",
+                "type": "integer",
+                "nullable": false
+              },
+              {
+                "id": "customer_id",
+                "name": "customer_id",
+                "type": "integer",
+                "nullable": false
+              },
+              {
+                "id": "amount",
+                "name": "amount",
+                "type": "decimal",
+                "nullable": false,
+                "precision": 12,
+                "scale": 2
+              }
+            ],
+            "primaryKey": [
+              "id"
+            ],
+            "foreignKeys": [
+              {
+                "columns": [
+                  "customer_id"
+                ],
+                "tableId": "customers",
+                "targetColumns": [
+                  "id"
+                ]
+              }
+            ],
+            "unique": [],
+            "indexes": []
+          }
+        ]
+      },
+      "ruleSetVersion": "0.1.0"
+    },
+    "options": {
+      "includeTests": true
+    }
+  },
+  "csv-etl": {
+    "schemaVersion": "0.1.0",
+    "templateVersion": "0.1.0-b0",
+    "module": "etl",
+    "target": {
+      "dialect": "sqlite",
+      "language": "python",
+      "framework": "none"
+    },
+    "spec": {
+      "source": {
+        "format": "csv",
+        "encoding": "utf-8",
+        "delimiter": ","
+      },
+      "destination": {
+        "dialect": "sqlite",
+        "table": "orders",
+        "connectionEnv": "DATABASE_URL"
+      },
+      "mappings": [
+        {
+          "source": "amount",
+          "target": "amount",
+          "cast": "decimal",
+          "trim": true,
+          "nullable": false
+        }
+      ],
+      "mode": "insert",
+      "uniqueKey": [],
+      "batchSize": 100,
+      "rejectPolicy": "strict",
+      "checkpoint": "after-commit"
+    },
+    "options": {
+      "includeTests": true
+    }
+  },
+  "json-etl": {
+    "schemaVersion": "0.1.0",
+    "templateVersion": "0.1.0-b0",
+    "module": "etl",
+    "target": {
+      "dialect": "sqlite",
+      "language": "python",
+      "framework": "none"
+    },
+    "spec": {
+      "source": {
+        "format": "json",
+        "encoding": "utf-8"
+      },
+      "destination": {
+        "dialect": "sqlite",
+        "table": "orders",
+        "connectionEnv": "DATABASE_URL"
+      },
+      "mappings": [
+        {
+          "source": "amount",
+          "target": "amount",
+          "cast": "decimal",
+          "trim": true,
+          "nullable": false
+        }
+      ],
+      "mode": "insert",
+      "uniqueKey": [],
+      "batchSize": 100,
+      "rejectPolicy": "strict",
+      "checkpoint": "after-commit"
+    },
+    "options": {
+      "includeTests": true
+    }
+  },
+  "java-auth": {
+    "schemaVersion": "0.1.0",
+    "templateVersion": "0.1.0-b0",
+    "module": "rest",
+    "target": {
+      "dialect": "sqlite",
+      "language": "java",
+      "framework": "jakarta-servlet"
+    },
+    "spec": {
+      "project": "example_auth",
+      "language": "java",
+      "framework": "jakarta-servlet",
+      "modules": [
+        "register",
+        "login",
+        "logout",
+        "session",
+        "profile",
+        "csrf"
+      ],
+      "sessionStrategy": "opaque-server-side",
+      "profileFields": [
+        "displayName",
+        "preferences"
+      ],
+      "captcha": {
+        "enabled": false,
+        "provider": "none"
+      },
+      "allowedOrigins": [
+        "https://example.invalid"
+      ]
+    },
+    "options": {
+      "includeTests": true
+    }
+  },
+  "python-auth": {
+    "schemaVersion": "0.1.0",
+    "templateVersion": "0.1.0-b0",
+    "module": "rest",
+    "target": {
+      "dialect": "sqlite",
+      "language": "python",
+      "framework": "fastapi"
+    },
+    "spec": {
+      "project": "example_auth",
+      "language": "python",
+      "framework": "fastapi",
+      "modules": [
+        "register",
+        "login",
+        "logout",
+        "session",
+        "profile",
+        "csrf"
+      ],
+      "sessionStrategy": "opaque-server-side",
+      "profileFields": [
+        "displayName",
+        "preferences"
+      ],
+      "captcha": {
+        "enabled": false,
+        "provider": "none"
+      },
+      "allowedOrigins": [
+        "https://example.invalid"
+      ]
+    },
+    "options": {
+      "includeTests": true
+    }
+  }
+}

@@ -3,6 +3,6 @@
   "build": {
     "builder": "DOCKERFILE",
     "dockerfilePath": "Useful-Tools/Dockerfile",
-    "dockerContextDir": "Useful-Tools"
+    "dockerContextDir": "."
   }
 }

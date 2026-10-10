@@ -1,0 +1,21 @@
+"""Strict application models, applied only after the bounded wire boundary."""
+from pydantic import BaseModel, ConfigDict
+
+class WireModel(BaseModel):
+    model_config = ConfigDict(strict=True, extra='forbid')
+
+class Credentials(WireModel):
+    username: str
+    password: str
+
+class CaptchaCredentials(Credentials):
+    captchaToken: str
+
+class Identity(WireModel):
+    id: str
+    username: str
+    role: str
+
+class Profile(Identity):
+    displayName: str
+    preferences: dict[str, str]

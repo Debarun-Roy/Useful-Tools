@@ -1,0 +1,43 @@
+package @PACKAGE@;
+
+import com.google.gson.*;
+import java.sql.SQLException;
+import java.util.*;
+
+public final class AuthService {
+    private final Config config;private final Users users;private final Passwords passwords;private final Captcha captcha;private final Limiter limiter;
+    public AuthService(Config config,Users users,Passwords passwords,Captcha captcha,Limiter limiter){this.config=config;this.users=users;this.passwords=passwords;this.captcha=captcha;this.limiter=limiter;}
+    public record Credentials(String username,String password) {}
+    public Credentials credentials(JsonObject body,String action)throws SQLException {
+        Set<String> keys=config.captcha?Set.of("username","password","captchaToken"):Set.of("username","password");Api.fields(body,keys,keys);
+        String username=Api.text(body,"username"),password=Api.text(body,"password");
+        if(!username.matches("[A-Za-z0-9_]{3,32}"))throw new Api.Failure(400,"USERNAME_POLICY");username=username.toLowerCase(Locale.ROOT);
+        passwords.validate(password);limiter.take(action+":account:"+username,10);
+        if(config.captcha)captcha.verify(Api.text(body,"captchaToken"),action);
+        return new Credentials(username,password);
+    }
+    public void register(Credentials value)throws SQLException{users.register(value.username,passwords.hash(value.password));}
+    public Users.User login(Credentials value)throws SQLException {
+        Users.User user=users.find(value.username);if(!passwords.verify(value.password,user==null?null:user.hash()))throw new Api.Failure(401,"INVALID_CREDENTIALS");return user;
+    }
+    public Users.User authenticated(String id)throws SQLException {
+        Users.User user=id==null?null:users.byId(id);if(user==null)throw new Api.Failure(401,"UNAUTHENTICATED");return user;
+    }
+    public Users.User profile(String id,JsonObject patch)throws SQLException {
+        Api.fields(patch,Set.of("displayName","preferences"),Set.of());if(patch.isEmpty())throw new Api.Failure(400,"INVALID_FIELDS");
+        JsonObject policy=config.spec.getAsJsonObject("profile");
+        if(patch.has("displayName")) {
+            String name=Api.text(patch,"displayName");if(name.codePointCount(0,name.length())>policy.get("displayNameMax").getAsInt()||name.codePoints().anyMatch(Character::isISOControl))throw new Api.Failure(400,"INVALID_FIELDS");
+        }
+        if(patch.has("preferences")) {
+            if(!patch.get("preferences").isJsonObject())throw new Api.Failure(400,"INVALID_FIELDS");
+            JsonObject preferences=patch.getAsJsonObject("preferences");if(preferences.size()>policy.get("preferenceCount").getAsInt())throw new Api.Failure(400,"INVALID_FIELDS");
+            for(String key:preferences.keySet()) {
+                if(!key.matches("[a-z][a-z0-9_]{0,31}"))throw new Api.Failure(400,"INVALID_FIELDS");String value=Api.text(preferences,key);
+                if(value.codePointCount(0,value.length())>policy.get("preferenceValueMax").getAsInt()||value.codePoints().anyMatch(Character::isISOControl))throw new Api.Failure(400,"INVALID_FIELDS");
+            }
+            if(Api.JSON.toJson(preferences).length()>8192)throw new Api.Failure(400,"INVALID_FIELDS");
+        }
+        return users.update(id,patch);
+    }
+}

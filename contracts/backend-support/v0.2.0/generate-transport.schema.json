@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "request": {
+      "$ref": "models.schema.json#/$defs/GenerationRequest"
+    }
+  },
+  "required": [
+    "request"
+  ],
+  "additionalProperties": false
+}

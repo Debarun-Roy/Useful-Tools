@@ -18,6 +18,8 @@ function isLocalOrigin(origin) {
 }
 
 export function normalizeApiBase(value) {
+  if (isLocalOrigin(getWindowOrigin())) return '/api'
+
   if (!value || !value.trim()) {
     return '/api'
   }

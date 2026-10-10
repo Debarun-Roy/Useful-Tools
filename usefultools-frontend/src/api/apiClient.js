@@ -136,7 +136,7 @@ async function parseResponseBody(response) {
 
 export async function request(
   path,
-  { method = 'GET', body = null, isForm = false, isJson = false } = {}
+  { method = 'GET', body = null, isForm = false, isJson = false, signal, jsonText = null, binary = false } = {}
 ) {
 
   const headers = {}
@@ -163,13 +163,22 @@ export async function request(
     encodedBody = JSON.stringify(body)
   }
 
+  if (jsonText !== null) {
+    headers['Content-Type'] = 'application/json'
+    encodedBody = jsonText
+  }
+
   const response = await fetch(`${BASE}${path}`, {
     method,
     credentials: 'include',
+    signal,
     headers,
     body: encodedBody
   })
 
+  if (binary && response.ok && response.headers.get('Content-Type')?.split(';')[0] === 'application/zip') {
+    return { status: response.status, blob: await response.blob() }
+  }
   const data = await parseResponseBody(response)
 
   if (
@@ -835,4 +844,12 @@ export const deleteRegexPattern = (id) =>
   request(`/regex/user/${encodeURIComponent(id)}`, {
     method: 'DELETE',
   })
-  
+
+// B1 specification preview; no generation or export.
+export const fetchBackendCatalog = (signal) => request('/backend-support/catalog', { signal })
+export const validateBackendSpec = (body, signal) => request('/backend-support/validate', { method: 'POST', body, isJson: true, signal })
+export const validateBackendDraft = (text, signal) => request('/backend-support/validate', { method: 'POST', jsonText: '{"request":' + text + '}', signal })
+
+// B2: literal JSON preserves duplicate keys for strict server decoding.
+export const generateBackendSchema = (text, signal) => request('/backend-support/generate', { method: 'POST', jsonText: '{"request":' + text + '}', signal })
+export const exportBackendSchema = (text, digest, signal) => request('/backend-support/export', { method: 'POST', jsonText: '{"request":' + text + ',"expectedDigest":' + JSON.stringify(digest) + '}', signal, binary: true })

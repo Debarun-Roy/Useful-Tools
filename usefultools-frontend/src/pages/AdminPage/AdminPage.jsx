@@ -29,6 +29,7 @@ import FeedbackTab  from './FeedbackTab'
 // ── Tool metadata (for display in the toggles tab) ──────────────────────────
 
 const TOOL_META = {
+  '/backend-support': { icon: '⌘', label: 'Backend Support (admin preview when disabled)' },
   '/calculator':    { icon: '🧮', label: 'Calculator' },
   '/analyser':      { icon: '🔢', label: 'Number Analyser' },
   '/vault':         { icon: '🔐', label: 'Password Vault' },
@@ -59,11 +60,12 @@ function RoleBadge({ role }) {
 
 // ── Toggle switch ───────────────────────────────────────────────────────────
 
-function ToggleSwitch({ checked, onChange, disabled, id }) {
+function ToggleSwitch({ checked, onChange, disabled, id, label }) {
   return (
     <label className={`${styles.toggle} ${disabled ? styles.toggleDisabled : ''}`} htmlFor={id}>
       <input
         id={id}
+        aria-label={label}
         type="checkbox"
         checked={checked}
         onChange={e => !disabled && onChange(e.target.checked)}
@@ -459,7 +461,7 @@ function ToolTogglesTab() {
         <div className={styles.togglesGrid}>
           {sortedPaths.map(path => {
             const meta    = TOOL_META[path]
-            const enabled = toggles[path] !== false // default to true if unknown
+            const enabled = path === '/backend-support' ? toggles[path] === true : toggles[path] !== false // default to true if unknown
             const busy    = working === path
             return (
               <div
@@ -479,6 +481,7 @@ function ToolTogglesTab() {
                   </span>
                   <ToggleSwitch
                     id={`toggle-${path.replace('/', '')}`}
+                    label={`Enable ${meta.label}`}
                     checked={enabled}
                     onChange={val => handleToggle(path, val)}
                     disabled={busy}

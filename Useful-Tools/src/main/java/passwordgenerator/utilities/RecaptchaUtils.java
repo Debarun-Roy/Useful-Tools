@@ -68,6 +68,9 @@ public class RecaptchaUtils {
      *         configuration error (HTTP 500), not as "captcha failed".
      */
     public static boolean verify(String token, String expectedAction, String remoteIp) {
+        if (AppConfig.isLocal() && !"recaptcha".equals(AppConfig.getOrDefault("local_external_integrations", "disabled"))) {
+            throw new IllegalStateException("Local reCAPTCHA is disabled; configure independent localhost keys before real login validation");
+        }
         String secretKey = System.getenv("RECAPTCHA_SECRET_KEY");
         logger.info("reCAPTCHA secret key present:" + (secretKey != null));
         if (secretKey == null || secretKey.isBlank()) {
@@ -108,7 +111,7 @@ public class RecaptchaUtils {
 
             boolean success = body.has("success") && body.get("success").getAsBoolean();
             if (!success) {
-                logger.info("reCAPTCHA verification failed: " + body);
+                logger.info("reCAPTCHA verification rejected");
                 return false;
             }
 

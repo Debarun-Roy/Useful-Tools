@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "success": {
+          "const": true
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "manifest": {
+              "type": "object",
+              "properties": {
+                "core": {
+                  "type": "object",
+                  "properties": {
+                    "manifestVersion": {
+                      "const": "1.0.0"
+                    },
+                    "schemaVersion": {
+                      "const": "0.2.0"
+                    },
+                    "templateVersion": {
+                      "const": "schema-0.2.0-b2"
+                    },
+                    "target": {
+                      "enum": [
+                        "sqlite",
+                        "postgresql"
+                      ]
+                    },
+                    "specificationDigest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "runtimeCompatibility": {
+                      "type": "string"
+                    },
+                    "verificationDependencies": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "maxItems": 100
+                    },
+                    "limitations": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "maxItems": 100
+                    },
+                    "files": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*\\.[A-Za-z0-9]+$"
+                          },
+                          "bytes": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 5242880
+                          },
+                          "sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          }
+                        },
+                        "required": [
+                          "path",
+                          "bytes",
+                          "sha256"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "maxItems": 100
+                    },
+                    "verificationRuntime": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "manifestVersion",
+                    "schemaVersion",
+                    "templateVersion",
+                    "target",
+                    "specificationDigest",
+                    "runtimeCompatibility",
+                    "verificationDependencies",
+                    "limitations",
+                    "files",
+                    "verificationRuntime"
+                  ],
+                  "additionalProperties": false
+                },
+                "digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "core",
+                "digest"
+              ],
+              "additionalProperties": false
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "findings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "ruleId": {
+                    "type": "string"
+                  },
+                  "severity": {
+                    "enum": [
+                      "error",
+                      "warning"
+                    ]
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "suggestion": {
+                    "type": "string"
+                  },
+                  "blocking": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "ruleId",
+                  "severity",
+                  "path",
+                  "message",
+                  "suggestion",
+                  "blocking"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 100
+            },
+            "adminPreview": {
+              "type": "boolean"
+            },
+            "files": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path",
+                  "content"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "manifest",
+            "digest",
+            "findings",
+            "adminPreview",
+            "files"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "success",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "success": {
+          "const": false
+        },
+        "error": {
+          "type": "string"
+        },
+        "errorCode": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "findings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "ruleId": {
+                    "type": "string"
+                  },
+                  "severity": {
+                    "enum": [
+                      "error",
+                      "warning"
+                    ]
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "suggestion": {
+                    "type": "string"
+                  },
+                  "blocking": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "ruleId",
+                  "severity",
+                  "path",
+                  "message",
+                  "suggestion",
+                  "blocking"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 100
+            },
+            "truncated": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "findings",
+            "truncated"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "success",
+        "error",
+        "errorCode"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

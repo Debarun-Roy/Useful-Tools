@@ -1,0 +1,155 @@
+{
+  "catalogVersion": "1.0.0-b1",
+  "schemaVersions": [
+    "0.1.0"
+  ],
+  "templateVersion": "0.1.0-b0",
+  "templateStatus": "draft-not-a-generator",
+  "operations": {
+    "validate": true,
+    "preview": true,
+    "generate": false,
+    "export": false
+  },
+  "limits": {
+    "bodyBytes": 1048576,
+    "depth": 32,
+    "stringLength": 4096,
+    "collectionItems": 1000,
+    "nodes": 20000,
+    "tables": 100,
+    "columnsPerSchema": 1000,
+    "findings": 100,
+    "responseBytes": 262144,
+    "requestsPerMinute": 40
+  },
+  "modules": [
+    {
+      "id": "schema",
+      "label": "Schema generation",
+      "targets": [
+        {
+          "language": "sql",
+          "framework": "none",
+          "dialect": "sqlite"
+        },
+        {
+          "language": "sql",
+          "framework": "none",
+          "dialect": "postgresql"
+        }
+      ],
+      "sampleIds": [
+        "customers-orders"
+      ]
+    },
+    {
+      "id": "migration",
+      "label": "Migrations",
+      "targets": [
+        {
+          "language": "sql",
+          "framework": "none",
+          "dialect": "sqlite"
+        },
+        {
+          "language": "sql",
+          "framework": "none",
+          "dialect": "postgresql"
+        }
+      ],
+      "sampleIds": [
+        "safe-add-column"
+      ]
+    },
+    {
+      "id": "view",
+      "label": "View generation",
+      "targets": [
+        {
+          "language": "sql",
+          "framework": "none",
+          "dialect": "sqlite"
+        },
+        {
+          "language": "sql",
+          "framework": "none",
+          "dialect": "postgresql"
+        }
+      ],
+      "sampleIds": [
+        "valid-view"
+      ]
+    },
+    {
+      "id": "evaluator",
+      "label": "Schema evaluation",
+      "targets": [
+        {
+          "language": "sql",
+          "framework": "none",
+          "dialect": "sqlite"
+        },
+        {
+          "language": "sql",
+          "framework": "none",
+          "dialect": "postgresql"
+        }
+      ],
+      "sampleIds": [
+        "evaluator"
+      ]
+    },
+    {
+      "id": "etl",
+      "label": "ETL",
+      "targets": [
+        {
+          "language": "python",
+          "framework": "none",
+          "dialect": "sqlite"
+        },
+        {
+          "language": "python",
+          "framework": "none",
+          "dialect": "postgresql"
+        }
+      ],
+      "sampleIds": [
+        "csv-etl",
+        "json-etl"
+      ]
+    },
+    {
+      "id": "rest",
+      "label": "REST API code generation",
+      "targets": [
+        {
+          "language": "java",
+          "framework": "jakarta-servlet",
+          "dialect": "sqlite"
+        },
+        {
+          "language": "java",
+          "framework": "jakarta-servlet",
+          "dialect": "postgresql"
+        },
+        {
+          "language": "python",
+          "framework": "fastapi",
+          "dialect": "sqlite"
+        },
+        {
+          "language": "python",
+          "framework": "fastapi",
+          "dialect": "postgresql"
+        }
+      ],
+      "sampleIds": [
+        "java-auth",
+        "python-auth"
+      ]
+    }
+  ],
+  "runtimeStatus": "B0 reference feasibility only; database runtime catalog planned"
+}

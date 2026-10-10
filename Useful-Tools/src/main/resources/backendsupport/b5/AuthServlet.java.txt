@@ -1,0 +1,38 @@
+package @PACKAGE@;
+
+import com.google.gson.JsonObject;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.*;
+
+/** Exact method whitelist is enforced by SecurityFilter, including PATCH on Servlet 6.1. */
+public final class AuthServlet extends HttpServlet {
+    @Override protected void service(HttpServletRequest request,HttpServletResponse response)throws IOException {
+        Bootstrap.Application app=Bootstrap.application(getServletContext());HttpSession session=(HttpSession)request.getAttribute("session");
+        JsonObject body=(JsonObject)request.getAttribute("body");String path=request.getServletPath();
+        try {
+            switch(path) {
+                case "/api/auth/csrf-token" -> Api.send(response,200,Map.of("csrfToken",app.sessions().bootstrap(request).getAttribute("csrf")));
+                case "/api/auth/session" -> {
+                    String id=Sessions.identity(session);Api.send(response,200,id==null?Map.of("authenticated",false):Map.of("authenticated",true,"user",app.auth().authenticated(id).identity()));
+                }
+                case "/api/auth/register" -> {
+                    if(Sessions.identity(session)!=null)throw new Api.Failure(409,"ALREADY_AUTHENTICATED");
+                    app.auth().register(app.auth().credentials(body,"register"));Api.send(response,201,Map.of("registered",true));
+                }
+                case "/api/auth/login" -> {
+                    if(Sessions.identity(session)!=null)throw new Api.Failure(409,"ALREADY_AUTHENTICATED");
+                    Users.User user=app.auth().login(app.auth().credentials(body,"login"));app.sessions().login(request,session,user);
+                    Api.send(response,200,Map.of("authenticated",true,"user",user.identity()));
+                }
+                case "/api/auth/logout" -> {Api.fields(body,Set.of(),Set.of());app.sessions().clear(request,response);Api.send(response,204,null);}
+                case "/api/user/profile" -> {
+                    Users.User user=(Users.User)request.getAttribute("user");
+                    Api.send(response,200,(request.getMethod().equals("PATCH")?app.auth().profile(user.id(),body):user).profile());
+                }
+                default -> throw new Api.Failure(404,"NOT_FOUND");
+            }
+        }catch(SQLException error){throw new Api.Failure(503,"SERVICE_UNAVAILABLE");}
+    }
+}

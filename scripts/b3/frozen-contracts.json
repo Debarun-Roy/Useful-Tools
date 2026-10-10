@@ -1,0 +1,12 @@
+{
+  "contracts/backend-support/v0.1.0/fixtures.json": "e5eb6b6ca6bf587da69420f45950811300ee6b5aebb5fae72d976f29a6944a4f",
+  "contracts/backend-support/v0.1.0/models.schema.json": "b129ed2f481988fa332df75f6965bcba6dc2381300511b74915f94a06e97c653",
+  "contracts/backend-support/v0.1.0/README.md": "a686ea27885ad2c9e7c6820f33e742a7d6f589818c36b3876ad26a47059a37cb",
+  "contracts/backend-support/v0.2.0/customers-orders.json": "2ad6dccfeaec6b610922f88e7e88c11d8d0def3881088cf135a178d4ce3369e6",
+  "contracts/backend-support/v0.2.0/export-transport.schema.json": "e98bcba667f51d7dba465df4d12b336d2d21bc4fa477e1305789c8f35b9abcdb",
+  "contracts/backend-support/v0.2.0/fixtures.json": "c54e5e85a8bdde082cec816bc360bbe7a5b46f686363689033e180dd6fee8a11",
+  "contracts/backend-support/v0.2.0/generate-transport.schema.json": "36dd8dc492f7eb9f524facde648ce984a98925f25c9c0db5214ae96888a8c2d2",
+  "contracts/backend-support/v0.2.0/generation-response.schema.json": "2a5a692dce112e268939af3879f82317411c0523d851e88a59fb4cb0ddad37c9",
+  "contracts/backend-support/v0.2.0/manifest.schema.json": "b31cdad013b74494bb3179feb2bc726aade7c6896831777c94feb214b9b95298",
+  "contracts/backend-support/v0.2.0/models.schema.json": "4cdfd92352414074e433be46d3e9432ac154fab3b2282d2657c0af650fcd5279"
+}

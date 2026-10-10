@@ -27,6 +27,15 @@ public class CookieConfigListener implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         ServletContext context = sce.getServletContext();
+        if (common.AppConfig.isLocal()) {
+            common.AppConfig.localDirectory();
+            SessionCookieConfig cookie = context.getSessionCookieConfig();
+            cookie.setSecure(false);
+            cookie.setHttpOnly(true);
+            cookie.setPath("/");
+            cookie.setAttribute("SameSite", "Lax");
+            return;
+        }
         
         System.out.println("[CookieConfigListener] Initializing session cookie configuration");
         

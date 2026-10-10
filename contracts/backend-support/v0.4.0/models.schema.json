@@ -1,0 +1,594 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/GenerationRequest",
+  "$defs": {
+    "Default": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "literal"
+            },
+            "value": {
+              "type": [
+                "string",
+                "number",
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "currentTimestamp"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Column": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,31}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 63
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "integer",
+            "bigint",
+            "decimal",
+            "text",
+            "varchar",
+            "boolean",
+            "date",
+            "timestamp",
+            "json"
+          ]
+        },
+        "nullable": {
+          "type": "boolean"
+        },
+        "precision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 38
+        },
+        "scale": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 38
+        },
+        "length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "default": {
+          "$ref": "#/$defs/Default"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type",
+        "nullable"
+      ],
+      "additionalProperties": false
+    },
+    "ForeignKey": {
+      "type": "object",
+      "properties": {
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,31}$"
+          },
+          "minItems": 1,
+          "maxItems": 32
+        },
+        "tableId": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,31}$"
+        },
+        "targetColumns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,31}$"
+          },
+          "minItems": 1,
+          "maxItems": 32
+        },
+        "onDelete": {
+          "type": "string",
+          "enum": [
+            "NO ACTION",
+            "RESTRICT",
+            "CASCADE",
+            "SET NULL"
+          ]
+        },
+        "onUpdate": {
+          "type": "string",
+          "enum": [
+            "NO ACTION",
+            "RESTRICT",
+            "CASCADE",
+            "SET NULL"
+          ]
+        }
+      },
+      "required": [
+        "columns",
+        "tableId",
+        "targetColumns",
+        "onDelete",
+        "onUpdate"
+      ],
+      "additionalProperties": false
+    },
+    "Index": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,31}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 63
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,31}$"
+          },
+          "minItems": 1,
+          "maxItems": 32
+        },
+        "unique": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "columns",
+        "unique"
+      ],
+      "additionalProperties": false
+    },
+    "Check": {
+      "type": "object",
+      "properties": {
+        "column": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,31}$"
+        },
+        "op": {
+          "type": "string",
+          "enum": [
+            "eq",
+            "ne",
+            "lt",
+            "le",
+            "gt",
+            "ge"
+          ]
+        },
+        "value": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ]
+        }
+      },
+      "required": [
+        "column",
+        "op",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "Table": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,31}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 63
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Column"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "primaryKey": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,31}$"
+          },
+          "minItems": 1,
+          "maxItems": 32
+        },
+        "unique": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,31}$"
+            },
+            "minItems": 1,
+            "maxItems": 32
+          },
+          "minItems": 0,
+          "maxItems": 32
+        },
+        "foreignKeys": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ForeignKey"
+          },
+          "minItems": 0,
+          "maxItems": 32
+        },
+        "indexes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Index"
+          },
+          "minItems": 0,
+          "maxItems": 32
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Check"
+          },
+          "minItems": 0,
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "columns",
+        "primaryKey",
+        "unique",
+        "foreignKeys",
+        "indexes",
+        "checks"
+      ],
+      "additionalProperties": false
+    },
+    "SchemaSnapshot": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": "0.2.0"
+        },
+        "templateVersion": {
+          "const": "schema-0.2.0-b2"
+        },
+        "module": {
+          "const": "schema"
+        },
+        "target": {
+          "type": "string",
+          "enum": [
+            "sqlite",
+            "postgresql"
+          ]
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Table"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "templateVersion",
+        "module",
+        "target",
+        "tables"
+      ],
+      "additionalProperties": false
+    },
+    "Mapping": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "columnId": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,31}$"
+        },
+        "transforms": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "trim",
+              "lower",
+              "upper",
+              "cast",
+              "date_iso",
+              "date_dmy",
+              "timestamp_iso"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 5
+        },
+        "missing": {
+          "type": "string",
+          "enum": [
+            "reject",
+            "null",
+            "default"
+          ]
+        },
+        "null": {
+          "type": "string",
+          "enum": [
+            "reject",
+            "null",
+            "default"
+          ]
+        },
+        "empty": {
+          "type": "string",
+          "enum": [
+            "reject",
+            "null",
+            "default",
+            "keep"
+          ]
+        }
+      },
+      "required": [
+        "source",
+        "columnId",
+        "transforms",
+        "missing",
+        "null",
+        "empty"
+      ],
+      "additionalProperties": false
+    },
+    "GenerationRequest": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": "0.4.0"
+        },
+        "module": {
+          "const": "etl"
+        },
+        "templateVersion": {
+          "const": "etl-0.4.0-b4"
+        },
+        "target": {
+          "type": "string",
+          "enum": [
+            "sqlite",
+            "postgresql"
+          ]
+        },
+        "schema": {
+          "$ref": "#/$defs/SchemaSnapshot"
+        },
+        "tableId": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,31}$"
+        },
+        "source": {
+          "type": "object",
+          "properties": {
+            "format": {
+              "type": "string",
+              "enum": [
+                "csv",
+                "json"
+              ]
+            },
+            "encoding": {
+              "type": "string",
+              "enum": [
+                "utf-8",
+                "utf-8-sig"
+              ]
+            },
+            "delimiter": {
+              "type": "string",
+              "enum": [
+                ",",
+                ";",
+                "\t"
+              ]
+            },
+            "unexpectedFields": {
+              "type": "string",
+              "enum": [
+                "ignore",
+                "reject"
+              ]
+            }
+          },
+          "required": [
+            "format",
+            "encoding",
+            "delimiter",
+            "unexpectedFields"
+          ],
+          "additionalProperties": false
+        },
+        "mappings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Mapping"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "insert",
+            "upsert"
+          ]
+        },
+        "conflictKey": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,31}$"
+          },
+          "minItems": 0,
+          "maxItems": 32
+        },
+        "updateColumns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,31}$"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        },
+        "batchSize": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "errorMode": {
+          "type": "string",
+          "enum": [
+            "strict",
+            "continue"
+          ]
+        },
+        "naiveTimestamp": {
+          "type": "string",
+          "enum": [
+            "reject",
+            "utc"
+          ]
+        },
+        "resumePolicy": {
+          "type": "string",
+          "enum": [
+            "manual_insert",
+            "upsert_replay"
+          ]
+        },
+        "rejects": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "metadata"
+            },
+            "maxBytes": {
+              "type": "integer",
+              "minimum": 256,
+              "maximum": 1048576
+            }
+          },
+          "required": [
+            "mode",
+            "maxBytes"
+          ],
+          "additionalProperties": false
+        },
+        "runtime": {
+          "type": "object",
+          "properties": {
+            "sourceEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]{0,63}$"
+            },
+            "connectionEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]{0,63}$"
+            },
+            "checkpointEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]{0,63}$"
+            },
+            "rejectsEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]{0,63}$"
+            }
+          },
+          "required": [
+            "sourceEnv",
+            "connectionEnv",
+            "checkpointEnv",
+            "rejectsEnv"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "module",
+        "templateVersion",
+        "target",
+        "schema",
+        "tableId",
+        "source",
+        "mappings",
+        "mode",
+        "conflictKey",
+        "updateColumns",
+        "batchSize",
+        "errorMode",
+        "naiveTimestamp",
+        "resumePolicy",
+        "rejects",
+        "runtime"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

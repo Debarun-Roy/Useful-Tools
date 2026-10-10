@@ -1,0 +1,45 @@
+package @PACKAGE@;
+
+import com.google.gson.*;
+import org.junit.jupiter.api.Test;
+import java.io.*;
+import java.time.*;
+import java.util.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+class RuntimeTest {
+    static Config config()throws Exception {
+        JsonObject spec;try(InputStream in=Config.class.getResourceAsStream("/auth-spec.json")){spec=Api.parse(in,16384).getAsJsonObject();}
+        spec.getAsJsonObject("captcha").addProperty("mode","off");
+        JsonObject names=spec.getAsJsonObject("runtime");Map<String,String> env=new HashMap<>();
+        env.put(names.get("databaseEnv").getAsString(),spec.get("database").getAsString().equals("sqlite")?java.nio.file.Path.of("target/test.db").toAbsolutePath().toString():"jdbc:postgresql://127.0.0.1:5432/test?sslmode=disable");
+        env.put(names.get("databaseUserEnv").getAsString(),"synthetic");env.put(names.get("databasePasswordEnv").getAsString(),"synthetic-only");env.put(names.get("initializeEnv").getAsString(),"true");return new Config(spec,env);
+    }
+    @Test void argonPolicyAndUniqueSalts()throws Exception {
+        Passwords passwords=new Passwords(config());String value="synthetic password with spaces ";String first=passwords.hash(value),second=passwords.hash(value);
+        assertNotEquals(first,second);assertTrue(first.startsWith("$argon2id$v=19$m=19456,t=2,p=1$"));assertTrue(passwords.verify(value,first));
+        assertFalse(passwords.verify("synthetic wrong password",first));assertFalse(passwords.verify(value,"$argon2id$v=19$m=999999999,t=2,p=1$invalid"));assertFalse(passwords.verify(value,null));
+        assertThrows(Api.Failure.class,()->passwords.hash("short"));assertThrows(Api.Failure.class,()->passwords.hash("x".repeat(129)));
+        assertFalse(passwords.verify(value.trim(),first));
+    }
+    @Test void strictJson() {
+        for(String input:List.of("{\"x\":1,\"x\":2}","{x:1}","{\"x\":NaN}","{} {}","{\"x\":\"\\ud800\"}","{\"x\":1e999}"))
+            assertThrows(Api.Failure.class,()->Api.parse(new ByteArrayInputStream(input.getBytes(java.nio.charset.StandardCharsets.UTF_8)),16384),input);
+    }
+    @Test void limiterBoundAndReset() {
+        class Time extends Clock {long now;public java.time.ZoneId getZone(){return ZoneOffset.UTC;}public Clock withZone(ZoneId zone){return this;}public Instant instant(){return Instant.ofEpochMilli(now);}}
+        Time time=new Time();Limiter limiter=new Limiter(time);limiter.take("a",1);Api.Failure error=assertThrows(Api.Failure.class,()->limiter.take("a",1));assertEquals(60,error.retry);
+        time.now=60000;limiter.take("a",1);for(int i=0;i<4095;i++)limiter.take("b"+i,1);assertEquals(4096,limiter.size());assertThrows(Api.Failure.class,()->limiter.take("overflow",1));
+        time.now=120000;limiter.take("new",1);assertEquals(1,limiter.size());
+    }
+    @Test void missingRuntimeConfigurationFails()throws Exception {assertThrows(IllegalStateException.class,()->new Config(config().spec,Map.of()));}
+    @Test void invalidModesAndPoliciesFailClosed()throws Exception {
+        Config valid=config();JsonObject names=valid.spec.getAsJsonObject("runtime");Map<String,String> env=new HashMap<>();
+        env.put(names.get("databaseEnv").getAsString(),valid.database);env.put(names.get("databaseUserEnv").getAsString(),"synthetic");
+        env.put(names.get("databasePasswordEnv").getAsString(),"synthetic-only");env.put(names.get("initializeEnv").getAsString(),"true");
+        for(String field:List.of("mode","database","schemaVersion")){JsonObject spec=valid.spec.deepCopy();spec.addProperty(field,"unsupported");assertThrows(IllegalStateException.class,()->new Config(spec,env));}
+        JsonObject enabled=valid.spec.deepCopy();enabled.getAsJsonObject("captcha").addProperty("mode","recaptcha-v3");assertThrows(IllegalStateException.class,()->new Config(enabled,env));
+        for(String value:List.of("yes","","TRUE")){Map<String,String> bad=new HashMap<>(env);bad.put(names.get("initializeEnv").getAsString(),value);assertThrows(IllegalStateException.class,()->new Config(valid.spec,bad));}
+        JsonObject origins=valid.spec.deepCopy();origins.add("origins",JsonParser.parseString("[\"http://example.invalid\"]"));assertThrows(IllegalStateException.class,()->new Config(origins,env));
+    }
+}

@@ -1,0 +1,55 @@
+import asyncio
+from datetime import datetime, timezone
+from decimal import Decimal
+import httpx
+from .wire import Failure, parse
+
+class Google:
+    def __init__(self, transport=None):
+        # A Python construction seam for external tests, never an operator URL option.
+        self.client = httpx.AsyncClient(transport=transport, timeout=httpx.Timeout(3, connect=2),
+            follow_redirects=False, trust_env=False, limits=httpx.Limits(max_connections=16, max_keepalive_connections=8))
+
+    async def verify(self, secret, token):
+        try:
+            async with asyncio.timeout(5):
+                async with self.client.stream('POST', 'https://www.google.com/recaptcha/api/siteverify', data={'secret': secret, 'response': token}) as response:
+                    if response.status_code != 200:
+                        raise Failure(503, 'CAPTCHA_UNAVAILABLE')
+                    raw = bytearray()
+                    async for chunk in response.aiter_bytes():
+                        if len(raw) + len(chunk) > 8192:
+                            raise Failure(503, 'CAPTCHA_UNAVAILABLE')
+                        raw.extend(chunk)
+                    return raw
+        except (httpx.HTTPError, TimeoutError):
+            raise Failure(503, 'CAPTCHA_UNAVAILABLE') from None
+
+    async def close(self):
+        await self.client.aclose()
+
+class Captcha:
+    def __init__(self, config, clock, transport):
+        self.config, self.clock, self.transport = config, clock, transport
+
+    async def verify(self, token, action):
+        if not self.config.captcha:
+            return
+        if not token or not token.strip() or len(token) > 4096:
+            raise Failure(403, 'CAPTCHA_REJECTED')
+        raw = await self.transport.verify(self.config.secret, token)
+        try:
+            result = parse(raw, 8192)
+            valid = (isinstance(result, dict) and result.get('success') is True
+                     and set(result) <= {'success', 'score', 'action', 'challenge_ts', 'hostname', 'error-codes'}
+                     and ('error-codes' not in result or result['error-codes'] == [])
+                     and result.get('action') == action and result.get('hostname') == self.config.spec['captcha']['hostname'])
+            score = result.get('score')
+            valid = valid and isinstance(score, Decimal) and score.is_finite() and Decimal(str(self.config.spec['captcha']['minimumScore'])) <= score <= 1
+            timestamp = result['challenge_ts']
+            valid = valid and isinstance(timestamp, str) and timestamp.endswith('Z')
+            age = self.clock() - datetime.fromisoformat(timestamp.replace('Z', '+00:00')).timestamp()
+            if not valid or not -10 <= age <= 120:
+                raise ValueError()
+        except (Failure, ValueError, TypeError, KeyError, AttributeError):
+            raise Failure(403, 'CAPTCHA_REJECTED') from None

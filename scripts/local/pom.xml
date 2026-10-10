@@ -1,0 +1,10 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.usefultools.local</groupId><artifactId>localhost-runtime</artifactId><version>1.0</version>
+  <!-- Match the repository's existing validated embedded runtime; not a WAR dependency. -->
+  <dependencies>
+    <dependency><groupId>org.apache.tomcat.embed</groupId><artifactId>tomcat-embed-jasper</artifactId><version>11.0.26</version></dependency>
+    <dependency><groupId>org.apache.tomcat</groupId><artifactId>tomcat-annotations-api</artifactId><version>11.0.26</version></dependency>
+    <dependency><groupId>com.google.code.gson</groupId><artifactId>gson</artifactId><version>2.10.1</version></dependency>
+  </dependencies>
+</project>

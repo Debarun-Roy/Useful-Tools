@@ -1,0 +1,85 @@
+"""Bounded strict wire parsing; no framework coercion or reflected validation values."""
+import json
+import re
+from decimal import Decimal, InvalidOperation
+
+class Failure(Exception):
+    def __init__(self, status, code, retry=0):
+        super().__init__(code)
+        self.status, self.code, self.retry = status, code, retry
+
+def utf16_length(value):
+    return len(value.encode('utf-16-le')) // 2
+
+def parse(raw, maximum=16384):
+    if len(raw) > maximum:
+        raise Failure(413, 'BODY_TOO_LARGE')
+    def pairs(items):
+        result = {}
+        for key, value in items:
+            if key in result:
+                raise Failure(400, 'DUPLICATE_KEY')
+            result[key] = value
+        return result
+    def number(value):
+        n = Decimal(value)
+        if len(value) > 64 or len(n.as_tuple().digits) > 32 or abs(n.as_tuple().exponent) > 100:
+            raise ValueError()
+        return n
+    def invalid(value):
+        raise ValueError()
+    try:
+        value = json.loads(raw.decode('utf-8'), object_pairs_hook=pairs,
+                           parse_int=number, parse_float=number, parse_constant=invalid)
+        nodes = 0
+        def string(s):
+            if utf16_length(s) > 4096:
+                raise Failure(413, 'STRING_LIMIT')
+        def visit(item, depth):
+            nonlocal nodes
+            nodes += 1
+            if depth > 8 or nodes > 256:
+                raise Failure(413, 'COMPLEXITY_LIMIT')
+            if isinstance(item, dict):
+                for k, v in item.items():
+                    string(k)
+                    visit(v, depth + 1)
+            elif isinstance(item, list):
+                for v in item:
+                    visit(v, depth + 1)
+            elif isinstance(item, str):
+                string(item)
+        visit(value, 0)
+        return value
+    except (ValueError, UnicodeError, RecursionError, InvalidOperation):
+        raise Failure(400, 'MALFORMED_JSON') from None
+
+async def body(request):
+    media = request.headers.get('content-type', '')
+    if not re.fullmatch(r'application/json(?:\s*;\s*charset=utf-8)?', media, re.I):
+        raise Failure(415, 'UNSUPPORTED_MEDIA_TYPE')
+    length = request.headers.get('content-length')
+    if length:
+        try:
+            if int(length) > 16384:
+                raise Failure(413, 'BODY_TOO_LARGE')
+        except ValueError:
+            raise Failure(400, 'MALFORMED_JSON') from None
+    data = bytearray()
+    async for chunk in request.stream():
+        if len(data) + len(chunk) > 16384:
+            raise Failure(413, 'BODY_TOO_LARGE')
+        data.extend(chunk)
+    value = parse(data)
+    if not isinstance(value, dict):
+        raise Failure(400, 'MALFORMED_JSON')
+    return value
+
+def fields(value, allowed, required=()):
+    if not isinstance(value, dict) or not set(value) <= set(allowed) or not set(required) <= set(value):
+        raise Failure(400, 'INVALID_FIELDS')
+
+def text(value, key):
+    if not isinstance(value.get(key), str):
+        raise Failure(400, 'INVALID_FIELDS')
+    return value[key]

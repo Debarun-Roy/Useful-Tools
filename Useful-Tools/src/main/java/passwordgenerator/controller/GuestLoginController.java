@@ -64,7 +64,7 @@ public class GuestLoginController extends HttpServlet {
             String sessionId = session.getId();
             session.setAttribute("username", guestUsername);
             session.setAttribute("role", "guest");   // Sprint 17
-            System.out.println("[GuestLoginController] Created session with ID: " + sessionId);
+            System.out.println("[GuestLoginController] Created guest session");
 
             // ── 3. Manually add JSESSIONID with SameSite=None ────────────────
             // (Same fix as regular login — ensures cross-origin cookie works)

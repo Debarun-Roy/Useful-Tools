@@ -1,0 +1,61 @@
+package @PACKAGE@;
+
+import com.google.gson.*;
+import java.io.*;
+import java.net.URI;
+import java.nio.file.Path;
+import java.util.*;
+
+public final class Config {
+    public final JsonObject spec;
+    public final boolean production,postgres,captcha,profile,initialize;
+    public final String database,user,password,captchaSecret,hostname;
+    public final Set<String> origins;
+    public final int idle,absolute,passwordMin,passwordMax;
+    public Config(JsonObject spec,Map<String,String> env) {
+        this.spec=spec.deepCopy();
+        try {
+            if(!Set.of("production","development").contains(spec.get("mode").getAsString())||!Set.of("sqlite","postgresql").contains(spec.get("database").getAsString())
+                ||!Set.of("off","recaptcha-v3").contains(spec.getAsJsonObject("captcha").get("mode").getAsString())||!spec.get("schemaVersion").getAsString().equals("0.5.0"))throw new IllegalArgumentException();
+            List<String> modules=spec.getAsJsonArray("modules").asList().stream().map(JsonElement::getAsString).toList();
+            if(!modules.contains("core")||!Set.of("core","profile").containsAll(modules)||new HashSet<>(modules).size()!=modules.size())throw new IllegalArgumentException();
+            production=spec.get("mode").getAsString().equals("production");
+            postgres=spec.get("database").getAsString().equals("postgresql");
+            captcha=spec.getAsJsonObject("captcha").get("mode").getAsString().equals("recaptcha-v3");
+            profile=spec.getAsJsonArray("modules").asList().stream().anyMatch(x->x.getAsString().equals("profile"));
+            Set<String> trusted=new HashSet<>();for(JsonElement item:spec.getAsJsonArray("origins")) {
+                String origin=item.getAsString();URI uri=URI.create(origin);
+                if(uri.getHost()==null||uri.getUserInfo()!=null||uri.getRawQuery()!=null||uri.getFragment()!=null||!uri.getRawPath().isEmpty()||uri.getPort()==0||uri.getPort()>65535
+                    ||!(uri.getScheme().equals("https")||!production&&uri.getScheme().equals("http")&&loopback(uri.getHost())))throw new IllegalArgumentException();
+                trusted.add(origin);
+            }
+            if(trusted.isEmpty())throw new IllegalArgumentException();origins=Set.copyOf(trusted);
+            idle=spec.getAsJsonObject("session").get("idleSeconds").getAsInt();absolute=spec.getAsJsonObject("session").get("absoluteSeconds").getAsInt();
+            passwordMin=spec.getAsJsonObject("policy").get("passwordMin").getAsInt();passwordMax=spec.getAsJsonObject("policy").get("passwordMax").getAsInt();
+            if(idle<60||idle>3600||absolute<idle||absolute>86400||passwordMin<15||passwordMax<passwordMin||passwordMax>128)throw new IllegalArgumentException();
+            JsonObject names=spec.getAsJsonObject("runtime");database=required(env,names,"databaseEnv");
+            String init=required(env,names,"initializeEnv");if(!Set.of("true","false").contains(init))throw new IllegalArgumentException();initialize=Boolean.parseBoolean(init);
+            if(postgres) {
+                if(!database.matches("jdbc:postgresql://[A-Za-z0-9.\\[\\]:-]+/[A-Za-z0-9_]+\\?sslmode=(verify-full|disable)"))throw new IllegalArgumentException();
+                URI uri=URI.create(database.substring(5));if(database.endsWith("=disable")&&!loopback(uri.getHost()))throw new IllegalArgumentException();
+                user=required(env,names,"databaseUserEnv");password=required(env,names,"databasePasswordEnv");
+            }else {
+                Path path=Path.of(database);if(!path.isAbsolute()||database.contains("?")||database.contains("\0")||database.contains(":memory:"))throw new IllegalArgumentException();
+                user="";password="";
+            }
+            JsonObject c=spec.getAsJsonObject("captcha");hostname=c.get("hostname").getAsString();
+            double score=c.get("minimumScore").getAsDouble();if(!Double.isFinite(score)||score<0.1||score>1)throw new IllegalArgumentException();
+            captchaSecret=captcha?required(env,c,"secretEnv"):"";
+        }catch(RuntimeException error){throw new IllegalStateException("INVALID_RUNTIME_CONFIGURATION");}
+    }
+    private static String required(Map<String,String> env,JsonObject names,String key) {
+        String value=env.get(names.get(key).getAsString());if(value==null||value.isBlank()||value.length()>4096)throw new IllegalArgumentException();return value;
+    }
+    public static boolean loopback(String host){return Set.of("localhost","127.0.0.1","::1","[::1]","0:0:0:0:0:0:0:1").contains(host);}
+    public static Config load()throws IOException {
+        try(InputStream in=Config.class.getResourceAsStream("/auth-spec.json")) {
+            if(in==null)throw new IllegalStateException("MISSING_CONFIGURATION");
+            return new Config(Api.parse(in,16384).getAsJsonObject(),System.getenv());
+        }
+    }
+}

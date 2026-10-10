@@ -18,8 +18,8 @@ const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY
  */
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY}>
-    <App />
-    </GoogleReCaptchaProvider>
+    {RECAPTCHA_SITE_KEY ? <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY}>
+      <App />
+    </GoogleReCaptchaProvider> : <App />}
   </StrictMode>,
 )

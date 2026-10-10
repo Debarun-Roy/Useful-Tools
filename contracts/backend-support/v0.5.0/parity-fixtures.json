@@ -1,0 +1,25 @@
+{
+  "version":"0.5.0",
+  "setup":"Fresh cookie jar; GET csrf-token; register b5_alice with unchanged synthetic password, no auto-login; retain anonymous token. Substitute $PASSWORD and $CAPTCHA_LOGIN. Omit captchaToken only when configured off.",
+  "negativeCases":[
+    {"id":"short-password","method":"POST","path":"/api/auth/login","body":{"username":"b5_alice","password":"short","captchaToken":"$CAPTCHA_LOGIN"},"status":400,"error":"PASSWORD_POLICY"},
+    {"id":"username-no-trim","method":"POST","path":"/api/auth/login","body":{"username":" b5_alice","password":"$PASSWORD","captchaToken":"$CAPTCHA_LOGIN"},"status":400,"error":"USERNAME_POLICY"},
+    {"id":"unknown-login-field","method":"POST","path":"/api/auth/login","body":{"username":"b5_alice","password":"$PASSWORD","captchaToken":"$CAPTCHA_LOGIN","role":"admin"},"status":400,"error":"INVALID_FIELDS"},
+    {"id":"missing-origin","method":"POST","path":"/api/auth/login","body":{"username":"b5_alice","password":"$PASSWORD","captchaToken":"$CAPTCHA_LOGIN"},"origin":false,"status":403,"error":"ORIGIN_REJECTED"},
+    {"id":"missing-csrf","method":"POST","path":"/api/auth/login","body":{"username":"b5_alice","password":"$PASSWORD","captchaToken":"$CAPTCHA_LOGIN"},"csrf":false,"status":403,"error":"CSRF_REJECTED"},
+    {"id":"duplicate-json-field","method":"POST","path":"/api/auth/login","raw":"{\"username\":\"b5_alice\",\"username\":\"b5_bob\"}","status":400,"error":"DUPLICATE_KEY"},
+    {"id":"malformed-json","method":"POST","path":"/api/auth/login","raw":"{bad","status":400,"error":"MALFORMED_JSON"},
+    {"id":"wrong-media","method":"POST","path":"/api/auth/login","body":{},"media":"text/plain","status":415,"error":"UNSUPPORTED_MEDIA_TYPE"}
+  ],
+  "positiveSequence":[
+    {"method":"GET","path":"/api/auth/csrf-token","status":200,"schema":"Csrf","save":"cookie and csrfToken"},
+    {"method":"POST","path":"/api/auth/register","status":201,"schema":"Registered","authenticated":false},
+    {"method":"POST","path":"/api/auth/login","status":200,"schema":"Authenticated","rotates":"cookie and csrfToken"},
+    {"method":"GET","path":"/api/auth/csrf-token","status":200,"schema":"Csrf","save":"new token"},
+    {"method":"GET","path":"/api/auth/session","status":200,"schema":"Session","authenticated":true},
+    {"method":"GET","path":"/api/user/profile","status":200,"schema":"Profile","requiresModule":"profile"},
+    {"method":"PATCH","path":"/api/user/profile","body":{"displayName":"Alice","preferences":{"theme":"dark"}},"status":200,"schema":"Profile","requiresModule":"profile"},
+    {"method":"POST","path":"/api/auth/logout","body":{},"status":204,"clears":"cookie and server session"},
+    {"method":"GET","path":"/api/auth/session","status":200,"schema":"Session","authenticated":false}
+  ]
+}

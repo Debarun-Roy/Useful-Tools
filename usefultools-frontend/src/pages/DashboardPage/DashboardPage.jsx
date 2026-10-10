@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { logoutUser }  from '../../api/apiClient'
-import { fetchToolStatus } from '../../api/apiClient'
+import { fetchToolStatus, fetchBackendCatalog } from '../../api/apiClient'
 import { useAuth }     from '../../auth/useAuth'
 import ThemePicker     from '../../components/ThemePicker/ThemePicker'
 import UserMenu        from '../../components/UserMenu/UserMenu'
@@ -54,6 +54,7 @@ import styles          from './DashboardPage.module.css'
  */
 
 const FEATURES = [
+  { label: 'Backend Support', path: '/backend-support', sprint: 'B1', ready: true, icon: '⌘', desc: 'Preview and validate six backend specification families. Generation arrives later.' },
   {
     label:  'Calculator',
     path:   '/calculator',
@@ -318,11 +319,13 @@ export default function DashboardPage() {
   // drop / dragend events — no library needed.
   const [dragFromIndex, setDragFromIndex] = useState(null)
   const [dragOverIndex, setDragOverIndex] = useState(null)
+  const [backendAccess, setBackendAccess] = useState(null)
   const [toolStatuses, setToolStatuses] = useState({})  // { "/calculator": true, ... }
 
   const [localError, setLocalError] = useState('')
 
   useEffect(() => {
+   fetchBackendCatalog().then(({ data }) => setBackendAccess(data?.success ? data.data.access : null)).catch(() => setBackendAccess(null))
    fetchToolStatus()
      .then(({ data }) => {
        if (data?.success && data.data?.toggles) {
@@ -447,6 +450,7 @@ export default function DashboardPage() {
             </div>
             <span className={styles.cardLabel}>{feature.label}</span>
             <span className={styles.cardDesc}>{feature.desc}</span>
+          {feature.path === '/backend-support' && <span>{backendAccess?.adminPreview ? 'Admin preview · disabled for users' : backendAccess?.enabled ? 'Enabled' : 'Disabled or unavailable'}</span>}
             <span className={styles.cardLockBadge} aria-hidden="true">🔒 Login required</span>
           </div>
         </span>
@@ -462,6 +466,7 @@ export default function DashboardPage() {
           </div>
           <span className={styles.cardLabel}>{feature.label}</span>
           <span className={styles.cardDesc}>{feature.desc}</span>
+          {feature.path === '/backend-support' && <span>{backendAccess?.adminPreview ? 'Admin preview · disabled for users' : backendAccess?.enabled ? 'Enabled' : 'Disabled or unavailable'}</span>}
           <span className={styles.cardBadge}>Sprint {feature.sprint}</span>
           {toolStatuses[feature.path] === false && (
            <span className={styles.cardDisabledBadge}>
@@ -517,13 +522,14 @@ export default function DashboardPage() {
           tabIndex={0}
           className={styles.card}
           onClick={() => {
-            const isEnabled = toolStatuses[feature.path] !== false  // default true
-            if (!isEnabled && !isAdmin) return   // blocked for regular users
+            const isEnabled = feature.path === '/backend-support' ? backendAccess?.canValidate === true : toolStatuses[feature.path] !== false  // default true
+            if (!isEnabled && (feature.path === '/backend-support' || !isAdmin)) return   // blocked for regular users
             navigate(feature.path)
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault()
+              if (feature.path === '/backend-support' && !backendAccess?.canValidate) return
               navigate(feature.path)
             }
           }}
@@ -533,6 +539,7 @@ export default function DashboardPage() {
           </div>
           <span className={styles.cardLabel}>{feature.label}</span>
           <span className={styles.cardDesc}>{feature.desc}</span>
+          {feature.path === '/backend-support' && <span>{backendAccess?.adminPreview ? 'Admin preview · disabled for users' : backendAccess?.enabled ? 'Enabled' : 'Disabled or unavailable'}</span>}
         </div>
       </div>
     )

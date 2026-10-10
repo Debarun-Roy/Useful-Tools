@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS units(
     UNIQUE(unit_id, unit_type)
 );
 
-INSERT INTO units(unit_id, label, category, unit_type, symbol, factor, offset)
+INSERT OR IGNORE INTO units(unit_id, label, category, unit_type, symbol, factor, offset)
 VALUES
       -- Length
       ('m', 'Meters', 'SI', 'Length', 'm', 1, 0),

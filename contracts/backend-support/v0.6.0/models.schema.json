@@ -1,0 +1,221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/GenerationRequest",
+  "$defs": {
+    "GenerationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "templateVersion",
+        "module",
+        "target",
+        "database",
+        "project",
+        "modules",
+        "mode",
+        "origins",
+        "session",
+        "policy",
+        "profile",
+        "captcha",
+        "runtime",
+        "pythonModule",
+        "pythonVersion"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "0.6.0"
+        },
+        "templateVersion": {
+          "const": "python-auth-0.6.0-b6"
+        },
+        "module": {
+          "const": "rest"
+        },
+        "target": {
+          "const": "python"
+        },
+        "database": {
+          "enum": [
+            "sqlite",
+            "postgresql"
+          ]
+        },
+        "project": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{2,39}$"
+        },
+        "modules": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "items": {
+            "enum": [
+              "core",
+              "profile"
+            ]
+          }
+        },
+        "mode": {
+          "enum": [
+            "production",
+            "development"
+          ]
+        },
+        "origins": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 200
+          }
+        },
+        "session": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "idleSeconds",
+            "absoluteSeconds"
+          ],
+          "properties": {
+            "idleSeconds": {
+              "type": "integer",
+              "minimum": 60,
+              "maximum": 3600
+            },
+            "absoluteSeconds": {
+              "type": "integer",
+              "minimum": 300,
+              "maximum": 86400
+            }
+          }
+        },
+        "policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "username",
+            "passwordMin",
+            "passwordMax"
+          ],
+          "properties": {
+            "username": {
+              "const": "ascii-lower-3-32"
+            },
+            "passwordMin": {
+              "type": "integer",
+              "minimum": 15,
+              "maximum": 64
+            },
+            "passwordMax": {
+              "type": "integer",
+              "minimum": 64,
+              "maximum": 128
+            }
+          }
+        },
+        "profile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "displayNameMax",
+            "preferenceCount",
+            "preferenceValueMax"
+          ],
+          "properties": {
+            "displayNameMax": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "preferenceCount": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            },
+            "preferenceValueMax": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          }
+        },
+        "captcha": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode",
+            "secretEnv",
+            "hostname",
+            "minimumScore"
+          ],
+          "properties": {
+            "mode": {
+              "enum": [
+                "off",
+                "recaptcha-v3"
+              ]
+            },
+            "secretEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]{2,63}$"
+            },
+            "hostname": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+              "maxLength": 253
+            },
+            "minimumScore": {
+              "type": "number",
+              "minimum": 0.1,
+              "maximum": 1
+            }
+          }
+        },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "databaseEnv",
+            "databaseUserEnv",
+            "databasePasswordEnv",
+            "initializeEnv",
+            "redisEnv"
+          ],
+          "properties": {
+            "databaseEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]{2,63}$"
+            },
+            "databaseUserEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]{2,63}$"
+            },
+            "databasePasswordEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]{2,63}$"
+            },
+            "initializeEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]{2,63}$"
+            },
+            "redisEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]{2,63}$"
+            }
+          }
+        },
+        "pythonModule": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{2,39}$"
+        },
+        "pythonVersion": {
+          "const": "3.14"
+        }
+      }
+    }
+  }
+}

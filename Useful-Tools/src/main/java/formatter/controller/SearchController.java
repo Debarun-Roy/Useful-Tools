@@ -39,6 +39,7 @@ public class SearchController extends HttpServlet {
 
     // Static tool registry — would normally be in a database or config
     private static final List<ToolInfo> ALL_TOOLS = List.of(
+            new ToolInfo("/backend-support", "Backend Support", "⌘", "Preview and validate schema, migration, view, evaluator, ETL and REST specifications"),
             new ToolInfo("/calculator", "Calculator", "🧮",
                     "Arithmetic, boolean, trig, complex, matrix, statistics and more"),
             new ToolInfo("/analyser", "Number Analyser", "🔢",

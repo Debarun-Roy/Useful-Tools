@@ -1,0 +1,23 @@
+package @PACKAGE@;
+
+import java.time.Clock;
+import java.util.*;
+
+/** Single-instance bounded fixed windows. Never trusts forwarded client addresses. */
+public final class Limiter {
+    private record Window(long end,int count) {}
+    private final Map<String,Window> windows=new HashMap<>();
+    private final Clock clock;
+    public Limiter(Clock clock){this.clock=clock;}
+    public synchronized void take(String key,int maximum) {
+        long now=clock.millis();windows.entrySet().removeIf(e->e.getValue().end<=now);
+        Window value=windows.get(key);
+        if(value==null) {
+            if(windows.size()>=4096)throw new Api.Failure(429,"RATE_LIMITED",60);
+            value=new Window(now+60000,0);
+        }
+        if(value.count>=maximum)throw new Api.Failure(429,"RATE_LIMITED",(int)Math.max(1,(value.end-now+999)/1000));
+        windows.put(key,new Window(value.end,value.count+1));
+    }
+    int size(){synchronized(this){return windows.size();}}
+}

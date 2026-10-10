@@ -1,0 +1,232 @@
+{
+  "schemaVersion": "0.4.0",
+  "module": "etl",
+  "templateVersion": "etl-0.4.0-b4",
+  "target": "sqlite",
+  "schema": {
+    "schemaVersion": "0.2.0",
+    "module": "schema",
+    "templateVersion": "schema-0.2.0-b2",
+    "target": "sqlite",
+    "tables": [
+      {
+        "id": "items",
+        "name": "items",
+        "columns": [
+          {
+            "id": "id",
+            "name": "id",
+            "type": "integer",
+            "nullable": false
+          },
+          {
+            "id": "name",
+            "name": "name",
+            "type": "varchar",
+            "nullable": false,
+            "length": 80
+          },
+          {
+            "id": "amount",
+            "name": "amount",
+            "type": "decimal",
+            "nullable": false,
+            "precision": 12,
+            "scale": 2,
+            "default": {
+              "kind": "literal",
+              "value": 0
+            }
+          },
+          {
+            "id": "active",
+            "name": "active",
+            "type": "boolean",
+            "nullable": false,
+            "default": {
+              "kind": "literal",
+              "value": true
+            }
+          },
+          {
+            "id": "day",
+            "name": "day",
+            "type": "date",
+            "nullable": true
+          },
+          {
+            "id": "instant",
+            "name": "instant",
+            "type": "timestamp",
+            "nullable": true
+          },
+          {
+            "id": "metadata",
+            "name": "metadata",
+            "type": "json",
+            "nullable": true
+          },
+          {
+            "id": "note",
+            "name": "note",
+            "type": "text",
+            "nullable": true,
+            "default": {
+              "kind": "literal",
+              "value": "preserved"
+            }
+          },
+          {
+            "id": "parent_id",
+            "name": "parent_id",
+            "type": "integer",
+            "nullable": true
+          }
+        ],
+        "primaryKey": [
+          "id"
+        ],
+        "unique": [
+          [
+            "name"
+          ]
+        ],
+        "foreignKeys": [
+          {
+            "columns": [
+              "parent_id"
+            ],
+            "tableId": "items",
+            "targetColumns": [
+              "id"
+            ],
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION"
+          }
+        ],
+        "indexes": [],
+        "checks": [
+          {
+            "column": "amount",
+            "op": "ge",
+            "value": 0
+          }
+        ]
+      }
+    ]
+  },
+  "tableId": "items",
+  "source": {
+    "format": "csv",
+    "encoding": "utf-8-sig",
+    "delimiter": ",",
+    "unexpectedFields": "reject"
+  },
+  "mappings": [
+    {
+      "source": "id",
+      "columnId": "id",
+      "transforms": [
+        "trim",
+        "cast"
+      ],
+      "missing": "reject",
+      "null": "reject",
+      "empty": "reject"
+    },
+    {
+      "source": "name",
+      "columnId": "name",
+      "transforms": [
+        "trim",
+        "cast"
+      ],
+      "missing": "reject",
+      "null": "reject",
+      "empty": "keep"
+    },
+    {
+      "source": "amount",
+      "columnId": "amount",
+      "transforms": [
+        "trim",
+        "cast"
+      ],
+      "missing": "default",
+      "null": "reject",
+      "empty": "reject"
+    },
+    {
+      "source": "active",
+      "columnId": "active",
+      "transforms": [
+        "trim",
+        "cast"
+      ],
+      "missing": "default",
+      "null": "reject",
+      "empty": "reject"
+    },
+    {
+      "source": "day",
+      "columnId": "day",
+      "transforms": [
+        "trim",
+        "date_iso"
+      ],
+      "missing": "null",
+      "null": "null",
+      "empty": "null"
+    },
+    {
+      "source": "instant",
+      "columnId": "instant",
+      "transforms": [
+        "trim",
+        "timestamp_iso"
+      ],
+      "missing": "null",
+      "null": "null",
+      "empty": "null"
+    },
+    {
+      "source": "metadata",
+      "columnId": "metadata",
+      "transforms": [
+        "trim",
+        "cast"
+      ],
+      "missing": "null",
+      "null": "null",
+      "empty": "null"
+    },
+    {
+      "source": "parent_id",
+      "columnId": "parent_id",
+      "transforms": [
+        "trim",
+        "cast"
+      ],
+      "missing": "null",
+      "null": "null",
+      "empty": "null"
+    }
+  ],
+  "mode": "insert",
+  "conflictKey": [],
+  "updateColumns": [],
+  "batchSize": 2,
+  "errorMode": "strict",
+  "naiveTimestamp": "reject",
+  "resumePolicy": "manual_insert",
+  "rejects": {
+    "mode": "metadata",
+    "maxBytes": 1048576
+  },
+  "runtime": {
+    "sourceEnv": "UT_ETL_SOURCE",
+    "connectionEnv": "UT_ETL_CONNECTION",
+    "checkpointEnv": "UT_ETL_CHECKPOINT",
+    "rejectsEnv": "UT_ETL_REJECTS"
+  }
+}

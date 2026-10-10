@@ -49,6 +49,7 @@ public class FavoritesDAO {
      */
 
     public static final java.util.Set<String> VALID_TOOL_PATHS = java.util.Set.of(
+            "/backend-support",
             "/calculator",
             "/analyser",
             "/vault",

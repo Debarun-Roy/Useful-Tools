@@ -97,6 +97,7 @@ public class ActivityDAO {
      */
     
     public static final java.util.Set<String> VALID_TOOL_NAMES = java.util.Set.of(
+            "backend-support.validate",
             "analyzer.classify",   // Number Analyser
             "converter.convert",   // Unit Converter
             "text.transform",      // Text Utilities
@@ -189,6 +190,11 @@ public class ActivityDAO {
         if (toolName == null || !VALID_TOOL_NAMES.contains(toolName)) return -1;
         if (summary == null || summary.isBlank()) return -1;
 
+        // This event is metadata-only even through the legacy public logging endpoint.
+        if ("backend-support.validate".equals(toolName)) {
+            summary = "Validated a backend specification";
+            payloadJson = null;
+        }
         String safeSummary = summary.length() > MAX_SUMMARY_LEN
                 ? summary.substring(0, MAX_SUMMARY_LEN) : summary;
         String safePayload = null;

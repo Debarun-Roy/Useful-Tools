@@ -1,0 +1,38 @@
+[
+  {
+    "ecosystem": "npm",
+    "name": "xlsx",
+    "version": "0.18.5",
+    "advisory": "GHSA-4r6h-8v6p-xvw6",
+    "assessment": "not applicable to exercised local path",
+    "reason": "Application only creates and writes workbooks; no XLSX.read/readFile in source. Input-parser attack path is absent. Independent reviewer must approve this reachability assessment.",
+    "releaseAcceptance": false
+  },
+  {
+    "ecosystem": "npm",
+    "name": "xlsx",
+    "version": "0.18.5",
+    "advisory": "GHSA-5pgg-2g8v-p4x9",
+    "assessment": "not applicable to exercised local path",
+    "reason": "Application only creates and writes workbooks; no XLSX.read/readFile in source. Input-parser attack path is absent. Independent reviewer must approve this reachability assessment.",
+    "releaseAcceptance": false
+  },
+  {
+    "ecosystem": "PyPI",
+    "name": "pytest",
+    "version": "9.0.2",
+    "advisory": "GHSA-6w46-j5rx-g56g",
+    "assessment": "not applicable to exercised local path",
+    "reason": "Advisory concerns UNIX shared temporary directories. Current qualification is Windows with owned --basetemp. Does not approve UNIX operator execution; new template dependency release or explicit review required.",
+    "releaseAcceptance": false
+  },
+  {
+    "ecosystem": "PyPI",
+    "name": "pytest",
+    "version": "9.0.2",
+    "advisory": "PYSEC-2026-1845",
+    "assessment": "not applicable to exercised local path",
+    "reason": "Advisory concerns UNIX shared temporary directories. Current qualification is Windows with owned --basetemp. Does not approve UNIX operator execution; new template dependency release or explicit review required.",
+    "releaseAcceptance": false
+  }
+]

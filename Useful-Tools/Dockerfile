@@ -3,11 +3,12 @@ FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
 
 # Cache dependencies
-COPY pom.xml .
+COPY Useful-Tools/pom.xml .
 RUN mvn dependency:go-offline -B
 
 # Copy source and build WAR
-COPY src ./src
+COPY Useful-Tools/src ./src
+COPY contracts/backend-support /contracts/backend-support
 RUN mvn clean package -DskipTests -B
 
 
@@ -33,23 +34,9 @@ done || echo "⚠ Warning: sqlite3 install failed after retries, continuing with
 # Copy built WAR
 COPY --from=build /app/target/UsefulTools.war /usr/local/tomcat/webapps/ROOT.war
 
-# Copy SQL dump into container
-COPY usefultools_dump.sql /tmp/usefultools_dump.sql
-
-# Ensure database directory exists (Railway volume mount target)
+# Operator provisions a reviewed database on the persistent volume before launch.
+# No account dump or production data is embedded in this image.
 RUN mkdir -p /databases
-
+ENV SQLITE_DB_PATH=/databases/UsefulTools.db
 EXPOSE 8080
-
-# Import DB dump only if database doesn't already exist
-CMD ["sh", "-c", "\
-if [ ! -f /databases/UsefulTools.db ]; then \
-  echo 'Initializing Railway volume SQLite database...'; \
-  if command -v sqlite3 &> /dev/null; then \
-    sqlite3 /databases/UsefulTools.db < /tmp/usefultools_dump.sql; \
-  else \
-    echo 'sqlite3 not available, but attempting to continue...'; \
-  fi; \
-else \
-  echo 'SQLite database already exists. Skipping import.'; \
-fi && catalina.sh run"]
+CMD ["sh", "-c", "test -s \"$SQLITE_DB_PATH\" || { echo 'Provision the application database on the persistent volume before startup' >&2; exit 1; }; exec catalina.sh run"]

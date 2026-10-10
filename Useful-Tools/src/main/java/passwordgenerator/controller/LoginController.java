@@ -153,7 +153,6 @@ public class LoginController extends HttpServlet {
             String sessionId = session.getId();
             session.setAttribute("username", username);
             session.setAttribute("role", userRole);   // Sprint 17
-            System.out.println("[LoginController] Created session with ID: " + sessionId);
 
             // ── 6b. CRITICAL: Manually add JSESSIONID with SameSite=None ────
             // Even though Tomcat adds automatic cookie, we add it here too via
@@ -165,7 +164,6 @@ public class LoginController extends HttpServlet {
             jsessionidCookie.setSecure(true);
             jsessionidCookie.setHttpOnly(true);
             response.addCookie(jsessionidCookie);
-            System.out.println("[LoginController] Re-added JSESSIONID via addCookie() - wrapper will add SameSite=None");
 
             // ── 7. CSRF token ──────────────────────────────────────────────
             String csrfToken = UUID.randomUUID().toString();

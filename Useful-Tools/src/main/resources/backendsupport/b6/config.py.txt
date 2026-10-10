@@ -1,0 +1,75 @@
+"""Only operator configuration, with explicit modes and no environment fallback."""
+import json
+import os
+import re
+from pathlib import Path
+from urllib.parse import urlsplit
+
+LOOPBACK = {'localhost', '127.0.0.1', '::1'}
+
+def require(value):
+    if not value:
+        raise ValueError('INVALID_RUNTIME_CONFIGURATION')
+
+class Config:
+    def __init__(self, spec, env):
+        try:
+            self.spec = json.loads(json.dumps(spec))
+            require(spec['schemaVersion'] == '0.6.0' and spec['target'] == 'python')
+            require(spec['mode'] in ('production', 'development'))
+            require(spec['database'] in ('sqlite', 'postgresql'))
+            require(spec['captcha']['mode'] in ('off', 'recaptcha-v3'))
+            modules = spec['modules']
+            require('core' in modules and set(modules) <= {'core', 'profile'} and len(set(modules)) == len(modules))
+            self.production = spec['mode'] == 'production'
+            self.postgres = spec['database'] == 'postgresql'
+            self.profile = 'profile' in modules
+            self.captcha = spec['captcha']['mode'] != 'off'
+            self.origins = set(spec['origins'])
+            require(self.origins)
+            for origin in self.origins:
+                u = urlsplit(origin)
+                require(u.hostname and not u.username and not u.password and not u.path and not u.query and not u.fragment)
+                require(u.port != 0 and (u.scheme == 'https' or not self.production and u.scheme == 'http' and u.hostname in LOOPBACK))
+            self.idle = spec['session']['idleSeconds']
+            self.absolute = spec['session']['absoluteSeconds']
+            self.minimum = spec['policy']['passwordMin']
+            self.maximum = spec['policy']['passwordMax']
+            require(all(type(v) is int for v in [self.idle, self.absolute, self.minimum, self.maximum]))
+            require(60 <= self.idle <= 3600 and self.idle <= self.absolute <= 86400 and 15 <= self.minimum <= self.maximum <= 128)
+            def required(key):
+                value = env.get(key)
+                require(isinstance(value, str) and value.strip() and len(value) <= 4096)
+                return value
+            names = spec['runtime']
+            self.database = required(names['databaseEnv'])
+            initialize = required(names['initializeEnv'])
+            require(initialize in ('true', 'false'))
+            self.initialize = initialize == 'true'
+            if self.postgres:
+                require(re.fullmatch(r'postgresql://[A-Za-z0-9.\[\]:-]+/[A-Za-z0-9_]+\?sslmode=(verify-full|disable)', self.database))
+                u = urlsplit(self.database)
+                require(u.hostname and (u.query == 'sslmode=verify-full' or u.hostname in LOOPBACK))
+                self.user = required(names['databaseUserEnv'])
+                self.password = required(names['databasePasswordEnv'])
+            else:
+                require(Path(self.database).is_absolute() and '?' not in self.database and '\0' not in self.database and ':memory:' not in self.database)
+                self.user = self.password = ''
+            self.redis_url = required(names['redisEnv'])
+            u = urlsplit(self.redis_url)
+            require(u.scheme in ('redis', 'rediss') and u.hostname and not u.query and not u.fragment)
+            require(u.scheme == 'rediss' or u.hostname in LOOPBACK)
+            require(re.fullmatch(r'/[0-9]{1,2}', u.path or '/0'))
+            require(env.get('WEB_CONCURRENCY', '1') == '1')
+            self.secret = required(spec['captcha']['secretEnv']) if self.captcha else ''
+            score = spec['captcha']['minimumScore']
+            require(type(score) in (int, float) and 0.1 <= score <= 1)
+            require(re.fullmatch(r'[A-Za-z0-9.-]{1,253}', spec['captcha']['hostname']))
+            require(all(type(v) is int and v > 0 for v in spec['profile'].values()))
+            require(spec['profile']['displayNameMax'] <= 100 and spec['profile']['preferenceCount'] <= 20 and spec['profile']['preferenceValueMax'] <= 200)
+        except (AssertionError, KeyError, TypeError, ValueError):
+            raise RuntimeError('INVALID_RUNTIME_CONFIGURATION') from None
+
+    @classmethod
+    def load(cls):
+        return cls(json.loads((Path(__file__).parent / 'auth-spec.json').read_text('utf-8')), os.environ)

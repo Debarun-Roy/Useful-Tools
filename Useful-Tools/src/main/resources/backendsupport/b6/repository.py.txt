@@ -1,0 +1,97 @@
+"""Short-lived bounded worker connections and parameterized per-operation transactions."""
+import json
+import sqlite3
+import uuid
+from contextlib import contextmanager
+from pathlib import Path
+import psycopg
+from .wire import Failure
+from .security import Work
+from .models import Identity, Profile
+
+class Users:
+    def __init__(self, config):
+        self.config = config
+        self.work = Work(8)
+
+    @contextmanager
+    def connection(self):
+        if self.config.postgres:
+            connection = psycopg.connect(self.config.database, user=self.config.user,
+                password=self.config.password, connect_timeout=3,
+                options='-c search_path=public -c statement_timeout=5000')
+        else:
+            connection = sqlite3.connect(self.config.database, timeout=5)
+            connection.execute('PRAGMA foreign_keys=ON')
+        try:
+            yield connection
+            connection.commit()
+        except BaseException:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
+    def execute(self, connection, sql, values=()):
+        return connection.execute(sql.replace('?', '%s') if self.config.postgres else sql, values)
+
+    def initialize(self):
+        with self.connection() as c:
+            rows = c.execute("SELECT tablename FROM pg_tables WHERE schemaname='public'" if self.config.postgres else "SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+            tables = {r[0] for r in rows if not r[0].startswith('sqlite_')}
+            if 'auth_schema_version' not in tables:
+                if not self.config.initialize:
+                    raise RuntimeError('SCHEMA_INITIALIZATION_REQUIRED')
+                if tables:
+                    raise RuntimeError('EMPTY_DATABASE_REQUIRED')
+                # Avoid executescript's implicit commit; every statement stays in one transaction.
+                if not self.config.postgres:
+                    c.execute('BEGIN')
+                for sql in (Path(__file__).parent / 'V001__auth.sql').read_text().split(';'):
+                    if sql.strip():
+                        c.execute(sql)
+            if c.execute('SELECT version FROM auth_schema_version').fetchall() != [(1,)]:
+                raise RuntimeError('UNSUPPORTED_SCHEMA_VERSION')
+            c.execute('SELECT id,username,password_hash,role,display_name,preferences FROM auth_users WHERE 1=0')
+
+    @staticmethod
+    def row(row):
+        if row is None:
+            return None
+        return dict(id=row[0], username=row[1], hash=row[2], role='user', displayName=row[3], preferences=json.loads(row[4]))
+
+    def find(self, key, value):
+        if key not in ('id', 'username'):
+            raise ValueError('INTERNAL_FIELD')
+        with self.connection() as c:
+            return self.row(self.execute(c, 'SELECT id,username,password_hash,display_name,preferences FROM auth_users WHERE '+key+'=?', (value,)).fetchone())
+
+    def register(self, username, encoded):
+        try:
+            with self.connection() as c:
+                self.execute(c, "INSERT INTO auth_users(id,username,password_hash,role,display_name,preferences) VALUES(?,?,?,'user','','{}')", (str(uuid.uuid4()), username, encoded))
+        except (sqlite3.IntegrityError, psycopg.IntegrityError) as error:
+            if getattr(error, 'sqlstate', None) == '23505' or 'UNIQUE constraint failed: auth_users.username' in str(error):
+                raise Failure(409, 'USERNAME_UNAVAILABLE') from None
+            raise
+
+    def update(self, identity, patch):
+        with self.connection() as c:
+            for key, column in [('displayName', 'display_name'), ('preferences', 'preferences')]:
+                if key in patch:
+                    value = json.dumps(patch[key], ensure_ascii=False, separators=(',', ':')) if key == 'preferences' else patch[key]
+                    if self.execute(c, 'UPDATE auth_users SET '+column+'=? WHERE id=?', (value, identity)).rowcount != 1:
+                        raise Failure(401, 'UNAUTHENTICATED')
+            row = self.execute(c, 'SELECT id,username,password_hash,display_name,preferences FROM auth_users WHERE id=?', (identity,)).fetchone()
+            if row is None:
+                raise Failure(401, 'UNAUTHENTICATED')
+            return self.row(row)
+
+    async def call(self, operation, *args):
+        return await self.work.run(getattr(self, operation), *args)
+
+def identity(user):
+    return Identity.model_validate({k: user[k] for k in ('id', 'username', 'role')}).model_dump()
+
+def profile(user):
+    return Profile.model_validate({k: user[k] for k in ('id', 'username', 'role', 'displayName', 'preferences')}).model_dump()

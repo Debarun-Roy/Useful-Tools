@@ -1,0 +1,48 @@
+package @PACKAGE@;
+
+import com.google.gson.JsonObject;
+import jakarta.servlet.*;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+import java.util.*;
+
+/** Registered once in web.xml: response boundary → transport → route/method → limits → body → session → Origin/CSRF → identity. */
+public final class SecurityFilter implements Filter {
+    private static final Map<String,Set<String>> METHODS=Map.of(
+        "/api/auth/register",Set.of("POST"),"/api/auth/login",Set.of("POST"),"/api/auth/logout",Set.of("POST"),
+        "/api/auth/session",Set.of("GET"),"/api/auth/csrf-token",Set.of("GET"),"/api/user/profile",Set.of("GET","PATCH"));
+    @Override public void doFilter(ServletRequest raw,ServletResponse output,FilterChain chain)throws IOException,ServletException {
+        HttpServletRequest request=(HttpServletRequest)raw;HttpServletResponse response=(HttpServletResponse)output;
+        String requestId=UUID.randomUUID().toString();response.setHeader("X-Request-ID",requestId);response.setHeader("Cache-Control","no-store");
+        response.setHeader("X-Content-Type-Options","nosniff");response.setHeader("Content-Security-Policy","default-src 'none'; frame-ancestors 'none'");
+        response.setHeader("Referrer-Policy","no-referrer");
+        try {
+            Bootstrap.Application app=Bootstrap.application(request.getServletContext());if(app==null)throw new Api.Failure(503,"UNAVAILABLE");
+            if(app.config().production){response.setHeader("Strict-Transport-Security","max-age=31536000");if(!request.isSecure())throw new Api.Failure(400,"HTTPS_REQUIRED");}
+            else if(!request.isSecure()&&!Config.loopback(request.getRemoteAddr()))throw new Api.Failure(400,"LOOPBACK_REQUIRED");
+            if(request.isRequestedSessionIdFromURL()||request.getRequestURI().contains(";")||request.getQueryString()!=null)throw new Api.Failure(400,"INVALID_REQUEST_TARGET");
+            String path=request.getServletPath();Set<String> methods=METHODS.get(path);
+            if(methods==null||path.equals("/api/user/profile")&&!app.config().profile)throw new Api.Failure(404,"NOT_FOUND");
+            String method=request.getMethod();if(!methods.contains(method)){response.setHeader("Allow",String.join(", ",new TreeSet<>(methods)));throw new Api.Failure(405,"METHOD_NOT_ALLOWED");}
+            boolean credentials=path.equals("/api/auth/login")||path.equals("/api/auth/register");
+            app.limiter().take(path+":address:"+request.getRemoteAddr(),credentials?30:120);
+            boolean unsafe=!method.equals("GET");JsonObject body=unsafe?Api.body(request):null;
+            if(body!=null)request.setAttribute("body",body);
+            HttpSession session=app.sessions().current(request);request.setAttribute("session",session);
+            if(unsafe) {
+                String origin=request.getHeader("Origin");if(origin==null||!app.config().origins.contains(origin)||Collections.list(request.getHeaders("Origin")).size()!=1)throw new Api.Failure(403,"ORIGIN_REJECTED");
+                if(!(path.equals("/api/auth/logout")&&session==null)) {
+                    if(Collections.list(request.getHeaders("X-CSRF-Token")).size()!=1)throw new Api.Failure(403,"CSRF_REJECTED");
+                    app.sessions().check(session,request.getHeader("X-CSRF-Token"));
+                }
+            }
+            if(path.equals("/api/user/profile"))request.setAttribute("user",app.auth().authenticated(Sessions.identity(session)));
+            chain.doFilter(request,response);
+        }catch(Api.Failure error) {
+            if(error.retry>0)response.setHeader("Retry-After",Integer.toString(error.retry));Api.send(response,error.status,Map.of("error",error.code,"requestId",requestId));
+        }catch(Exception error) {
+            // Never log exceptions: JDBC/provider exception text can contain credentials or application data.
+            Api.send(response,503,Map.of("error","SERVICE_UNAVAILABLE","requestId",requestId));
+        }
+    }
+}

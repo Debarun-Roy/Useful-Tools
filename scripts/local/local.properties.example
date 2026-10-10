@@ -1,0 +1,3 @@
+# Local-only overlay; loaded explicitly by AppConfig through UT_LOCAL_DIR.
+# No secrets in this file. Keep disabled until independent localhost keys exist.
+local_external_integrations=disabled

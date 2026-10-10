@@ -23,7 +23,7 @@ import common.DatabaseUtils;
  *   )
  *
  * ── Default state ─────────────────────────────────────────────────────────
- * All known tools are inserted as enabled=1 on first startup.  If a new
+ * Backend Support is inserted disabled; existing tools default enabled. If a new
  * tool is added to KNOWN_TOOLS later, it is also inserted on next startup
  * via ensureSchema().
  *
@@ -37,6 +37,7 @@ public class ToolToggleDAO {
 
     /** Canonical set of tool paths that can be toggled. */
     public static final Set<String> KNOWN_TOOLS = Set.of(
+            "/backend-support",
             "/calculator",
             "/analyser",
             "/vault",
@@ -71,14 +72,15 @@ public class ToolToggleDAO {
             );
         }
 
-        // Insert any missing tools as enabled=1
+        // Insert missing tools; Backend Support requires explicit admin enablement.
         String now = Instant.now().toString();
         for (String path : KNOWN_TOOLS) {
             try (PreparedStatement pst = conn.prepareStatement(
                     "INSERT OR IGNORE INTO tool_toggles (tool_path, enabled, updated_at) "
-                    + "VALUES (?, 1, ?)")) {
+                    + "VALUES (?, ?, ?)")) {
                 pst.setString(1, path);
-                pst.setString(2, now);
+                pst.setInt(2, path.equals("/backend-support") ? 0 : 1);
+                pst.setString(3, now);
                 pst.executeUpdate();
             }
         }
@@ -96,7 +98,7 @@ public class ToolToggleDAO {
         // Pre-populate with defaults so we always return something even if
         // the DB call fails.
         for (String path : KNOWN_TOOLS) {
-            result.put(path, true);
+            result.put(path, !path.equals("/backend-support"));
         }
 
         try (Connection conn = DatabaseUtils.getSQLite3Connection()) {
@@ -119,6 +121,7 @@ public class ToolToggleDAO {
      * Returns true if the given tool_path is enabled (or unknown).
      */
     public static boolean isEnabled(String toolPath) {
+        if ("/backend-support".equals(toolPath)) return backendSupportAvailability() == Availability.ENABLED;
         if (toolPath == null) return true;
         if (!KNOWN_TOOLS.contains(toolPath)) return true; // unknown → allow
 
@@ -135,6 +138,25 @@ public class ToolToggleDAO {
             e.printStackTrace();
         }
         return true; // fail-open: if we can't read the DB, allow access
+    }
+
+    public enum Availability { ENABLED, DISABLED, ABSENT, FAILED }
+
+    /** Strict read: no schema creation and no fail-open fallback. */
+    public static Availability backendSupportAvailability() {
+        try (Connection conn = DatabaseUtils.getSQLite3Connection()) {
+            if (conn == null) return Availability.FAILED;
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT enabled FROM tool_toggles WHERE tool_path = '/backend-support'");
+                 ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return Availability.ABSENT;
+                String value = rs.getString(1);
+                if (!"0".equals(value) && !"1".equals(value)) return Availability.FAILED;
+                return "1".equals(value) ? Availability.ENABLED : Availability.DISABLED;
+            }
+        } catch (SQLException | RuntimeException ignored) {
+            return Availability.FAILED;
+        }
     }
 
     // ── Writes ──────────────────────────────────────────────────────────────

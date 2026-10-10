@@ -1,0 +1,52 @@
+package @PACKAGE@;
+
+import com.google.gson.*;
+import java.io.*;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.time.*;
+import java.util.Set;
+
+public final class Captcha {
+    /** Dependency injection is Java wiring only. No configurable URL or token bypass exists. */
+    public interface Transport { byte[] verify(String secret,String token)throws IOException; }
+    public interface ConnectionFactory { HttpURLConnection open()throws IOException; }
+    public static final class Google implements Transport {
+        private final ConnectionFactory connections;
+        public Google(){this(()->(HttpURLConnection)URI.create("https://www.google.com/recaptcha/api/siteverify").toURL().openConnection());}
+        /** Java-only dependency boundary for isolated transport tests; never read from runtime configuration. */
+        public Google(ConnectionFactory connections){this.connections=connections;}
+        @Override public byte[] verify(String secret,String token)throws IOException {
+            HttpURLConnection connection=connections.open();
+            connection.setConnectTimeout(2000);connection.setReadTimeout(3000);connection.setInstanceFollowRedirects(false);
+            connection.setRequestMethod("POST");connection.setDoOutput(true);
+            connection.setRequestProperty("Content-Type","application/x-www-form-urlencoded; charset=UTF-8");
+            byte[] form=("secret="+URLEncoder.encode(secret,StandardCharsets.UTF_8)+"&response="+URLEncoder.encode(token,StandardCharsets.UTF_8)).getBytes(StandardCharsets.UTF_8);
+            connection.setFixedLengthStreamingMode(form.length);
+            try {
+                try(OutputStream output=connection.getOutputStream()){output.write(form);}
+                if(connection.getResponseCode()!=200)throw new IOException("PROVIDER_UNAVAILABLE");
+                try(InputStream input=connection.getInputStream()){byte[] bytes=input.readNBytes(8193);if(bytes.length>8192)throw new IOException("PROVIDER_LIMIT");return bytes;}
+            }finally{connection.disconnect();}
+        }
+    }
+    private final Config config;private final Clock clock;private final Transport transport;
+    public Captcha(Config config,Clock clock,Transport transport){this.config=config;this.clock=clock;this.transport=transport;}
+    public void verify(String token,String action) {
+        if(!config.captcha)return;
+        if(token==null||token.isBlank()||token.length()>4096)throw new Api.Failure(403,"CAPTCHA_REJECTED");
+        byte[] bytes;try{bytes=transport.verify(config.captchaSecret,token);}catch(IOException error){throw new Api.Failure(503,"CAPTCHA_UNAVAILABLE");}
+        try {
+            JsonObject result=Api.parse(new ByteArrayInputStream(bytes),8192).getAsJsonObject();
+            if(!(result.get("success") instanceof JsonPrimitive success)||!success.isBoolean()||!success.getAsBoolean())reject();
+            if(!Set.of("success","score","action","challenge_ts","hostname","error-codes").containsAll(result.keySet()))reject();
+            if(result.has("error-codes")&&(!result.get("error-codes").isJsonArray()||result.getAsJsonArray("error-codes").size()!=0))reject();
+            if(!Api.text(result,"action").equals(action)||!Api.text(result,"hostname").equals(config.hostname))reject();
+            if(!(result.get("score") instanceof JsonPrimitive score)||!score.isNumber())reject();
+            double score=result.get("score").getAsDouble();if(!Double.isFinite(score)||score>1||score<config.spec.getAsJsonObject("captcha").get("minimumScore").getAsDouble())reject();
+            Instant timestamp=Instant.parse(Api.text(result,"challenge_ts"));long age=Duration.between(timestamp,clock.instant()).toMillis();
+            if(age< -10000||age>120000)reject();
+        }catch(IOException|RuntimeException error){throw new Api.Failure(403,"CAPTCHA_REJECTED");}
+    }
+    private static void reject(){throw new Api.Failure(403,"CAPTCHA_REJECTED");}
+}

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "0.6.0",
+  "templateVersion": "python-auth-0.6.0-b6",
+  "module": "rest",
+  "target": "python",
+  "database": "sqlite",
+  "project": "auth-starter",
+  "modules": [
+    "core",
+    "profile"
+  ],
+  "mode": "production",
+  "origins": [
+    "https://localhost:8443"
+  ],
+  "session": {
+    "idleSeconds": 900,
+    "absoluteSeconds": 28800
+  },
+  "policy": {
+    "username": "ascii-lower-3-32",
+    "passwordMin": 15,
+    "passwordMax": 128
+  },
+  "profile": {
+    "displayNameMax": 100,
+    "preferenceCount": 20,
+    "preferenceValueMax": 200
+  },
+  "captcha": {
+    "mode": "off",
+    "secretEnv": "AUTH_CAPTCHA_SECRET",
+    "hostname": "localhost",
+    "minimumScore": 0.5
+  },
+  "runtime": {
+    "databaseEnv": "AUTH_DATABASE",
+    "databaseUserEnv": "AUTH_DATABASE_USER",
+    "databasePasswordEnv": "AUTH_DATABASE_PASSWORD",
+    "initializeEnv": "AUTH_INITIALIZE",
+    "redisEnv": "AUTH_REDIS_URL"
+  },
+  "pythonModule": "auth_app",
+  "pythonVersion": "3.14"
+}

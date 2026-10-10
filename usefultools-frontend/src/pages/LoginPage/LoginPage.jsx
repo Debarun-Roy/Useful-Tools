@@ -45,6 +45,11 @@ export default function LoginPage() {
       return
     }
 
+    if (!import.meta.env.VITE_RECAPTCHA_SITE_KEY) {
+      setError('Captcha is unavailable: independent development configuration is required.');
+      return
+    }
+
     if (!executeRecaptcha) {
       setError('Captcha is still loading. Please wait a moment and try again.')
       return
@@ -97,8 +102,11 @@ export default function LoginPage() {
     }
   }
 
+  const localCaptchaUnavailable = import.meta.env.MODE === 'development' && !import.meta.env.VITE_RECAPTCHA_SITE_KEY
+
   return (
     <AuthLayout title="Sign in">
+      {localCaptchaUnavailable && <p role="status">Local account login, registration and captcha recovery are unavailable until independent localhost reCAPTCHA keys are configured. Guest access remains available.</p>}
 
       <form onSubmit={handleSubmit} noValidate>
 

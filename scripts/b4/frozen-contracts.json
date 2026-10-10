@@ -1,0 +1,22 @@
+{
+  "contracts/backend-support/v0.1.0/fixtures.json": "e5eb6b6ca6bf587da69420f45950811300ee6b5aebb5fae72d976f29a6944a4f",
+  "contracts/backend-support/v0.1.0/models.schema.json": "b129ed2f481988fa332df75f6965bcba6dc2381300511b74915f94a06e97c653",
+  "contracts/backend-support/v0.1.0/README.md": "a686ea27885ad2c9e7c6820f33e742a7d6f589818c36b3876ad26a47059a37cb",
+  "contracts/backend-support/v0.2.0/customers-orders.json": "2ad6dccfeaec6b610922f88e7e88c11d8d0def3881088cf135a178d4ce3369e6",
+  "contracts/backend-support/v0.2.0/export-transport.schema.json": "e98bcba667f51d7dba465df4d12b336d2d21bc4fa477e1305789c8f35b9abcdb",
+  "contracts/backend-support/v0.2.0/fixtures.json": "c54e5e85a8bdde082cec816bc360bbe7a5b46f686363689033e180dd6fee8a11",
+  "contracts/backend-support/v0.2.0/generate-transport.schema.json": "36dd8dc492f7eb9f524facde648ce984a98925f25c9c0db5214ae96888a8c2d2",
+  "contracts/backend-support/v0.2.0/generation-response.schema.json": "2a5a692dce112e268939af3879f82317411c0523d851e88a59fb4cb0ddad37c9",
+  "contracts/backend-support/v0.2.0/manifest.schema.json": "b31cdad013b74494bb3179feb2bc726aade7c6896831777c94feb214b9b95298",
+  "contracts/backend-support/v0.2.0/models.schema.json": "4cdfd92352414074e433be46d3e9432ac154fab3b2282d2657c0af650fcd5279",
+  "contracts/backend-support/v0.3.0/evaluator-sample.json": "70d1e96ea90e8e60260dd1a4786268f7060e70c7ae1ff219f9da5d8cdc6b9573",
+  "contracts/backend-support/v0.3.0/export-transport.schema.json": "e98bcba667f51d7dba465df4d12b336d2d21bc4fa477e1305789c8f35b9abcdb",
+  "contracts/backend-support/v0.3.0/generate-transport.schema.json": "36dd8dc492f7eb9f524facde648ce984a98925f25c9c0db5214ae96888a8c2d2",
+  "contracts/backend-support/v0.3.0/generation-response.schema.json": "ce8e7d92d688b8ad8eda23aeecd7018b49da4c7ce86a7e2c7abafa7ea993df08",
+  "contracts/backend-support/v0.3.0/manifest.schema.json": "a9719284242c02dce0eea5a4e63dbe57e794df75962cdddb6fb9196f048879db",
+  "contracts/backend-support/v0.3.0/migration-sample.json": "6eeac2491d189e4171b7d6698abfb8337ff4f2738e0e418c2299c74f223b8b8d",
+  "contracts/backend-support/v0.3.0/models.schema.json": "b9f54c938b76d2997d8ec05c6d6cc73e858ca850c94d45ae5354e16d504ef560",
+  "contracts/backend-support/v0.3.0/view-sample.json": "68437136e0de0b865e980e22d72342de1e335849dc37e36d85dc136f135803c0",
+  "Useful-Tools/src/main/resources/backendsupport/b3/migrate.py": "471c3378d91d2c531ed627ea42a828da0b05623d6388efb7d24926d69a8143b5",
+  "Useful-Tools/src/main/resources/backendsupport/b3/verify.py": "49bd1d1c90737a3d67b7a04dfabe81e3f8772b28e93a5b706211f5b001d200ce"
+}

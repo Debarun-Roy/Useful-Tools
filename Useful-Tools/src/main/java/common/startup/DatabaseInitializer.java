@@ -53,6 +53,7 @@ public class DatabaseInitializer implements ServletContextListener {
                 return;
             }
 
+            common.dao.ToolToggleDAO.ensureSchema(conn);
             createRegexPatternsTable(conn);
             createSchemaTemplatesTable(conn);
             createToolRecommendationsTable(conn);
@@ -176,7 +177,7 @@ public class DatabaseInitializer implements ServletContextListener {
      * that file so it also works standalone if Debarun runs it directly
      * against a fresh database with a SQLite tool) and the INSERT. Only
      * the INSERT half is needed here, so the file is split at its one
-     * "INSERT INTO" occurrence.
+     * INSERT (including the idempotent OR IGNORE form).
      */
     private void seedUnitsTableIfEmpty(Connection conn) throws SQLException {
         try (PreparedStatement count = conn.prepareStatement("SELECT COUNT(*) FROM units");
@@ -194,14 +195,14 @@ public class DatabaseInitializer implements ServletContextListener {
             return;
         }
 
-        int insertIdx = script.indexOf("INSERT INTO");
-        if (insertIdx < 0) {
+        var insert = java.util.regex.Pattern.compile("(?m)^INSERT(?: OR IGNORE)? INTO units\\s*\\(").matcher(script);
+        if (!insert.find()) {
             System.out.println("[DatabaseInitializer] WARNING: units.sql has no INSERT "
                     + "statement, units table left empty");
             return;
         }
 
-        String insertSql = script.substring(insertIdx).trim();
+        String insertSql = script.substring(insert.start()).trim();
         if (insertSql.endsWith(";")) {
             insertSql = insertSql.substring(0, insertSql.length() - 1);
         }
