@@ -107,7 +107,7 @@ function AuthEditor({ sample, capability, active, onTargetChange, navigationRevi
     <div className={styles.actions}>
       <button type="button" disabled={!unapplied} onClick={apply}>Apply auth JSON</button>
       <button type="button" disabled={!unapplied} onClick={() => { setJson(text(draft)); setUnapplied(false); invalidate('Unapplied changes discarded explicitly.') }}>Discard auth JSON changes</button>
-      <button type="button" disabled={busy || !capability?.canGenerate} onClick={generate}>Generate auth preview</button>
+      <button className={styles.primaryAction} type="button" disabled={busy || !capability?.canGenerate} onClick={generate}>Generate auth preview</button>
       <button type="button" disabled={busy || !result || !capability?.canExport} onClick={download}>Download auth ZIP</button>
     </div>
     <p role="status" aria-live="polite">{status}</p>

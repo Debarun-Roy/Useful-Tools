@@ -41,3 +41,8 @@
 @media (max-width: 360px) {
   .page > header { flex-wrap: wrap; row-gap: 8px; padding-block: 8px; }
 }
+
+/* Separate navigation, generation, and the older validation-only workflow. */
+.panel > section:not([hidden]) { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--clr-border); }
+.legacy { margin-top: 40px; padding-top: 24px; border-top: 2px solid var(--clr-border); }
+.panel .primaryAction { border: 2px solid var(--clr-accent); font-weight: 700; }

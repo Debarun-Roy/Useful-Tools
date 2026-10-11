@@ -97,8 +97,9 @@ export default function SchemaEditor({ capability, active = true }) {
     <div className={styles.controls}>
       <label>Schema source<select value={source} disabled={unsaved} onChange={e => { invalidate(); setSource(e.target.value); setTableIndex(0) }}><option value="draft">Personal draft</option><option value="sample">Read-only customers/orders sample</option></select></label>
       <label>Schema dialect<select value={request.target} disabled={unsaved} onChange={e => readonly ? (invalidate(), setSampleTarget(e.target.value)) : edit(n => { n.target = e.target.value })}>{capability?.targets.map(t => <option key={t} value={t}>{t}</option>)}</select></label>
-      <label>Generator template<select value={request.templateVersion} disabled={unsaved || readonly} onChange={e => edit(n => { n.templateVersion = e.target.value })}><option value={capability?.templateVersion}>{capability?.templateVersion}</option></select></label>
+
     </div>
+    <p className={styles.meta}>Requested template: <code>{request.templateVersion}</code> (fixed by the schema contract).</p>
     <div className={styles.actions} role="group" aria-label="Schema sections">{['Tables', 'Relationships', 'Options', 'JSON'].map(t => <button type="button" key={t} aria-pressed={tab === t} disabled={unsaved && t !== 'JSON'} onClick={() => setTab(t)}>{t}</button>)}</div>
     {tab !== 'JSON' && <label>Selected table<select value={Math.min(tableIndex, request.tables.length - 1)} onChange={e => setTableIndex(Number(e.target.value))}>{request.tables.map((t, i) => <option key={`${t.id}-${i}`} value={i}>{t.name} ({t.id})</option>)}</select></label>}
     {tab === 'Tables' && <>
@@ -153,7 +154,7 @@ export default function SchemaEditor({ capability, active = true }) {
     </>}
     <p>Your schema is sent to UsefulTools for validation and rendering. It is not saved in browser storage or retained as a project. Do not include credentials or personal data. The server does not execute generated SQL.</p>
     <div className={styles.actions}>
-      <button type="button" disabled={busy || !capability?.canGenerate} onClick={generate}>{busy ? 'Working…' : 'Validate and generate schema'}</button>
+      <button className={styles.primaryAction} type="button" disabled={busy || !capability?.canGenerate} onClick={generate}>{busy ? 'Working…' : 'Validate and generate schema'}</button>
       {busy && <button type="button" onClick={() => invalidate('Request cancelled. Input preserved.')}>Cancel generation request</button>}
       <button type="button" disabled={busy || !result || !capability?.canExport} onClick={downloadBundle}>Download bundle</button>
     </div>

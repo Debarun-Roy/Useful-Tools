@@ -94,28 +94,33 @@ export default function BackendSupportPage() {
   }
   return <div className={styles.page}>
     <AppHeader username={username} onLogout={signOut} onBack={() => navigate('/dashboard')} glyph="⌘" />
-    <main className={styles.main}>
-      <ToolHero badge="Backend tools" title="Backend Support" description="Configure database tools, local Python ETL jobs, and standalone Java and Python auth starters." />
+    <main>
+      <ToolHero fullWidth badge="Backend tools" title="Backend Support" description="Configure database tools, local Python ETL jobs, and standalone Java and Python auth starters." />
+      <div className={styles.main}>
       <section className={styles.panel} aria-label="Backend specification workspace">
         {!catalog && !catalogError && <p role="status">Loading capability catalog…</p>}
         {catalogError && <p role="alert">{catalogError}</p>}
         <button type="button" onClick={() => { invalidate(); setRefresh(r => r + 1) }}>Refresh access</button>
         {catalog && <>
           <p className={styles.notice}>{!access.configured ? 'Tool configuration is missing. Validation is unavailable.' : access.adminPreview ? 'Admin preview: this tool is disabled for other users.' : !access.enabled ? 'This tool is disabled. An administrator must enable it before validation.' : access.sampleOnly ? 'Guest access: immutable built-in samples only.' : 'Custom specifications and built-in sample previews are available.'}</p>
-          <p className={styles.meta}>Catalog {catalog.catalogVersion} · Schema {catalog.schemaVersions.join(', ')} · Template {catalog.templateVersion} (draft, not a generator)</p>
           <div className={styles.controls}>
             <label>Tool family<select value={moduleId} onChange={e => { navigationRevision.current++; invalidate(); setSearchParams({ module: e.target.value }); setSampleId(''); setPreview(null) }}>
               {catalog.modules.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
             </select></label>
-            <label>Built-in sample<select value={effectiveSample} onChange={e => { invalidate(); setSampleId(e.target.value); setPreview(null) }}>
-              {selected?.sampleIds.map(id => <option key={id} value={id}>{id}</option>)}
-            </select></label>
+
           </div>
           <SchemaEditor capability={catalog.generation} active={moduleId === 'schema'} />
           {['migration', 'view', 'evaluator'].map(module => <B3Editor key={module} module={module} capability={catalog.generationModules?.find(c => c.module === module)} active={moduleId === module} />)}
           <EtlEditor capability={catalog.generationModules?.find(c => c.module === 'etl')} active={moduleId === 'etl'} />
           <RestEditor navigationRevision={navigationRevision} capability={catalog.generationModules?.find(c => c.module === 'rest')} active={moduleId === 'rest'} />
+          <div className={styles.legacy}>
           <h2>Historical draft validation (0.1.0)</h2>
+          <p>Validate older specifications separately from the generators above. This workflow does not generate files.</p>
+          <p className={styles.meta}>Catalog {catalog.catalogVersion} · Schema {catalog.schemaVersions.join(', ')} · Template {catalog.templateVersion} (draft, not a generator)</p>
+          <label>Built-in sample<select value={effectiveSample} onChange={e => { invalidate(); setSampleId(e.target.value); setPreview(null) }}>
+              {selected?.sampleIds.map(id => <option key={id} value={id}>{id}</option>)}
+            </select></label>
+
           <p>Applicable targets: {selected?.targets.map(t => `${t.language} / ${t.framework} / ${t.dialect}`).join(' · ')}</p>
           <PageTabs ariaLabel="Specification input" activeTab={mode} onChange={changeMode} tabs={[{ id: 'sample', label: 'Sample preview' }, ...(access.canCustom ? [{ id: 'custom', label: 'Custom JSON' }] : [])]} />
           {mode === 'sample' ? <>
@@ -132,6 +137,7 @@ export default function BackendSupportPage() {
             </select></label>
           </>}
           <div className={styles.actions}><button type="button" disabled={busy || !access.canValidate || (mode === 'custom' && !access.canCustom)} onClick={validate}>{busy ? 'Validating…' : mode === 'sample' ? 'Load and validate sample' : 'Validate custom specification'}</button></div>
+          </div>
         </>}
         <p role="status" aria-label="Validation status" aria-live="polite" aria-atomic="true">{status}</p>
         {result && <section aria-label="Validation findings">
@@ -140,6 +146,7 @@ export default function BackendSupportPage() {
           {result.result.findings.length === 0 ? <p>No findings from B1 checks.</p> : <ol>{result.result.findings.map((f, i) => <li key={`${f.ruleId}-${f.path}-${i}`}><strong>{f.severity}: {f.ruleId}</strong><br /><code>{f.path}</code><p>{f.message} {f.suggestion}</p></li>)}</ol>}
         </section>}
       </section>
+      </div>
     </main>
   </div>
 }
