@@ -70,6 +70,9 @@ test-output/
 /docs/*
 !/docs/backend-support/
 
+# Word creates transient owner/lock files while issue reports are open.
+/docs/issues/~$*.docx
+
 #######################################
 # ZIP FILES
 #######################################

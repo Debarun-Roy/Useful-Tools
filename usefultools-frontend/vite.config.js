@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { setDefaultResultOrder } from 'node:dns'
+import { localOriginPlugin } from './dev/localOrigin.mjs'
 setDefaultResultOrder('ipv4first')
 
 /**
@@ -40,7 +41,7 @@ setDefaultResultOrder('ipv4first')
  *   admin         — Admin panel (separate — only admin users ever load this)
  */
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), localOriginPlugin()],
   server: {
     host: 'localhost',
     // API preflight must reach the backend's explicit credentialed-origin policy.
