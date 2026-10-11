@@ -133,3 +133,8 @@ remaining_tasks.txt
 # Optional GitHub Actions certification runners (not application runtime).
 # Already tracked workflows remain tracked until explicitly removed from Git.
 /.github/workflows/
+
+# Localhost deployment scripts and commands (not application runtime).
+backend-local.py
+frontend-local.py
+LOCALHOST-COMMANDS.md

@@ -56,7 +56,11 @@ public final class BackendSupportSecurityFilter implements Filter {
         int port = request.getServerPort();
         String ownOrigin = request.getScheme() + "://" + request.getServerName()
                 + ((request.isSecure() && port == 443 || !request.isSecure() && port == 80) ? "" : ":" + port);
-        if (origin == null || !(origin.equals(ownOrigin) || origins.contains(origin))) {
+        // Match the container guard only in the dedicated local profile. CSRF
+        // was checked above; hosted origin requirements remain unchanged.
+        boolean trustedLocalReferer = AppConfig.isLocal() && origin == null
+                && common.filter.LocalRequestPolicy.rejection(request) == null;
+        if (!trustedLocalReferer && (origin == null || !(origin.equals(ownOrigin) || origins.contains(origin)))) {
             Responses.fail(response,403,"ORIGIN_REJECTED");
             return;
         }

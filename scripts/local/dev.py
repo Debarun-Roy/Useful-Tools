@@ -115,6 +115,104 @@ def active():
     return run
 
 
+def process_state(pid):
+    """Read-only liveness/creation time. Never signal a recorded Windows PID."""
+    if type(pid) is not int or pid <= 0:
+        return {'state': 'unknown'}
+    if os.name != 'nt':
+        try:
+            os.kill(pid, 0)
+            return {'state': 'running'}
+        except ProcessLookupError:
+            return {'state': 'exited'}
+        except OSError:
+            return {'state': 'unknown'}
+    import ctypes
+    from ctypes import wintypes
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    kernel.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    kernel.OpenProcess.restype = wintypes.HANDLE
+    kernel.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+    kernel.WaitForSingleObject.restype = wintypes.DWORD
+    kernel.GetProcessTimes.argtypes = [wintypes.HANDLE] + [ctypes.POINTER(wintypes.FILETIME)] * 4
+    kernel.GetProcessTimes.restype = wintypes.BOOL
+    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel.CloseHandle.restype = wintypes.BOOL
+    handle = kernel.OpenProcess(0x1000 | 0x100000, False, pid)  # QUERY_LIMITED_INFORMATION | SYNCHRONIZE
+    if not handle:
+        return {'state': 'exited' if ctypes.get_last_error() == 87 else 'unknown'}
+    try:
+        wait = kernel.WaitForSingleObject(handle, 0)
+        if wait == 0:
+            return {'state': 'exited'}
+        if wait != 258:  # WAIT_TIMEOUT means still running; other failures are uncertain.
+            return {'state': 'unknown'}
+        created, exited, system, user = (wintypes.FILETIME() for _ in range(4))
+        result = {'state': 'running'}
+        if kernel.GetProcessTimes(handle, ctypes.byref(created), ctypes.byref(exited),
+                                  ctypes.byref(system), ctypes.byref(user)):
+            result['createdAt'] = ((created.dwHighDateTime << 32) | created.dwLowDateTime) / 10000000 - 11644473600
+        return result
+    finally:
+        kernel.CloseHandle(handle)
+
+
+def occupied_local_ports():
+    occupied = []
+    for port in (5173, 8080):
+        with socket.socket() as probe:
+            try:
+                probe.bind(('127.0.0.1', port))
+            except OSError:
+                occupied.append(port)
+    return occupied
+
+
+def run_state(run):
+    """A readiness file is historical evidence, not proof of a live process."""
+    if not run or (run / 'stopped').exists():
+        return {'state': 'stopped', 'processes': [], 'occupiedPorts': []}
+    try:
+        recorded = json.loads((run / 'processes.json').read_text(encoding='utf-8'))
+        pids = [recorded['supervisorPid'], *recorded['pids']]
+        if len(pids) != 3 or any(type(pid) is not int or pid <= 0 for pid in pids):
+            raise ValueError('Incomplete process record')
+        # Legacy records were written after all children started. A process created
+        # later cannot be that recorded process, even if Windows reused its PID.
+        recorded_at = datetime.fromisoformat(recorded['startedAt']).timestamp()
+        identities = recorded.get('createdAt', {})
+        if not isinstance(identities, dict) or any(type(v) not in (int, float) for v in identities.values()):
+            raise ValueError('Invalid process identities')
+        processes = []
+        for pid in pids:
+            observed = process_state(pid)
+            created = observed.get('createdAt')
+            expected = identities.get(str(pid))
+            if observed['state'] == 'running' and created is not None:
+                if (expected is not None and created != expected) or (expected is None and created > recorded_at):
+                    observed = {**observed, 'state': 'pid-reused'}
+            processes.append({'pid': pid, **observed})
+    except (OSError, ValueError, KeyError, TypeError):
+        return {'state': 'unknown', 'processes': [], 'occupiedPorts': occupied_local_ports(),
+                'reason': 'Missing or invalid processes.json; automatic recovery cannot prove ownership.'}
+    ports = occupied_local_ports()
+    gone = all(p['state'] in ('exited', 'pid-reused') for p in processes)
+    state = 'stale' if gone and not ports else 'unknown' if any(p['state'] == 'unknown' for p in processes) else 'registered'
+    return {'state': state, 'processes': processes, 'occupiedPorts': ports}
+
+
+def recover_stale_run(run):
+    """Retire only proven-dead runs; retain active.json, readiness, logs and data."""
+    observed = run_state(run)
+    if observed['state'] != 'stale':
+        return False
+    (run / 'recovered-stale.json').write_text(json.dumps({
+        'recoveredAt': datetime.now(timezone.utc).isoformat(), **observed}, indent=2), encoding='utf-8')
+    (run / 'stop').touch()
+    (run / 'stopped').touch()
+    return True
+
+
 def supervisor(run):
     env = environment()
     cp = str(LOCAL / 'classes') + os.pathsep + (LOCAL / 'classpath.txt').read_text().strip()
@@ -131,8 +229,11 @@ def supervisor(run):
             children.append(subprocess.Popen(command, cwd=cwd, env=env, stdout=handle,
                                              stderr=subprocess.STDOUT,
                                              creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0))
+        pids = [os.getpid(), *(p.pid for p in children)]
+        identities = {str(pid): process_state(pid).get('createdAt') for pid in pids}
         (run / 'processes.json').write_text(json.dumps({'supervisorPid': os.getpid(),
             'startedAt': datetime.now(timezone.utc).isoformat(), 'pids': [p.pid for p in children],
+            'createdAt': {pid: created for pid, created in identities.items() if created is not None},
             'commands': [command for command, _, _ in commands]}))
         while not (run / 'stop').exists():
             if any(p.poll() is not None for p in children):
@@ -140,19 +241,26 @@ def supervisor(run):
             time.sleep(.25)
     finally:
         (run / 'stop').touch()
+        cleanup_errors = []
         for index, child in enumerate(children):
             try:
-                if index == 0:
-                    child.wait(timeout=20)  # Tomcat observes stop; closes the local database.
-                else:
+                if index != 0 and child.poll() is None:
+                    child.terminate()
+                try:
+                    child.wait(timeout=20 if index == 0 else 10)
+                except subprocess.TimeoutExpired:
                     child.terminate()
                     child.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                child.terminate()
-                child.wait(timeout=10)
+            except OSError as error:
+                cleanup_errors.append(str(error))
+            except subprocess.TimeoutExpired as error:
+                cleanup_errors.append(str(error))
         for handle in handles:
             handle.close()
-        (run / 'stopped').touch()
+        if cleanup_errors:
+            (run / 'cleanup-errors.json').write_text(json.dumps(cleanup_errors), encoding='utf-8')
+        if all(child.poll() is not None for child in children):
+            (run / 'stopped').touch()
 
 
 def api_ready():
@@ -170,6 +278,8 @@ def _start():
     prepare()
     environment()
     previous = active()
+    if previous:
+        recover_stale_run(previous)
     if previous and not (previous / 'stopped').exists():
         raise RuntimeError('A local run is registered; use status/stop before starting another')
     for port in (5173, 8080):
@@ -222,21 +332,26 @@ def stop():
     if not run or (run / 'stopped').exists():
         print('Stopped')
         return
+    if recover_stale_run(run):
+        print('Recovered stale localhost registration; no processes killed; data and logs retained')
+        return
     (run / 'stop').touch()
     deadline = time.monotonic() + 40
     while time.monotonic() < deadline:
-        if (run / 'stopped').exists():
+        if (run / 'stopped').exists() or recover_stale_run(run):
             print('Stopped owned localhost services; data and logs retained')
             return
         time.sleep(.25)
-    raise RuntimeError('Stop not confirmed; inspect supervisor log. No unrelated process was killed.')
+    raise RuntimeError('Stop not confirmed. Current process/port state: ' + json.dumps(run_state(run)) +
+                       f'. Inspect {run}. No unrelated process was killed; registration retained.')
 
 
 def status():
     run = active()
-    healthy = bool(run and not (run / 'stopped').exists() and api_ready())
+    observed = run_state(run)
+    healthy = bool(observed['state'] == 'registered' and api_ready())
     print(json.dumps({'run': str(run) if run else None,
-                      'state': 'stopped' if not run or (run / 'stopped').exists() else 'registered',
+                      **observed,
                       'apiHealthy': healthy,
                       'backendReadyMarker': bool(run and (run / 'backend-ready.json').exists())}, indent=2))
 

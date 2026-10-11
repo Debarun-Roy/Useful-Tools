@@ -44,12 +44,16 @@ public class SameSiteFilter implements Filter {
             throws IOException, ServletException {
 
         if (common.AppConfig.isLocal() && request instanceof jakarta.servlet.http.HttpServletRequest localRequest) {
-            String origin = localRequest.getHeader("Origin");
-            boolean loopback = java.net.InetAddress.getByName(localRequest.getRemoteAddr()).isLoopbackAddress();
-            boolean allowedOrigin = origin == null || origin.equals("http://localhost:5173") || origin.equals("http://localhost:8080");
-            boolean unsafe = !java.util.Set.of("GET", "HEAD", "OPTIONS").contains(localRequest.getMethod());
-            if (!loopback || !"localhost".equals(localRequest.getServerName()) || !allowedOrigin || unsafe && origin == null) {
-                ((HttpServletResponse) response).sendError(403, "Local requests require localhost and an explicit local Origin");
+            String rejection = LocalRequestPolicy.rejection(localRequest);
+            if (rejection != null) {
+                HttpServletResponse denied = (HttpServletResponse) response;
+                denied.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                denied.setContentType("application/json");
+                denied.setCharacterEncoding("UTF-8");
+                denied.setHeader("Cache-Control", "no-store");
+                denied.setHeader("X-Content-Type-Options", "nosniff");
+                denied.getWriter().print(new com.google.gson.Gson().toJson(
+                        common.ApiResponse.fail(rejection, "LOCAL_REQUEST_REJECTED")));
                 return;
             }
         }
