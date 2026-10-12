@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { generateBackendSchema, exportBackendSchema } from '../../api/apiClient'
 import { revisionGuard } from './revision'
 import sample from './schemaSample.json'
+import ColumnConstraints from './ColumnConstraints'
+import TableRelationships from './TableRelationships'
+import { editableConstraints } from './schemaControls.mjs'
 import styles from './BackendSupportPage.module.css'
 
 const types = ['integer', 'bigint', 'decimal', 'text', 'varchar', 'boolean', 'date', 'timestamp', 'json']
@@ -18,7 +21,7 @@ function editable(value) {
   return value && typeof value === 'object' && ['schemaVersion', 'templateVersion', 'module', 'target'].every(k => typeof value[k] === 'string') && Array.isArray(value.tables) && value.tables.length > 0 &&
     value.tables.every(t => t && typeof t.id === 'string' && typeof t.name === 'string' && Array.isArray(t.columns) &&
       t.columns.every(c => c && typeof c.nullable === 'boolean' && ['id', 'name', 'type'].every(k => typeof c[k] === 'string')) &&
-      ['primaryKey', 'unique', 'indexes', 'checks', 'foreignKeys'].every(k => Array.isArray(t[k])) &&
+      ['primaryKey', 'unique', 'indexes', 'checks', 'foreignKeys'].every(k => Array.isArray(t[k])) && editableConstraints(t) &&
       t.primaryKey.every(id => typeof id === 'string') && t.foreignKeys.every(f => f && typeof f.tableId === 'string' &&
         ['columns', 'targetColumns'].every(k => Array.isArray(f[k]) && f[k].every(id => typeof id === 'string')) &&
         ['onDelete', 'onUpdate'].every(k => typeof f[k] === 'string')))
@@ -103,7 +106,7 @@ export default function SchemaEditor({ capability, active = true }) {
     <div className={styles.actions} role="group" aria-label="Schema sections">{['Tables', 'Relationships', 'Options', 'JSON'].map(t => <button type="button" key={t} aria-pressed={tab === t} disabled={unsaved && t !== 'JSON'} onClick={() => setTab(t)}>{t}</button>)}</div>
     {tab !== 'JSON' && <label>Selected table<select value={Math.min(tableIndex, request.tables.length - 1)} onChange={e => setTableIndex(Number(e.target.value))}>{request.tables.map((t, i) => <option key={`${t.id}-${i}`} value={i}>{t.name} ({t.id})</option>)}</select></label>}
     {tab === 'Tables' && <>
-      <p>Internal IDs remain stable when database names change. Use JSON for advanced type options and typed defaults.</p>
+      <p>Internal IDs remain stable when database names change. Set typed defaults and constraints below. Use JSON for advanced type options and composite unique keys.</p>
       <fieldset disabled={readonly}><legend>Table definition</legend>
         <label>Table database name<input value={selected.name} maxLength={63} onChange={e => editTable(t => { t.name = e.target.value })} /></label>
         <p>Stable table ID: <code>{selected.id}</code></p>
@@ -114,8 +117,7 @@ export default function SchemaEditor({ capability, active = true }) {
             if (col.type === 'decimal') { col.precision = 12; col.scale = 2 }
             if (col.type === 'varchar') col.length = 80
           })}>{types.map(v => <option key={v}>{v}</option>)}</select></label>
-          <label><input type="checkbox" checked={c.nullable} onChange={e => editTable(t => { t.columns[i].nullable = e.target.checked })} /> Nullable</label>
-          <label><input type="checkbox" checked={selected.primaryKey.includes(c.id)} onChange={e => editTable(t => { t.primaryKey = e.target.checked ? [...t.primaryKey, c.id] : t.primaryKey.filter(id => id !== c.id) })} /> Primary key (selection order)</label>
+          <ColumnConstraints table={selected} column={c} onEdit={editTable} />
           <button type="button" onClick={() => editTable(t => { t.columns.splice(i, 1) })}>Remove column {c.id}</button>
         </fieldset>)}
         <button type="button" disabled={selected.columns.length >= 100} onClick={() => editTable(t => {
@@ -131,18 +133,10 @@ export default function SchemaEditor({ capability, active = true }) {
       </fieldset>
     </>}
     {tab === 'Relationships' && <fieldset disabled={readonly}><legend>Foreign keys</legend>
-      <p>References use IDs and survive database renames. Composite keys use ordered comma-separated IDs. Deleting a referenced column produces a blocking server finding.</p>
-      {selected.foreignKeys.map((f, i) => <fieldset key={i}><legend>Relationship {i + 1}</legend>
-        <label>Local column IDs<input value={f.columns.join(',')} onChange={e => editTable(t => { t.foreignKeys[i].columns = e.target.value.split(',').map(v => v.trim()) })} /></label>
-        <label>Referenced table ID<select value={f.tableId} onChange={e => editTable(t => { t.foreignKeys[i].tableId = e.target.value })}>{request.tables.map(t => <option key={t.id} value={t.id}>{t.name} ({t.id})</option>)}</select></label>
-        <label>Referenced column IDs<input value={f.targetColumns.join(',')} onChange={e => editTable(t => { t.foreignKeys[i].targetColumns = e.target.value.split(',').map(v => v.trim()) })} /></label>
-        {['onDelete', 'onUpdate'].map(key => <label key={key}>{key}<select value={f[key]} onChange={e => editTable(t => { t.foreignKeys[i][key] = e.target.value })}>{['NO ACTION', 'RESTRICT', 'CASCADE', 'SET NULL'].map(v => <option key={v}>{v}</option>)}</select></label>)}
-        <button type="button" onClick={() => editTable(t => { t.foreignKeys.splice(i, 1) })}>Remove relationship {i + 1}</button>
-      </fieldset>)}
-      <button type="button" onClick={() => editTable(t => { t.foreignKeys.push({ columns: [t.columns[0]?.id || 'id'], tableId: request.tables[0].id, targetColumns: [...request.tables[0].primaryKey], onDelete: 'NO ACTION', onUpdate: 'NO ACTION' }) })}>Add relationship</button>
+      <TableRelationships table={selected} tables={request.tables} onEdit={editTable} />
     </fieldset>}
     {tab === 'Options' && <>
-      <p>Unique keys, indexes, checks and typed defaults are edited in the synchronized JSON section. Column comparisons support eq, ne, lt, le, gt, ge; raw SQL is rejected.</p>
+      <p>Column defaults and single-column unique keys are available in Tables. Composite unique keys, indexes and checks remain available in synchronized JSON. Column comparisons support eq, ne, lt, le, gt, ge; raw SQL is rejected.</p>
       <pre>{text({ primaryKey: selected.primaryKey, unique: selected.unique, indexes: selected.indexes, checks: selected.checks })}</pre>
       <button type="button" onClick={() => setTab('JSON')}>Edit advanced options in JSON</button>
       <p>SQLite decimal is approximate; date/timestamp TEXT formats are conventions. Boolean, varchar length and JSON validity are checked. PostgreSQL uses NUMERIC, TIMESTAMPTZ and JSONB. Multi-table cycles and migrations are unavailable.</p>
