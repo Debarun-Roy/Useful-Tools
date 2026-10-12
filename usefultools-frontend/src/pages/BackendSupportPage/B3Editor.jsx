@@ -5,13 +5,16 @@ import migrationSample from './migrationSample.json'
 import viewSample from './viewSample.json'
 import evaluatorSample from './evaluatorSample.json'
 import styles from './BackendSupportPage.module.css'
+import ColumnConstraints from './ColumnConstraints'
+import TableRelationships from './TableRelationships'
+import { editableConstraints } from './schemaControls.mjs'
 
 const samples = { migration: migrationSample, view: viewSample, evaluator: evaluatorSample }
 const titles = { migration: 'Migration planner', view: 'View generator', evaluator: 'Schema evaluator' }
 const text = value => JSON.stringify(value, null, 2)
 const ref = (sourceAlias, columnId) => ({ kind: 'column', sourceAlias, columnId })
 function editable(s, module) {
-  const schema = value => value && Array.isArray(value.tables) && value.tables.every(t => t && typeof t.id === 'string' && typeof t.name === 'string' && Array.isArray(t.columns) && t.columns.every(c => c && typeof c.id === 'string' && typeof c.name === 'string') && ['primaryKey', 'unique', 'indexes', 'checks', 'foreignKeys'].every(k => Array.isArray(t[k])))
+  const schema = value => value && Array.isArray(value.tables) && value.tables.every(t => t && typeof t.id === 'string' && typeof t.name === 'string' && Array.isArray(t.columns) && t.columns.every(c => c && typeof c.id === 'string' && typeof c.name === 'string') && ['primaryKey', 'unique', 'indexes', 'checks', 'foreignKeys'].every(k => Array.isArray(t[k])) && editableConstraints(t))
   if (!s || s.module !== module || typeof s.target !== 'string') return false
   if (module === 'migration') return schema(s.before) && schema(s.after) && s.renames && ['tables', 'columns'].every(k => Array.isArray(s.renames[k]))
   if (!schema(s.schema)) return false
@@ -110,8 +113,15 @@ export default function B3Editor({ module, capability, active }) {
       </>}
       {module === 'evaluator' && <>
         <p className={styles.meta}>Requested rule set: <code>{draft.rulesetVersion}</code> (fixed by the evaluator contract).</p><label>Naming convention<select value={draft.namingConvention} onChange={e => edit(n => { n.namingConvention = e.target.value })}><option value="snake_case">snake_case (advisory)</option><option value="none">No naming advice</option></select></label>
-        {tables.map((t, i) => <fieldset key={i}><legend>Diagnostic table {i + 1}</legend><label>Table name<input value={t.name} onChange={e => edit(n => { n.schema.tables[i].name = e.target.value })} /></label><label>Primary key column IDs (comma-separated)<input value={t.primaryKey.join(',')} onChange={e => edit(n => { n.schema.tables[i].primaryKey = e.target.value.split(',').map(v => v.trim()).filter(Boolean) })} /></label>{t.columns.map((c, k) => <div className={styles.controls} key={k}><label>{c.name}: logical type<input value={c.type} onChange={e => edit(n => { n.schema.tables[i].columns[k].type = e.target.value })} /></label><label><span><input type="checkbox" checked={c.nullable} onChange={e => edit(n => { n.schema.tables[i].columns[k].nullable = e.target.checked })} /> {c.name}: nullable</span></label></div>)}</fieldset>)}
-        <p>Unique and business-key metadata, relationships, defaults and indexes are editable in JSON. Unknown types and invalid relationships are diagnostic input, not executable SQL. No quality score or performance promise is produced.</p>
+        {tables.map((t, i) => <fieldset key={t.id || i}><legend>Diagnostic table {i + 1}</legend>
+          <label>Table name<input value={t.name} onChange={e => edit(n => { n.schema.tables[i].name = e.target.value })} /></label>
+          {t.columns.map((c, k) => <fieldset key={c.id || k}><legend>Column {c.id}</legend>
+            <label>{c.name}: logical type<input value={c.type} onChange={e => edit(n => { n.schema.tables[i].columns[k].type = e.target.value })} /></label>
+            <ColumnConstraints table={t} column={c} onEdit={update => edit(n => update(n.schema.tables[i]))} />
+          </fieldset>)}
+          <TableRelationships table={t} tables={tables} onEdit={update => edit(n => update(n.schema.tables[i]))} />
+        </fieldset>)}
+        <p>Composite unique keys, business keys and indexes remain editable in JSON. Invalid types, defaults and relationships are diagnostic input, never executable SQL.</p>
       </>}
     </fieldset>
     <label>Full {module} specification JSON<textarea ref={editor} value={json} maxLength={1048576} rows={16} spellCheck={false} onChange={e => { invalidate('JSON changes are unapplied. Guided controls are locked until apply or explicit discard.'); setJson(e.target.value); setUnapplied(true) }} /></label>

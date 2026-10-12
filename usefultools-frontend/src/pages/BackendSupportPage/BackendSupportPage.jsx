@@ -40,15 +40,20 @@ export default function BackendSupportPage() {
   useEffect(() => {
     const controller = new AbortController()
     setCatalogError(''); setCatalog(null)
-    fetchBackendCatalog(controller.signal).then(({ data }) => {
+    // Strict Mode replays setup/cleanup synchronously. Start only after that
+    // replay, retaining normal cancellation for navigation and access refresh.
+    queueMicrotask(() => {
       if (controller.signal.aborted) return
-      if (!data?.success) throw new Error('catalog')
-      setCatalog(data.data)
-    }).catch(error => {
-      if (error.name !== 'AbortError') setCatalogError('Catalog unavailable. Your draft has been preserved. Retry to check access.')
+      fetchBackendCatalog(controller.signal).then(({ data }) => {
+        if (controller.signal.aborted) return
+        if (!data?.success) throw new Error('catalog')
+        setCatalog(data.data)
+      }).catch(error => {
+        if (!controller.signal.aborted && error.name !== 'AbortError') setCatalogError('Catalog unavailable. Retry to check access.')
+      })
     })
     return () => controller.abort()
-  }, [refresh])
+  }, [refresh, username])
   useEffect(() => () => { guard.current.edit(); pending.current?.abort() }, [])
   useEffect(() => {
     guard.current.edit(); pending.current?.abort(); setBusy(false); setResult(null)

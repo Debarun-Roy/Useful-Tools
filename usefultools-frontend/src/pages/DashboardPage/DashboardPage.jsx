@@ -325,7 +325,13 @@ export default function DashboardPage() {
   const [localError, setLocalError] = useState('')
 
   useEffect(() => {
-   fetchBackendCatalog().then(({ data }) => setBackendAccess(data?.success ? data.data.access : null)).catch(() => setBackendAccess(null))
+   const controller = new AbortController()
+   queueMicrotask(() => {
+     if (controller.signal.aborted) return
+     fetchBackendCatalog(controller.signal).then(({ data }) => {
+       if (!controller.signal.aborted) setBackendAccess(data?.success ? data.data.access : null)
+     }).catch(() => { if (!controller.signal.aborted) setBackendAccess(null) })
+   })
    fetchToolStatus()
      .then(({ data }) => {
        if (data?.success && data.data?.toggles) {
@@ -333,6 +339,7 @@ export default function DashboardPage() {
        }
      })
      .catch(() => {}) // fail silently — all tools default to enabled
+   return () => controller.abort()
   }, [])
 
   async function handleLogout() {

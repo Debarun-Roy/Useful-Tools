@@ -53,6 +53,8 @@ public final class SchemaEvaluation {
         JsonArray cols=t.getAsJsonArray("columns");
         for(int i=0;i<cols.size();i++) {
             JsonObject c=cols.get(i).getAsJsonObject();String cp=p+"/columns/"+i;
+            if(ids(t.getAsJsonArray("primaryKey")).contains(str(c,"id")) && c.get("nullable").getAsBoolean())
+                add("PRIMARY_KEY_NULLABLE","error",cp+"/nullable","Primary key columns cannot be nullable.","Make the primary key column nonnullable before schema generation.");
             if(convention.equals("snake_case"))naming(str(c,"name"),cp+"/name");
             boolean type=supportedType(c);
             if(!type)add("UNSUPPORTED_TYPE","error",cp+"/type","Logical type or its options are unsupported.","Select a supported logical type with consistent precision, scale or length options.");
