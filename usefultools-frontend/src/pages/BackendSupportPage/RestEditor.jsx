@@ -12,9 +12,9 @@ function editable(s, sample) {
 function Select({ label, value, values, onChange }) {
   return <label>{label}<select aria-label={label} value={value} onChange={e => onChange(e.target.value)}>{values.map(v => <option key={v} value={v}>{v === '\t' ? 'tab' : v}</option>)}</select></label>
 }
-export default function RestEditor({ capability, active, navigationRevision }) {
+export default function RestEditor({ capability, active, navigationRevision, onNavigationChange }) {
   const [target, setTarget] = useState('java')
-  function changeTarget(value) { navigationRevision.current++; setTarget(value) }
+  function changeTarget(value) { onNavigationChange(); setTarget(value) }
   return <>
     <AuthEditor sample={javaSample} capability={capability} active={active && target === 'java'} onTargetChange={changeTarget} navigationRevision={navigationRevision} />
     <AuthEditor sample={pythonSample} capability={{ ...capability, ...capability?.python }} active={active && target === 'python'} onTargetChange={changeTarget} navigationRevision={navigationRevision} />
@@ -29,7 +29,7 @@ function AuthEditor({ sample, capability, active, onTargetChange, navigationRevi
   const guard = useRef(revisionGuard()), pending = useRef(null), editor = useRef(null)
   function invalidate(message = 'Draft changed. Generate a fresh preview before export.') { guard.current.edit(); pending.current?.abort(); setBusy(false); setResult(null); setFindings([]); setStatus(message) }
   useEffect(() => () => { guard.current.edit(); pending.current?.abort() }, [])
-  useLayoutEffect(() => { invalidate('Module or access changed. Generate again to check current access.') }, [active, capability?.canGenerate, capability?.canExport, navigationRevision.current])
+  useLayoutEffect(() => { invalidate('Module or access changed. Generate again to check current access.') }, [active, capability?.canGenerate, capability?.canExport])
   function edit(update) { invalidate(); const next = structuredClone(draft); update(next); setDraft(next); setJson(text(next)); setUnapplied(false) }
   function apply() {
     try { const next = JSON.parse(json); if (!editable(next, sample) || next.target !== sample.target) throw new Error('shape'); setDraft(next); setUnapplied(false); invalidate('JSON applied. The server validates all semantics before export.') }

@@ -97,6 +97,7 @@ public class ActivityDAO {
      */
     
     public static final java.util.Set<String> VALID_TOOL_NAMES = java.util.Set.of(
+            "emote-utils.visit",
             "backend-support.validate",
             "analyzer.classify",   // Number Analyser
             "converter.convert",   // Unit Converter
@@ -194,6 +195,10 @@ public class ActivityDAO {
         if ("backend-support.validate".equals(toolName)) {
             summary = "Validated a backend specification";
             payloadJson = null;
+        }
+        if ("emote-utils.visit".equals(toolName)) {
+            if (ToolToggleDAO.emoteAvailability() != ToolToggleDAO.Availability.ENABLED) return -1;
+            summary = "Opened EmoteUtils"; payloadJson = null;
         }
         String safeSummary = summary.length() > MAX_SUMMARY_LEN
                 ? summary.substring(0, MAX_SUMMARY_LEN) : summary;

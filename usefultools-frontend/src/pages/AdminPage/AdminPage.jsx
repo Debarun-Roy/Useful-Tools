@@ -29,6 +29,7 @@ import FeedbackTab  from './FeedbackTab'
 // ── Tool metadata (for display in the toggles tab) ──────────────────────────
 
 const TOOL_META = {
+  '/emote-utils': { icon: ':)', label: 'EmoteUtils' },
   '/backend-support': { icon: '⌘', label: 'Backend Support (admin preview when disabled)' },
   '/calculator':    { icon: '🧮', label: 'Calculator' },
   '/analyser':      { icon: '🔢', label: 'Number Analyser' },
@@ -450,8 +451,8 @@ function ToolTogglesTab() {
       )}
 
       <p className={styles.togglesHint}>
-        Disabling a tool hides it from the dashboard for regular users. Admins
-        can still navigate to all tools regardless of toggle state.
+        Disabling a tool restricts access for regular users. EmoteUtils is also
+        unavailable to admins while disabled; other tools retain their existing admin access.
       </p>
 
       {loading && <div className={styles.loadingRow}>Loading tool statuses…</div>}
@@ -461,7 +462,7 @@ function ToolTogglesTab() {
         <div className={styles.togglesGrid}>
           {sortedPaths.map(path => {
             const meta    = TOOL_META[path]
-            const enabled = path === '/backend-support' ? toggles[path] === true : toggles[path] !== false // default to true if unknown
+            const enabled = ['/backend-support', '/emote-utils'].includes(path) ? toggles[path] === true : toggles[path] !== false // default to true if unknown
             const busy    = working === path
             return (
               <div

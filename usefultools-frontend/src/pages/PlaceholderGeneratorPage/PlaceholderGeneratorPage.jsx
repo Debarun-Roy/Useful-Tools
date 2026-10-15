@@ -18,7 +18,7 @@
  * Privacy rule: log only operation type + count — never generated content
  */
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'

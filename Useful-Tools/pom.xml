@@ -71,6 +71,12 @@
         -->
         <resources>
             <resource>
+                <directory>../docs/03_EmoteUtils/catalog</directory>
+                <targetPath>emotes/catalog</targetPath>
+                <includes><include>emoji-17.0.json</include><include>text-and-symbols.json</include><include>manifest.json</include><include>sources/emoji-test-17.0.txt</include><include>sources/UNICODE-LICENSE.txt</include></includes>
+                <filtering>false</filtering>
+            </resource>
+            <resource>
                 <directory>../contracts/backend-support</directory>
                 <targetPath>backendsupport/contracts</targetPath>
                 <includes><include>v0.1.0/models.schema.json</include><include>v0.2.0/*.json</include><include>v0.3.0/*.json</include><include>v0.4.0/*.json</include><include>v0.5.0/*.json</include><include>v0.6.0/*.json</include></includes>

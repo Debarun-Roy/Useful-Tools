@@ -654,7 +654,6 @@ function CompressTool() {
         let lo = 0.05, hi = 1.0, best = null, bestQ = 1.0
         for (let i = 0; i < 12; i++) {
           const mid = (lo + hi) / 2
-          // eslint-disable-next-line no-await-in-loop
           const attempt = await compressAtQuality(mid)
           if (attempt.size > targetBytes) {
             hi = mid

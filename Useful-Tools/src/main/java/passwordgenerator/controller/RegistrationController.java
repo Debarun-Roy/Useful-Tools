@@ -132,18 +132,17 @@ public class RegistrationController extends HttpServlet {
                 return;
             }
 
-            if (UserDAO.checkIfUserExists(username.trim())) {
-                response.setStatus(HttpServletResponse.SC_CONFLICT);
-                out.print(gson.toJson(ApiResponse.fail(
-                        "That username is already taken. Please choose another.",
-                        "USERNAME_TAKEN")));
+            String trimmedUsername = username.trim();
+            UserDAO.RegistrationResult result = UserDAO.registerUser(trimmedUsername, password);
+            if (result != UserDAO.RegistrationResult.CREATED) {
+                int status = result == UserDAO.RegistrationResult.DUPLICATE ? 409
+                        : result == UserDAO.RegistrationResult.INVALID ? 400 : 503;
+                String code = result == UserDAO.RegistrationResult.DUPLICATE ? "USERNAME_TAKEN"
+                        : result == UserDAO.RegistrationResult.INVALID ? "INVALID_USERNAME" : "DB_UNAVAILABLE";
+                response.setStatus(status);
+                out.print(gson.toJson(ApiResponse.fail("Registration could not be completed.", code)));
                 return;
             }
-
-            String trimmedUsername = username.trim();
-
-            // Register the user (hashes password internally).
-            UserDAO.registerUser(trimmedUsername, password);
 
             // Seed password history so the registration password cannot be
             // immediately reused after a "change password" action (Sprint 6).

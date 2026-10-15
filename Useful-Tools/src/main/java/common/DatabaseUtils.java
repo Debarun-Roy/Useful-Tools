@@ -33,12 +33,15 @@ public class DatabaseUtils {
      * Returns a connection to the SQLite3 database.
      * Resolution order: SQLITE_DB_URL env → SQLITE_DB_PATH env → config.properties.
      */
-    public static Connection getSQLite3Connection() {
+    public static Connection getSQLite3Connection() { return getSQLite3Connection(true); }
+
+    /** Same configuration/isolation, with sanitized diagnostics for protected APIs. */
+    public static Connection getSQLite3Connection(boolean diagnostics) {
         Connection conn = null;
         try {
             Class.forName(AppConfig.getRequired("sqlite3_driver"));
 
-            String url = resolveJdbcUrl();
+            String url = resolveJdbcUrl(diagnostics);
 
             // Create parent directory and file if they don't exist yet.
             String pathPart = url.replaceFirst("^jdbc:sqlite:", "");
@@ -48,23 +51,23 @@ public class DatabaseUtils {
                 if (parentDir != null && !parentDir.exists()) {
                     parentDir.mkdirs();
                 }
-                System.out.println("Database file not found. Creating new database at: " + pathPart);
+                if (diagnostics) System.out.println("Database file not found. Creating new database at: " + pathPart);
             } else {
-                System.out.println("Database file already exists at: " + pathPart);
+                if (diagnostics) System.out.println("Database file already exists at: " + pathPart);
             }
 
             conn = DriverManager.getConnection(url);
 
             if (conn != null) {
-                System.out.println("Connection to SQLite3 database successful");
+                if (diagnostics) System.out.println("Connection to SQLite3 database successful");
             }
 
         } catch (SQLException sqle) {
-            sqle.printStackTrace();
+            if (diagnostics) sqle.printStackTrace();
         } catch (ClassNotFoundException cnfe) {
-            cnfe.printStackTrace();
+            if (diagnostics) cnfe.printStackTrace();
         } catch (RuntimeException re) {
-            re.printStackTrace();
+            if (diagnostics) re.printStackTrace();
         }
         return conn;
     }
@@ -77,7 +80,7 @@ public class DatabaseUtils {
      *   2. SQLITE_DB_PATH — file path only; jdbc:sqlite: prefix is prepended
      *   3. config.properties sqlite3_url
      */
-    private static String resolveJdbcUrl() {
+    private static String resolveJdbcUrl(boolean diagnostics) {
         if (AppConfig.isLocal()) {
             var expected = AppConfig.localDirectory().resolve("data/UsefulTools.db").normalize();
             String url = System.getenv("SQLITE_DB_URL");
@@ -91,7 +94,7 @@ public class DatabaseUtils {
         // Tier 1: full JDBC URL from env
         String envUrl = System.getenv("SQLITE_DB_URL");
         if (envUrl != null && !envUrl.isBlank()) {
-            System.out.println("[DatabaseUtils] Using SQLITE_DB_URL env var: " + envUrl);
+            if (diagnostics) System.out.println("[DatabaseUtils] Using SQLITE_DB_URL env var: " + envUrl);
             return envUrl.trim();
         }
 
@@ -99,7 +102,7 @@ public class DatabaseUtils {
         String envPath = System.getenv("SQLITE_DB_PATH");
         if (envPath != null && !envPath.isBlank()) {
             String jdbcUrl = "jdbc:sqlite:" + envPath.trim();
-            System.out.println("[DatabaseUtils] Using SQLITE_DB_PATH env var: " + jdbcUrl);
+            if (diagnostics) System.out.println("[DatabaseUtils] Using SQLITE_DB_PATH env var: " + jdbcUrl);
             return jdbcUrl;
         }
 

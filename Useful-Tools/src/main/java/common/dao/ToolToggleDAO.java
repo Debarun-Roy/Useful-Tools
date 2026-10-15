@@ -38,6 +38,7 @@ public class ToolToggleDAO {
     /** Canonical set of tool paths that can be toggled. */
     public static final Set<String> KNOWN_TOOLS = Set.of(
             "/backend-support",
+            "/emote-utils",
             "/calculator",
             "/analyser",
             "/vault",
@@ -79,7 +80,7 @@ public class ToolToggleDAO {
                     "INSERT OR IGNORE INTO tool_toggles (tool_path, enabled, updated_at) "
                     + "VALUES (?, ?, ?)")) {
                 pst.setString(1, path);
-                pst.setInt(2, path.equals("/backend-support") ? 0 : 1);
+                pst.setInt(2, (path.equals("/backend-support") || path.equals("/emote-utils")) ? 0 : 1);
                 pst.setString(3, now);
                 pst.executeUpdate();
             }
@@ -98,7 +99,7 @@ public class ToolToggleDAO {
         // Pre-populate with defaults so we always return something even if
         // the DB call fails.
         for (String path : KNOWN_TOOLS) {
-            result.put(path, !path.equals("/backend-support"));
+            result.put(path, !path.equals("/backend-support") && !path.equals("/emote-utils"));
         }
 
         try (Connection conn = DatabaseUtils.getSQLite3Connection()) {
@@ -122,6 +123,7 @@ public class ToolToggleDAO {
      */
     public static boolean isEnabled(String toolPath) {
         if ("/backend-support".equals(toolPath)) return backendSupportAvailability() == Availability.ENABLED;
+        if ("/emote-utils".equals(toolPath)) return emoteAvailability() == Availability.ENABLED;
         if (toolPath == null) return true;
         if (!KNOWN_TOOLS.contains(toolPath)) return true; // unknown → allow
 
@@ -157,6 +159,14 @@ public class ToolToggleDAO {
         } catch (SQLException | RuntimeException ignored) {
             return Availability.FAILED;
         }
+    }
+
+    public static Availability emoteAvailability() {
+        try (Connection c = emotes.EmoteDb.open(); PreparedStatement p = c.prepareStatement(
+                "SELECT enabled FROM tool_toggles WHERE tool_path='/emote-utils'"); ResultSet rs = p.executeQuery()) {
+            if (!rs.next()) return Availability.ABSENT;
+            return "1".equals(rs.getString(1)) ? Availability.ENABLED : "0".equals(rs.getString(1)) ? Availability.DISABLED : Availability.FAILED;
+        } catch (SQLException | RuntimeException e) { return Availability.FAILED; }
     }
 
     // ── Writes ──────────────────────────────────────────────────────────────

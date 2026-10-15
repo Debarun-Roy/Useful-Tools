@@ -57,7 +57,7 @@ public class UserDAO {
              ResultSet rs = st.executeQuery("PRAGMA table_info(user_table)")) {
                 if(!rs.next()) {
                     st.executeUpdate("CREATE TABLE \"user_table\"(" +
-                            "username VARCHAR(500) NOT NULL, " +
+                            "username VARCHAR(500) COLLATE BINARY NOT NULL UNIQUE, " +
                             "hashed_password VARCHAR(5000) NOT NULL, " +
                             "failed_attempts INTEGER DEFAULT 0, " +
                             "locked_until TEXT, " +
@@ -120,26 +120,28 @@ public class UserDAO {
 
     // ── Existing methods (unchanged) ──────────────────────────────────────────
 
-    public static void registerUser(String username, String password) {
-        Connection conn = null;
-        PreparedStatement pst = null;
-        try {
-            conn = DatabaseUtils.getSQLite3Connection();
+    public enum RegistrationResult { CREATED, DUPLICATE, INVALID, UNAVAILABLE }
+
+    public static RegistrationResult registerUser(String username, String password) {
+        if (!emotes.AccountKey.valid(username)) return RegistrationResult.INVALID;
+        try (Connection conn = DatabaseUtils.getSQLite3Connection(false)) {
+            if (conn == null) return RegistrationResult.UNAVAILABLE;
             ensureUserProfileSchema(conn);
-            logger.info("SQLite3 connection successful");
-            String sql = "INSERT INTO user_table (username, hashed_password, created_date) VALUES (?, ?, ?) "
-                    + "ON CONFLICT DO NOTHING;";
-            pst = conn.prepareStatement(sql);
-            pst.setString(1, username);
-            String hashedPassword = HashingUtils.generateHashedPassword(password);
-            pst.setString(2, hashedPassword);
-            pst.setString(3, Instant.now().toString());
-            pst.executeUpdate();
-            logger.info("User details stored into database");
-        } catch (SQLException sqle) {
-            sqle.printStackTrace();
-        } finally {
-            DatabaseUtils.closeSQLConnection(conn, pst, null);
+            // Existing unconstrained installs need the explicit operator prerequisite.
+            // Registration never performs that migration or pretends uniqueness exists.
+            if (!emotes.AccountKey.compatible(conn)) return RegistrationResult.UNAVAILABLE;
+            try (Statement statement = conn.createStatement()) { statement.execute("PRAGMA busy_timeout=3000"); }
+            try (PreparedStatement pst = conn.prepareStatement(
+                    "INSERT INTO user_table (username, hashed_password, created_date) VALUES (?, ?, ?) "
+                    + "ON CONFLICT(username COLLATE BINARY) DO NOTHING")) {
+                pst.setString(1, username);
+                pst.setString(2, HashingUtils.generateHashedPassword(password));
+                pst.setString(3, Instant.now().toString());
+                return pst.executeUpdate() == 1 ? RegistrationResult.CREATED : RegistrationResult.DUPLICATE;
+            }
+        } catch (SQLException | RuntimeException unavailable) {
+            logger.warning("Account registration unavailable");
+            return RegistrationResult.UNAVAILABLE;
         }
     }
 

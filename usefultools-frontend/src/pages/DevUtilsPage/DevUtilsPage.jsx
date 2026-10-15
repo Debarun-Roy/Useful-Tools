@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
@@ -516,8 +516,6 @@ function describeCron(minute, hour, dom, month, dow) {
   } else if (hour === '*') {
     timeClause = `at ${minuteDesc} past every hour`
   } else {
-    const h = /^\d+$/.test(hour) ? hour.padStart(2, '0') : hour
-    const m = /^\d+$/.test(minute) ? minute.padStart(2, '0') : minute
     if (/^\d+$/.test(hour) && /^\d+$/.test(minute)) {
       const hNum = parseInt(hour, 10)
       const mNum = parseInt(minute, 10)

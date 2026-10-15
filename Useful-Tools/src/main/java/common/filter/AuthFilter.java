@@ -50,6 +50,7 @@ public class AuthFilter implements Filter {
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
         String path = request.getServletPath();
+        if (path.equals("/api/emotes") || path.startsWith("/api/emotes/")) response.setHeader("Cache-Control", "no-store");
 
         if (PUBLIC_PATHS.contains(path)) {
             chain.doFilter(servletRequest, servletResponse);

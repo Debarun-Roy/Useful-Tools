@@ -22,7 +22,7 @@
  * publication-quality output using the browser's native PDF renderer.
  */
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
@@ -472,19 +472,18 @@ export default function MarkdownConverterPage() {
         theme,
       })
     }
-  }, [markdown, theme])
+  }, [markdown, theme, stats.words, stats.chars])
 
   // ── Table: resize when col/row count changes ───────────────────────────────
-  useEffect(() => {
-    setHeaders(prev => {
-      const next = Array.from({ length: colCount }, (_, i) => prev[i] ?? `Column ${i + 1}`)
-      return next
-    })
-    setAlignments(prev => Array.from({ length: colCount }, (_, i) => prev[i] ?? 'none'))
-    setTableRows(prev => Array.from({ length: rowCount }, (_, r) =>
-      Array.from({ length: colCount }, (_, c) => prev[r]?.[c] ?? '')
+  function resizeTable(nextCols, nextRows) {
+    setColCount(nextCols)
+    setRowCount(nextRows)
+    setHeaders(prev => Array.from({ length: nextCols }, (_, i) => prev[i] ?? `Column ${i + 1}`))
+    setAlignments(prev => Array.from({ length: nextCols }, (_, i) => prev[i] ?? 'none'))
+    setTableRows(prev => Array.from({ length: nextRows }, (_, r) =>
+      Array.from({ length: nextCols }, (_, c) => prev[r]?.[c] ?? '')
     ))
-  }, [colCount, rowCount])
+  }
 
   // ── Build the full standalone HTML for export ──────────────────────────────
   function buildStandaloneHtml(forPrint = false) {
@@ -759,17 +758,17 @@ ${renderedHtml}
                   <div>
                     <label className={styles.fieldLabel}>Columns</label>
                     <div className={styles.spinnerRow}>
-                      <button className={styles.spinBtn} onClick={() => setColCount(c => Math.max(1, c - 1))}>−</button>
+                      <button className={styles.spinBtn} onClick={() => resizeTable(Math.max(1, colCount - 1), rowCount)}>−</button>
                       <span className={styles.spinVal}>{colCount}</span>
-                      <button className={styles.spinBtn} onClick={() => setColCount(c => Math.min(10, c + 1))}>+</button>
+                      <button className={styles.spinBtn} onClick={() => resizeTable(Math.min(10, colCount + 1), rowCount)}>+</button>
                     </div>
                   </div>
                   <div>
                     <label className={styles.fieldLabel}>Rows</label>
                     <div className={styles.spinnerRow}>
-                      <button className={styles.spinBtn} onClick={() => setRowCount(r => Math.max(1, r - 1))}>−</button>
+                      <button className={styles.spinBtn} onClick={() => resizeTable(colCount, Math.max(1, rowCount - 1))}>−</button>
                       <span className={styles.spinVal}>{rowCount}</span>
-                      <button className={styles.spinBtn} onClick={() => setRowCount(r => Math.min(20, r + 1))}>+</button>
+                      <button className={styles.spinBtn} onClick={() => resizeTable(colCount, Math.min(20, rowCount + 1))}>+</button>
                     </div>
                   </div>
                 </div>

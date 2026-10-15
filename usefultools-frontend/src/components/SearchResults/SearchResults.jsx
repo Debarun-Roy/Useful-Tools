@@ -31,6 +31,7 @@ import styles from './SearchResults.module.css'
  */
 export default function SearchResults({
   username = null,
+  emoteEnabled = false,
   onSelectTool = null,
   compact = false,
   maxResults = 10,
@@ -57,7 +58,7 @@ export default function SearchResults({
   }, [debouncedQuery, search])
 
   // Limit results to maxResults
-  const displayedResults = searchResults.slice(0, maxResults)
+  const displayedResults = searchResults.filter(tool => tool.path !== '/emote-utils' || emoteEnabled).slice(0, maxResults)
 
   const handleClear = () => {
     setQuery('')

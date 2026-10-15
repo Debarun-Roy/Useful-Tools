@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   fetchFavorites,
   toggleFavorite as apiToggleFavorite,
@@ -48,6 +48,7 @@ const DEFAULT_MAX = 20
 // extension writing garbage into localStorage shouldn't propagate to the UI
 // or (if the user later registers) to the server.
 const VALID_PATHS = new Set([
+  '/emote-utils',
   '/backend-support',
   '/calculator',
   '/analyser',
@@ -124,41 +125,37 @@ function writeGuestFavorites(paths) {
 export default function useFavorites(username) {
   const isGuest = username === GUEST_USERNAME
 
-  const [favorites, setFavorites] = useState([])
-  const [loading,   setLoading]   = useState(!isGuest)  // guest: sync read, no loading
+  const [favorites, setFavorites] = useState(() => isGuest ? readGuestFavorites() : [])
+  const [loading,   setLoading]   = useState(Boolean(username) && !isGuest)  // guest: sync read, no loading
   const [error,     setError]     = useState(null)
   const [max,       setMax]       = useState(DEFAULT_MAX)
 
-  // Tracks whether the component is still mounted — prevents setState calls
-  // from landing after unmount (React 18 StrictMode double-mount safeguard).
-  const mountedRef = useRef(true)
-  useEffect(() => {
-    mountedRef.current = true
-    return () => { mountedRef.current = false }
-  }, [])
+  const [loadedUsername, setLoadedUsername] = useState(username)
+  // Reset with identity so another account's favorites cannot flash on screen.
+  if (loadedUsername !== username) {
+    setLoadedUsername(username)
+    setFavorites(isGuest ? readGuestFavorites() : [])
+    setLoading(Boolean(username) && !isGuest)
+    setMax(DEFAULT_MAX)
+    setError(null)
+  }
+
+  // Each committed identity gets a distinct lifetime, including A -> B -> A.
+  // Async mutation rollback must never write into a later owner's state.
+  const lifetimeRef = useRef(null)
+  useLayoutEffect(() => {
+    const lifetime = { pending: false }
+    lifetimeRef.current = lifetime
+    return () => { lifetimeRef.current = null }
+  }, [username])
 
   // ── Initial load ─────────────────────────────────────────────────────────
   useEffect(() => {
-    // Not logged in → nothing to load.
-    if (!username) {
-      setFavorites([])
-      setLoading(false)
-      return
-    }
-
-    if (isGuest) {
-      setFavorites(readGuestFavorites())
-      setMax(DEFAULT_MAX)
-      setLoading(false)
-      setError(null)
-      return
-    }
-
-    // Registered user → hit the server.
-    setLoading(true)
+    if (!username || isGuest) return
+    let cancelled = false
     fetchFavorites()
       .then(({ data }) => {
-        if (!mountedRef.current) return
+        if (cancelled || !lifetimeRef.current) return
         if (data?.success) {
           const paths = Array.isArray(data.data?.favorites)
             ? data.data.favorites
@@ -173,13 +170,14 @@ export default function useFavorites(username) {
         }
       })
       .catch(() => {
-        if (!mountedRef.current) return
+        if (cancelled || !lifetimeRef.current) return
         setError('Could not reach the server.')
       })
       .finally(() => {
-        if (!mountedRef.current) return
+        if (cancelled || !lifetimeRef.current) return
         setLoading(false)
       })
+    return () => { cancelled = true }
   }, [username, isGuest])
 
   // ── Lookup helper ────────────────────────────────────────────────────────
@@ -194,6 +192,11 @@ export default function useFavorites(username) {
   // previous state is restored and the error is bubbled up. The Dashboard
   // renders a small error banner using the returned error.
   const toggleFavorite = useCallback(async (toolPath) => {
+    const lifetime = lifetimeRef.current
+    if (!username || loading || !lifetime || lifetime.pending) {
+      return { ok: false, error: 'Favorites are not ready. Try again.' }
+    }
+
     if (!VALID_PATHS.has(toolPath)) {
       return { ok: false, error: 'Unknown tool.' }
     }
@@ -226,16 +229,18 @@ export default function useFavorites(username) {
     }
 
     // Registered user — hit the server.
+    lifetime.pending = true
     try {
       const { status, data } = wasFavorited
         ? await apiRemoveFavorite(toolPath)
         : await apiToggleFavorite(toolPath)
 
+      if (lifetimeRef.current !== lifetime) return { ok: false, stale: true }
       const okResponse = data?.success && status >= 200 && status < 300
 
       if (!okResponse) {
         // Server rejected — rollback the local state.
-        if (mountedRef.current) setFavorites(previous)
+        if (lifetimeRef.current === lifetime) setFavorites(previous)
         // Surface server-provided message if useful.
         const message = data?.errorCode === 'FAVORITES_FULL'
           ? `You've pinned the maximum number of tools (${max}).`
@@ -245,10 +250,13 @@ export default function useFavorites(username) {
 
       return { ok: true }
     } catch {
-      if (mountedRef.current) setFavorites(previous)
+      if (lifetimeRef.current !== lifetime) return { ok: false, stale: true }
+      setFavorites(previous)
       return { ok: false, error: 'Could not reach the server.' }
+    } finally {
+      lifetime.pending = false
     }
-  }, [favorites, isGuest, max])
+  }, [username, loading, favorites, isGuest, max])
 
   // ── Reorder ──────────────────────────────────────────────────────────────
   //
@@ -256,6 +264,11 @@ export default function useFavorites(username) {
   // (only known paths, no dupes, stays at or below current length), apply
   // optimistically, then send to the server. On failure we roll back.
   const reorderFavorites = useCallback(async (orderedPaths) => {
+    const lifetime = lifetimeRef.current
+    if (!username || loading || !lifetime || lifetime.pending) {
+      return { ok: false, error: 'Favorites are not ready. Try again.' }
+    }
+
     if (!Array.isArray(orderedPaths)) {
       return { ok: false, error: 'Invalid reorder request.' }
     }
@@ -296,19 +309,24 @@ export default function useFavorites(username) {
       return { ok: true }
     }
 
+    lifetime.pending = true
     try {
       const { status, data } = await apiReorderFavorites(clean)
+      if (lifetimeRef.current !== lifetime) return { ok: false, stale: true }
       const okResponse = data?.success && status >= 200 && status < 300
       if (!okResponse) {
-        if (mountedRef.current) setFavorites(previous)
+        if (lifetimeRef.current === lifetime) setFavorites(previous)
         return { ok: false, error: data?.error || 'Could not save new order.' }
       }
       return { ok: true }
     } catch {
-      if (mountedRef.current) setFavorites(previous)
+      if (lifetimeRef.current !== lifetime) return { ok: false, stale: true }
+      setFavorites(previous)
       return { ok: false, error: 'Could not reach the server.' }
+    } finally {
+      lifetime.pending = false
     }
-  }, [favorites, isGuest])
+  }, [username, loading, favorites, isGuest])
 
   return {
     favorites,

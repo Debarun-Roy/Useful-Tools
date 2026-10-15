@@ -21,7 +21,7 @@
  * column count, chart type, export format).
  */
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import * as XLSX from 'xlsx'
 import { useAuth } from '../../auth/useAuth'
@@ -317,7 +317,6 @@ function renderPie(ctx, width, height, labels, values, colors) {
   })
 
   // Legend
-  const legStartY = height - 20 - labels.length * 0
   labels.forEach((lbl, i) => {
     const row = Math.floor(i / 3)
     const col = i % 3
@@ -444,7 +443,7 @@ export default function DataVisualizationPage() {
   const [exportMsg, setExportMsg] = useState('')
 
   // ── Chart rendered flag ───────────────────────────────────────────────────
-  const [rendered, setRendered] = useState(false)
+  const [, setRendered] = useState(false)
 
   // ── Draw chart whenever chartData / type / palette / title change ─────────
   useEffect(() => {

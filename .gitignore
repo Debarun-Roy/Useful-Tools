@@ -70,6 +70,19 @@ test-output/
 /docs/*
 !/docs/backend-support/
 
+# E0 reviewed inputs/evidence stay visible; disposable experiments do not.
+/.e0/
+/usefultools-frontend/.e0/
+/usefultools-frontend/test-results/
+/usefultools-frontend/playwright-report/
+/usefultools-frontend/blob-report/
+/docs/03_EmoteUtils/e0/scratch/
+*.db-wal
+*.db-shm
+*.db-journal
+/.local/**/*.db
+/.local/backups/
+
 # Word creates transient owner/lock files while issue reports are open.
 /docs/issues/~$*.docx
 
@@ -141,3 +154,12 @@ remaining_tasks.txt
 backend-local.py
 frontend-local.py
 LOCALHOST-COMMANDS.md
+
+# E1 isolated runtime databases, expanded WAR and raw output
+/.e1/
+
+# E2 disposable browser/runtime profiles, databases and raw diagnostics
+/.e2/
+
+# Rotated DAO runtime logs contain machine-local diagnostics.
+/dao_logs.log.*

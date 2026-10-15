@@ -9,6 +9,8 @@ RUN mvn dependency:go-offline -B
 # Copy source and build WAR
 COPY Useful-Tools/src ./src
 COPY contracts/backend-support /contracts/backend-support
+# Same authoritative seed path expected by pom.xml; never a second edited copy.
+COPY docs/03_EmoteUtils/catalog /docs/03_EmoteUtils/catalog
 RUN mvn clean package -DskipTests -B
 
 

@@ -40,6 +40,7 @@ const LIMIT = 5
 // Metadata per tool name — drives the row icon, label, and click target.
 // The tool_name values here MUST match ActivityDAO.VALID_TOOL_NAMES.
 const TOOL_META = {
+  'emote-utils.visit': { icon: ':)', label: 'EmoteUtils', path: '/emote-utils' },
   'backend-support.validate': { icon: '⌘', label: 'Backend Support', path: '/backend-support' },
   'analyzer.classify':  { icon: '🔢', label: 'Number Analyser',       path: '/analyser'   },
   'converter.convert':  { icon: '🔄', label: 'Unit Converter',        path: '/converter'  },
@@ -83,7 +84,7 @@ function relativeTime(iso) {
 
 // ── Component ───────────────────────────────────────────────────────────────
 
-export default function RecentActivity() {
+export default function RecentActivity({ emoteEnabled = false }) {
   const navigate = useNavigate()
 
   const [entries, setEntries] = useState([])
@@ -226,7 +227,7 @@ export default function RecentActivity() {
                   type="button"
                   className={styles.itemButton}
                   onClick={() => { if (meta.path) navigate(meta.path) }}
-                  disabled={!meta.path}
+                  disabled={!meta.path || meta.path === '/emote-utils' && !emoteEnabled}
                 >
                   <span className={styles.itemIcon} aria-hidden="true">
                     {meta.icon}

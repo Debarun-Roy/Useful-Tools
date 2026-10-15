@@ -27,7 +27,7 @@ function formatValue(key, value) {
   return String(value)
 }
 
-export default function StatsCalc({ isGuest }) {
+export default function StatsCalc() {
   const [input,   setInput]   = useState('')
   const [result,  setResult]  = useState(null)
   const [error,   setError]   = useState('')

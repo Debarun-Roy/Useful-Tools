@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useNotes } from './NotesContext'
+import { useNotes } from './useNotes'
 import styles from './TextUtilitiesPage.module.css'
 
 /*

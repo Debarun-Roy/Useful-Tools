@@ -80,3 +80,6 @@ await run('vercel.json keeps api proxy ahead of spa fallback', async () => {
     destination: '/index.html',
   })
 })
+
+const { checkEmoteQuery } = await import('./emote-query.mjs')
+await run('Emote URL canonicalization, exact literal queries, bounds and API encoding', checkEmoteQuery)

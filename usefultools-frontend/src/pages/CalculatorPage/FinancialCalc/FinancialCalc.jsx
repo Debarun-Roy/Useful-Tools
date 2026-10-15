@@ -14,7 +14,7 @@ const TABS = [
   { id: 'salary',     label: 'Salary Breakdown',   icon: '💵' },
 ]
 
-export default function FinancialCalc({ isGuest }) {
+export default function FinancialCalc() {
   const [activeTab, setActiveTab] = useState('emi')
 
   function renderCalculator() {

@@ -147,7 +147,7 @@ export default function FeedbackTab() {
   const summary = data?.summary || { total: 0, avgOverallRating: 0, distribution: {} }
   const total   = data?.total   || 0
   const offset  = data?.offset  || 0
-  const entries = data?.entries || []
+  const entries = useMemo(() => data?.entries || [], [data?.entries])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()

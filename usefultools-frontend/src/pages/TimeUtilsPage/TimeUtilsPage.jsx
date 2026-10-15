@@ -186,7 +186,6 @@ function TimezoneConverterTool() {
       if (isNaN(localDate)) return null
 
       // Get what the local time looks like in sourceTZ
-      const localOffset = localDate.getTimezoneOffset() // browser TZ offset in min
       const tzDate = new Date(localDate.toLocaleString('en-US', { timeZone: sourceTZ }))
       const diff = localDate - tzDate  // ms difference
       const corrected = new Date(localDate.getTime() + diff)
@@ -218,14 +217,20 @@ function TimezoneConverterTool() {
     )
   }
 
-  const results = useMemo(() => trackTool('time.convert', () => {
+  const results = useMemo(() => {
     if (!parsedDate) return []
     return targetTZs.map(tz => ({
       tz,
       formatted: formatInTZ(parsedDate, tz),
       offset: getUtcOffset(tz, parsedDate),
     }))
-  }), [parsedDate, targetTZs])
+  }, [parsedDate, targetTZs])
+
+  useEffect(() => {
+    if (parsedDate) trackTool('time.convert', () => targetTZs.map(tz => ({
+      tz, formatted: formatInTZ(parsedDate, tz), offset: getUtcOffset(tz, parsedDate),
+    })))
+  }, [parsedDate, targetTZs])
 
   return (
     <div className={styles.tabPanel}>
@@ -345,80 +350,88 @@ function TimezoneConverterTool() {
 const UNIX_EPOCH = new Date(0)
 const MAX_TIMESTAMP = 32503680000 // year 3000
 
+function relativeTime(date) {
+  const diffMs = date - new Date()
+  const abs = Math.abs(diffMs)
+  const past = diffMs < 0
+  if (abs < 60000) return past ? 'just now' : 'in a moment'
+  if (abs < 3600000) {
+    const m = Math.round(abs / 60000)
+    return past ? `${m} min ago` : `in ${m} min`
+  }
+  if (abs < 86400000) {
+    const h = Math.round(abs / 3600000)
+    return past ? `${h}h ago` : `in ${h}h`
+  }
+  const d = Math.round(abs / 86400000)
+  return past ? `${d} days ago` : `in ${d} days`
+}
+
+function calculateTimestamp(tsInput, displayTZ) {
+  const raw = tsInput.trim()
+  if (!raw) return null
+  let n = Number(raw)
+  if (isNaN(n)) return { error: 'Not a number' }
+  // If the user entered milliseconds (13+ digits), convert to seconds
+  const isMs = Math.abs(n) > 1e10
+  const ts = isMs ? n : n * 1000
+  const date = new Date(ts)
+  if (isNaN(date)) return { error: 'Invalid timestamp' }
+  return {
+    date,
+    seconds: isMs ? Math.floor(n / 1000) : n,
+    millis: isMs ? n : n * 1000,
+    iso: date.toISOString(),
+    localFormatted: formatInTZ(date, displayTZ),
+    utcFormatted: formatInTZ(date, 'UTC'),
+    relative: relativeTime(date),
+  }
+}
+
 function TimestampTool() {
   const [tsInput, setTsInput]   = useState('')
   const [dateInput, setDateInput] = useState('')
   const [displayTZ, setDisplayTZ] = useState(LOCAL_TZ)
 
   // Timestamp → date
-  const tsResult = useMemo(() => trackTool('time.timestamp', () => {
-    const raw = tsInput.trim()
-    if (!raw) return null
-    let n = Number(raw)
-    if (isNaN(n)) return { error: 'Not a number' }
-    // If the user entered milliseconds (13+ digits), convert to seconds
-    const isMs = Math.abs(n) > 1e10
-    const ts = isMs ? n : n * 1000
-    const date = new Date(ts)
-    if (isNaN(date)) return { error: 'Invalid timestamp' }
-    return {
-      date,
-      seconds: isMs ? Math.floor(n / 1000) : n,
-      millis: isMs ? n : n * 1000,
-      iso: date.toISOString(),
-      localFormatted: formatInTZ(date, displayTZ),
-      utcFormatted: formatInTZ(date, 'UTC'),
-      relative: relativeTime(date),
-    }
-  }), [tsInput, displayTZ])
+  const tsResult = useMemo(() => calculateTimestamp(tsInput, displayTZ), [tsInput, displayTZ])
 
   // Date → timestamp
-  const dateResult = useMemo(() => trackTool('time.timestamp', () => {
+  const dateResult = useMemo(() => {
     if (!dateInput) return null
     const date = new Date(dateInput)
     if (isNaN(date)) return { error: 'Invalid date string' }
     const s = Math.floor(date.getTime() / 1000)
     const ms = date.getTime()
     return { seconds: s, millis: ms, iso: date.toISOString() }
-  }), [dateInput])
+  }, [dateInput])
 
   // Debounced log: capture a single entry per settled input.
   useEffect(() => {
     if (tsResult && !tsResult.error) {
+      trackTool('time.timestamp', () => calculateTimestamp(tsInput, displayTZ))
       logActivity(
         'time.timestamp',
         `Timestamp → date in ${displayTZ}`,
         { mode: 'ts-to-date', tz: displayTZ }
       )
     }
-  }, [tsResult, displayTZ])
+  }, [tsResult, tsInput, displayTZ])
 
   useEffect(() => {
     if (dateResult && !dateResult.error) {
+      trackTool('time.timestamp', () => {
+        const date = new Date(dateInput)
+        return { seconds: Math.floor(date.getTime() / 1000), millis: date.getTime(), iso: date.toISOString() }
+      })
       logActivity(
         'time.timestamp',
         `Date → Unix timestamp (${dateResult.seconds}s)`,
         { mode: 'date-to-ts' }
       )
     }
-  }, [dateResult])
+  }, [dateResult, dateInput])
 
-  function relativeTime(date) {
-    const diffMs = date - new Date()
-    const abs = Math.abs(diffMs)
-    const past = diffMs < 0
-    if (abs < 60000) return past ? 'just now' : 'in a moment'
-    if (abs < 3600000) {
-      const m = Math.round(abs / 60000)
-      return past ? `${m} min ago` : `in ${m} min`
-    }
-    if (abs < 86400000) {
-      const h = Math.round(abs / 3600000)
-      return past ? `${h}h ago` : `in ${h}h`
-    }
-    const d = Math.round(abs / 86400000)
-    return past ? `${d} days ago` : `in ${d} days`
-  }
 
   async function copyText(t) {
     await navigator.clipboard.writeText(String(t))

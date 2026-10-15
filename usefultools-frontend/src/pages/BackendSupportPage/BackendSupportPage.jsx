@@ -117,7 +117,7 @@ export default function BackendSupportPage() {
           <SchemaEditor capability={catalog.generation} active={moduleId === 'schema'} />
           {['migration', 'view', 'evaluator'].map(module => <B3Editor key={module} module={module} capability={catalog.generationModules?.find(c => c.module === module)} active={moduleId === module} />)}
           <EtlEditor capability={catalog.generationModules?.find(c => c.module === 'etl')} active={moduleId === 'etl'} />
-          <RestEditor navigationRevision={navigationRevision} capability={catalog.generationModules?.find(c => c.module === 'rest')} active={moduleId === 'rest'} />
+          <RestEditor onNavigationChange={() => { navigationRevision.current++ }} navigationRevision={navigationRevision} capability={catalog.generationModules?.find(c => c.module === 'rest')} active={moduleId === 'rest'} />
           <div className={styles.legacy}>
           <h2>Historical draft validation (0.1.0)</h2>
           <p>Validate older specifications separately from the generators above. This workflow does not generate files.</p>

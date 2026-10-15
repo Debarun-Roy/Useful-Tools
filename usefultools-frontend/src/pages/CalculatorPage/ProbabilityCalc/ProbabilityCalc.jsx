@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { calculateProbability } from '../../../api/apiClient'
 
-export default function ProbabilityCalc({ isGuest }) {
+export default function ProbabilityCalc() {
   const [distribution, setDistribution] = useState('normal')
   const [params, setParams] = useState({
     // Normal distribution

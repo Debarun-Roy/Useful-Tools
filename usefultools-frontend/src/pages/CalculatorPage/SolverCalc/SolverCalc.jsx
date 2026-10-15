@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { solveEquation } from '../../../api/apiClient'
 
-export default function SolverCalc({ isGuest }) {
+export default function SolverCalc() {
   const [equation, setEquation] = useState('')
   const [result, setResult] = useState('')
   const [error, setError] = useState('')

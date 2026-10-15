@@ -39,6 +39,7 @@ public class SearchController extends HttpServlet {
 
     // Static tool registry — would normally be in a database or config
     private static final List<ToolInfo> ALL_TOOLS = List.of(
+            new ToolInfo("/emote-utils", "EmoteUtils", ":)", "Browse and copy emoji, text faces, kaomoji and symbols"),
             new ToolInfo("/backend-support", "Backend Support", "⌘", "Preview and validate schema, migration, view, evaluator, ETL and REST specifications"),
             new ToolInfo("/calculator", "Calculator", "🧮",
                     "Arithmetic, boolean, trig, complex, matrix, statistics and more"),
@@ -160,7 +161,8 @@ public class SearchController extends HttpServlet {
 
         // Check cache first — search results are deterministic for a static tool list.
         ToolCache cache = ToolCache.getInstance();
-        String cacheKey = CACHE_SEARCH_PREFIX + query;
+        boolean emoteEnabled = common.dao.ToolToggleDAO.emoteAvailability() == common.dao.ToolToggleDAO.Availability.ENABLED;
+        String cacheKey = CACHE_SEARCH_PREFIX + emoteEnabled + ":" + query;
         LinkedHashMap<String, Object> cached = cache.get(cacheKey);
         if (cached != null) {
             response.setStatus(HttpServletResponse.SC_OK);
@@ -172,6 +174,7 @@ public class SearchController extends HttpServlet {
 
         // Fuzzy match against tool names and descriptions
         for (ToolInfo tool : ALL_TOOLS) {
+            if ("/emote-utils".equals(tool.path) && !emoteEnabled) continue;
             int score = calculateMatchScore(query, tool);
             if (score > 0) {
                 results.add(new ToolSearchResult(tool, score));
@@ -232,6 +235,7 @@ public class SearchController extends HttpServlet {
         }
 
         LinkedHashMap<String, Object> data = new LinkedHashMap<>();
+        recommendations = availableEmotes(recommendations);
         data.put("recommendations", recommendations);
         data.put("count", recommendations.size());
 
@@ -296,7 +300,7 @@ public class SearchController extends HttpServlet {
             // Use default
         }
 
-        List<Map<String, Object>> dbTrending = formatterDAO.getTrendingTools(limit);
+        List<Map<String, Object>> dbTrending = availableEmotes(formatterDAO.getTrendingTools(limit));
 
         // Enrich DB results with icon + description from ALL_TOOLS registry
         Map<String, ToolInfo> toolByPath = new java.util.HashMap<>();
@@ -472,6 +476,11 @@ public class SearchController extends HttpServlet {
             }
         }
         return queryIndex == query.length();
+    }
+
+    private static List<Map<String, Object>> availableEmotes(List<Map<String, Object>> tools) {
+        if (common.dao.ToolToggleDAO.emoteAvailability() == common.dao.ToolToggleDAO.Availability.ENABLED) return tools;
+        return tools.stream().filter(tool -> !"/emote-utils".equals(tool.get("toolPath")) && !"/emote-utils".equals(tool.get("path"))).toList();
     }
 
     // ── Helper Classes ───────────────────────────────────────────────────────

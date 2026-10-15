@@ -74,7 +74,7 @@ function MatrixDisplay({ matrix, size }) {
   )
 }
 
-export default function MatrixCalc({ isGuest }) {
+export default function MatrixCalc() {
   const [size,      setSize]      = useState(2)
   const [operation, setOperation] = useState('determinant')
   const [matA,      setMatA]      = useState(emptyMatrix(2))

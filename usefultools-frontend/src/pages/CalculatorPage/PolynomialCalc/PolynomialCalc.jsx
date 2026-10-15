@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { calculatePolynomial } from '../../../api/apiClient'
 
-export default function PolynomialCalc({ isGuest }) {
+export default function PolynomialCalc() {
   const [operation, setOperation] = useState('evaluate')
   const [coefficients, setCoefficients] = useState('')
   const [x, setX] = useState(0)

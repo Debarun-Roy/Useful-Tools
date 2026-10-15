@@ -660,13 +660,14 @@ export const resetUserRecoveryCode =
 export const fetchAdminToolToggles =
   () => request('/admin/tool-toggles')
 
-export const updateToolToggle =
-  (toolPath, enabled) =>
-    request('/admin/tool-toggles', {
-      method: 'PUT',
-      isJson: true,
-      body: { toolPath, enabled }
-    })
+export const updateToolToggle = async (toolPath, enabled) => {
+  const result = await request('/admin/tool-toggles', { method: 'PUT', isJson: true, body: { toolPath, enabled } })
+  if (toolPath === '/emote-utils' && result.data?.success) {
+    window.dispatchEvent(new Event('emote-availability'))
+    try { localStorage.setItem('emote-availability', String(Date.now())) } catch { /* periodic checks still apply */ }
+  }
+  return result
+}
 
 
 // ─────────────────────────────────────────────────────────────
@@ -853,3 +854,7 @@ export const validateBackendDraft = (text, signal) => request('/backend-support/
 // B2: literal JSON preserves duplicate keys for strict server decoding.
 export const generateBackendSchema = (text, signal) => request('/backend-support/generate', { method: 'POST', jsonText: '{"request":' + text + '}', signal })
 export const exportBackendSchema = (text, digest, signal) => request('/backend-support/export', { method: 'POST', jsonText: '{"request":' + text + ',"expectedDigest":' + JSON.stringify(digest) + '}', signal, binary: true })
+
+// Bounded catalog reads use the shared credentialed/session-aware client.
+export const fetchEmoteCategories = (params = {}, signal) => request(`/emotes/categories?${new URLSearchParams(params)}`, { signal })
+export const fetchEmoteCatalog = (params, signal) => request(`/emotes/catalog?${new URLSearchParams(params)}`, { signal })

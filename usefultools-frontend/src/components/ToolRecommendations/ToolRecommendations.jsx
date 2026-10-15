@@ -39,7 +39,7 @@ function ToolChip({ tool, onClick }) {
   )
 }
 
-export default function ToolRecommendations({ username, onSelectTool }) {
+export default function ToolRecommendations({ username, onSelectTool, emoteEnabled = false }) {
   const [recs,     setRecs]     = useState([])
   const [trending, setTrending] = useState([])
   const [loading,  setLoading]  = useState(true)
@@ -75,9 +75,13 @@ export default function ToolRecommendations({ username, onSelectTool }) {
     return () => { cancelled = true }
   }, [username, isGuest])
 
+  const available = tool => (tool.path || tool.toolPath) !== '/emote-utils' || emoteEnabled
+  const visibleRecs = isGuest ? [] : recs.filter(available)
+  const visibleTrending = trending.filter(available)
+
   // Nothing to show yet
   if (loading) return null
-  if (recs.length === 0 && trending.length === 0) return null
+  if (visibleRecs.length === 0 && visibleTrending.length === 0) return null
 
   function handleClick(pathOrTool) {
     if (onSelectTool) onSelectTool(pathOrTool)
@@ -86,7 +90,7 @@ export default function ToolRecommendations({ username, onSelectTool }) {
   return (
     <section className={styles.widget} aria-label="Tool recommendations">
       {/* Personal recommendations */}
-      {!isGuest && recs.length > 0 && (
+      {visibleRecs.length > 0 && (
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
             <span className={styles.sectionIcon}>⚡</span>
@@ -94,7 +98,7 @@ export default function ToolRecommendations({ username, onSelectTool }) {
             <span className={styles.sectionHint}>Based on your recent activity</span>
           </div>
           <div className={styles.chipRow}>
-            {recs.map((tool, i) => (
+            {visibleRecs.map((tool, i) => (
               <ToolChip key={i} tool={tool} onClick={handleClick} />
             ))}
           </div>
@@ -102,7 +106,7 @@ export default function ToolRecommendations({ username, onSelectTool }) {
       )}
 
       {/* Trending */}
-      {trending.length > 0 && (
+      {visibleTrending.length > 0 && (
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
             <span className={styles.sectionIcon}>📈</span>
@@ -110,7 +114,7 @@ export default function ToolRecommendations({ username, onSelectTool }) {
             <span className={styles.sectionHint}>Most popular across all users</span>
           </div>
           <div className={styles.chipRow}>
-            {trending.map((tool, i) => (
+            {visibleTrending.map((tool, i) => (
               <ToolChip key={i} tool={tool} onClick={handleClick} />
             ))}
           </div>

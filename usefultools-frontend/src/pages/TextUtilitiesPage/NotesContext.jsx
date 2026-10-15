@@ -1,4 +1,5 @@
-import { createContext, useContext, useState } from 'react'
+import { useState } from 'react'
+import { NotesContext as Ctx } from './useNotes'
 import useTextUtilNotes from '../../hooks/useTextUtilNotes'
 
 /*
@@ -10,7 +11,6 @@ import useTextUtilNotes from '../../hooks/useTextUtilNotes'
  * "Saved" confirmation next to its Save button without each component
  * inventing its own toast plumbing.
  */
-const Ctx = createContext(null)
 
 export function NotesProvider({ username, children }) {
   const store = useTextUtilNotes(username)
@@ -32,10 +32,4 @@ export function NotesProvider({ username, children }) {
       {children}
     </Ctx.Provider>
   )
-}
-
-export function useNotes() {
-  const ctx = useContext(Ctx)
-  if (!ctx) throw new Error('useNotes must be inside <NotesProvider>')
-  return ctx
 }

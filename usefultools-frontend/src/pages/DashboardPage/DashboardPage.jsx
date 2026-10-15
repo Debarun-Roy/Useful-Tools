@@ -9,6 +9,7 @@ import RecentActivity  from '../../components/RecentActivity/RecentActivity'
 import SearchResults   from '../../components/SearchResults/SearchResults'
 import ToolRecommendations from '../../components/ToolRecommendations/ToolRecommendations'
 import useFavorites    from '../../hooks/useFavorites.js'
+import useEmoteAccess from '../../hooks/useEmoteAccess'
 import styles          from './DashboardPage.module.css'
 
 /**
@@ -54,6 +55,7 @@ import styles          from './DashboardPage.module.css'
  */
 
 const FEATURES = [
+  { label: 'EmoteUtils', path: '/emote-utils', sprint: 'E2', ready: true, icon: ':)', desc: 'Browse and copy emoji, text faces, kaomoji and symbols.' },
   { label: 'Backend Support', path: '/backend-support', sprint: 'B1', ready: true, icon: '⌘', desc: 'Preview and validate six backend specification families. Generation arrives later.' },
   {
     label:  'Calculator',
@@ -319,6 +321,8 @@ export default function DashboardPage() {
   // drop / dragend events — no library needed.
   const [dragFromIndex, setDragFromIndex] = useState(null)
   const [dragOverIndex, setDragOverIndex] = useState(null)
+  const emoteAccess = useEmoteAccess()
+  const openTool = path => { if (path !== '/emote-utils' || emoteAccess.status === 'enabled') navigate(path) }
   const [backendAccess, setBackendAccess] = useState(null)
   const [toolStatuses, setToolStatuses] = useState({})  // { "/calculator": true, ... }
 
@@ -361,6 +365,7 @@ export default function DashboardPage() {
   // ── Star click handler with error surfacing ─────────────────────────────
   async function handleToggleFavorite(path) {
     const result = await toggleFavorite(path)
+    if (result.stale) return
     if (!result.ok && result.error) {
       setLocalError(result.error)
       // Clear the error after 4 s so it doesn't linger indefinitely.
@@ -375,6 +380,7 @@ export default function DashboardPage() {
     const toIndex = fromIndex + delta
     const reordered = moveInArray(favorites, fromIndex, toIndex)
     const result = await reorderFavorites(reordered)
+    if (result.stale) return
     if (!result.ok && result.error) {
       setLocalError(result.error)
       setTimeout(() => setLocalError(''), 4000)
@@ -419,6 +425,7 @@ export default function DashboardPage() {
     setDragFromIndex(null)
     setDragOverIndex(null)
     const result = await reorderFavorites(reordered)
+    if (result.stale) return
     if (!result.ok && result.error) {
       setLocalError(result.error)
       setTimeout(() => setLocalError(''), 4000)
@@ -457,6 +464,7 @@ export default function DashboardPage() {
             </div>
             <span className={styles.cardLabel}>{feature.label}</span>
             <span className={styles.cardDesc}>{feature.desc}</span>
+          {feature.path === '/emote-utils' && <span>{emoteAccess.status === 'enabled' ? 'Enabled' : emoteAccess.status === 'checking' ? 'Checking availability…' : emoteAccess.status === 'disabled' ? 'Disabled' : 'Unavailable'}</span>}
           {feature.path === '/backend-support' && <span>{backendAccess?.adminPreview ? 'Admin preview · disabled for users' : backendAccess?.enabled ? 'Enabled' : 'Disabled or unavailable'}</span>}
             <span className={styles.cardLockBadge} aria-hidden="true">🔒 Login required</span>
           </div>
@@ -473,6 +481,7 @@ export default function DashboardPage() {
           </div>
           <span className={styles.cardLabel}>{feature.label}</span>
           <span className={styles.cardDesc}>{feature.desc}</span>
+          {feature.path === '/emote-utils' && <span>{emoteAccess.status === 'enabled' ? 'Enabled' : emoteAccess.status === 'checking' ? 'Checking availability…' : emoteAccess.status === 'disabled' ? 'Disabled' : 'Unavailable'}</span>}
           {feature.path === '/backend-support' && <span>{backendAccess?.adminPreview ? 'Admin preview · disabled for users' : backendAccess?.enabled ? 'Enabled' : 'Disabled or unavailable'}</span>}
           <span className={styles.cardBadge}>Sprint {feature.sprint}</span>
           {toolStatuses[feature.path] === false && (
@@ -528,16 +537,17 @@ export default function DashboardPage() {
           role="button"
           tabIndex={0}
           className={styles.card}
+          aria-disabled={feature.path === '/emote-utils' && emoteAccess.status !== 'enabled'}
           onClick={() => {
             const isEnabled = feature.path === '/backend-support' ? backendAccess?.canValidate === true : toolStatuses[feature.path] !== false  // default true
             if (!isEnabled && (feature.path === '/backend-support' || !isAdmin)) return   // blocked for regular users
-            navigate(feature.path)
+            openTool(feature.path)
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault()
               if (feature.path === '/backend-support' && !backendAccess?.canValidate) return
-              navigate(feature.path)
+              openTool(feature.path)
             }
           }}
         >
@@ -546,6 +556,7 @@ export default function DashboardPage() {
           </div>
           <span className={styles.cardLabel}>{feature.label}</span>
           <span className={styles.cardDesc}>{feature.desc}</span>
+          {feature.path === '/emote-utils' && <span>{emoteAccess.status === 'enabled' ? 'Enabled' : emoteAccess.status === 'checking' ? 'Checking availability…' : emoteAccess.status === 'disabled' ? 'Disabled' : 'Unavailable'}</span>}
           {feature.path === '/backend-support' && <span>{backendAccess?.adminPreview ? 'Admin preview · disabled for users' : backendAccess?.enabled ? 'Enabled' : 'Disabled or unavailable'}</span>}
         </div>
       </div>
@@ -600,22 +611,22 @@ export default function DashboardPage() {
             <p className={styles.sectionTitle}>Find a tool</p>
             <span className={styles.favoriteHint}>Search by task, format, or workflow.</span>
           </div>
-          <SearchResults
+          <SearchResults emoteEnabled={emoteAccess.status === 'enabled'}
             username={username}
-            onSelectTool={(tool) => navigate(tool.path)}
+            onSelectTool={(tool) => openTool(tool.path)}
             maxResults={8}
             placeholder="Search tools, formats, and utilities"
           />
         </section>
 
         {/* ── Tool Recommendations + Trending (Sprint 21) ───────────────── */}
-        <ToolRecommendations
+        <ToolRecommendations emoteEnabled={emoteAccess.status === 'enabled'}
           username={username}
-          onSelectTool={(path) => navigate(path)}
+          onSelectTool={(path) => openTool(path)}
         />
 
         {/* ── Recent Activity (non-guest only) ─────────────────────────── */}
-        {!isGuest && <RecentActivity />}
+        {!isGuest && <RecentActivity emoteEnabled={emoteAccess.status === 'enabled'} />}
 
         {/* ── Favorites section ────────────────────────────────────────── */}
         {favoriteFeatures.length > 0 && (

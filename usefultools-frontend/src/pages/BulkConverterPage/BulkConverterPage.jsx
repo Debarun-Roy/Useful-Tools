@@ -15,7 +15,7 @@
  * log file contents or filenames.
  */
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
@@ -541,7 +541,6 @@ function ImageConverterTab() {
 
   const doneCount   = files.filter(f => f.status === 'done').length
   const errorCount  = files.filter(f => f.status === 'error').length
-  const pendingCount = files.filter(f => f.status === 'pending').length
 
   return (
     <div className={styles.imageConverterLayout}>

@@ -15,7 +15,7 @@
  * table count) — never log raw SQL or schema definitions.
  */
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
@@ -109,7 +109,7 @@ function tokenise(sql) {
     // Number
     if (/[\d.]/.test(sql[i])) {
       let j = i
-      while (j < sql.length && /[\d.eE+\-]/.test(sql[j])) j++
+      while (j < sql.length && /[\d.eE+-]/.test(sql[j])) j++
       tokens.push({ type: 'number', value: sql.slice(i, j) })
       i = j
       continue
@@ -121,7 +121,7 @@ function tokenise(sql) {
   return tokens.filter(t => !(t.type === 'ws'))
 }
 
-function formatSQL(sql, { indent = 2, keywordCase = 'upper', dialect = 'standard' }) {
+function formatSQL(sql, { indent = 2, keywordCase = 'upper' }) {
   if (!sql.trim()) return ''
 
   const indentStr = ' '.repeat(Math.max(1, indent))
@@ -551,6 +551,15 @@ function FormatterTab() {
 
 // ─── Analyzer Tab ──────────────────────────────────────────────────────────────
 
+function ComplexityBar({ value }) {
+  const color = value < 30 ? '#3fb950' : value < 60 ? '#d29922' : '#f85149'
+  return (
+    <div className={styles.complexityBar}>
+      <div className={styles.complexityFill} style={{ width: `${value}%`, background: color }} />
+    </div>
+  )
+}
+
 function AnalyzerTab() {
   const [input, setInput] = useState(SAMPLE_SQL)
 
@@ -569,14 +578,7 @@ function AnalyzerTab() {
     })
   }
 
-  function ComplexityBar({ value }) {
-    const color = value < 30 ? '#3fb950' : value < 60 ? '#d29922' : '#f85149'
-    return (
-      <div className={styles.complexityBar}>
-        <div className={styles.complexityFill} style={{ width: `${value}%`, background: color }} />
-      </div>
-    )
-  }
+
 
   return (
     <div className={styles.analyzerLayout}>

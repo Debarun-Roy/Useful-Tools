@@ -16,7 +16,7 @@
  * Privacy rule: log only operation type and counts — never raw hex/RGB values
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { logoutUser } from '../../api/apiClient'
@@ -299,7 +299,7 @@ function TabBar({ tabs, active, onChange }) {
   )
 }
 
-function ColorSwatch({ hex, size = 'md', label, onClick, copyable = false }) {
+function ColorSwatch({ hex, size = 'md', onClick, copyable = false }) {
   const [copied, setCopied] = useState(false)
   function handleCopy() {
     navigator.clipboard.writeText(hex).then(() => {
@@ -798,6 +798,12 @@ function GradientTab() {
 
 // ─── Accessibility Tab ─────────────────────────────────────────────────────────
 
+const PassBadge = ({ pass, label }) => (
+  <span className={pass ? styles.passBadge : styles.failBadge}>
+    {pass ? '✓' : '✗'} {label}
+  </span>
+)
+
 function AccessibilityTab() {
   const [fg, setFg] = useState('#ffffff')
   const [bg, setBg] = useState('#3b6fd4')
@@ -819,11 +825,7 @@ function AccessibilityTab() {
     logActivity('color.accessibility', 'Checked contrast', { ratio, passed: levels.aa })
   }
 
-  const PassBadge = ({ pass, label }) => (
-    <span className={pass ? styles.passBadge : styles.failBadge}>
-      {pass ? '✓' : '✗'} {label}
-    </span>
-  )
+
 
   return (
     <div className={styles.a11yLayout}>

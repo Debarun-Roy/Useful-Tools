@@ -4,8 +4,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 
 import common.DatabaseUtils;
@@ -77,114 +75,116 @@ public class UserUtils {
      * account keeps working afterwards with a clean slate. This is what
      * backs "Delete My Data".
      *
-     * Every DELETE is best-effort: a table that doesn't exist yet on this
-     * deployment (pre-migration) is skipped rather than aborting the whole
-     * wipe, matching the existing tolerance pattern in RoleDAO.
+     * Missing legacy tables are detected before deletion. Any actual SQL
+     * failure rolls back the complete wipe; account removal shares the transaction.
      *
-     * @return true if the wipe ran to completion; false only if no database
-     *         connection could be obtained at all.
+     * @return true only after commit; false on unavailable connection or SQL failure.
      */
     public static boolean deleteUserData(String username) {
-        if (username == null || username.isBlank()) {
-            return false;
-        }
-
-        try (Connection conn = DatabaseUtils.getSQLite3Connection()) {
-            if (conn == null) {
-                logger.warning("deleteUserData: no DB connection available for " + username);
-                return false;
-            }
-
-            for (String table : USER_DATA_TABLES) {
-                try (PreparedStatement pst = conn.prepareStatement(
-                        "DELETE FROM " + table + " WHERE username = ?;")) {
-                    pst.setString(1, username);
-                    pst.executeUpdate();
-                } catch (SQLException e) {
-                    // Table may not exist yet on this deployment — skip, don't abort.
-                    logger.info("deleteUserData: skipped " + table + " for " + username
-                            + " (" + e.getMessage() + ")");
-                }
-            }
-
-            deleteFeedback(conn, username);
-
-            logger.info("Deleted platform usage data for " + username);
-            return true;
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
+        return deleteWithConnection(username, false);
     }
 
-    /**
-     * Deletes {@code username}'s feedback submissions. feedback_features rows
-     * are children of feedback.id (not username directly), so the matching
-     * feedback ids are looked up first and their children deleted before the
-     * parent rows.
-     */
-    private static void deleteFeedback(Connection conn, String username) {
-        List<Long> feedbackIds = new ArrayList<>();
-
-        try (PreparedStatement pst = conn.prepareStatement(
-                "SELECT id FROM feedback WHERE username = ?;")) {
-            pst.setString(1, username);
-            try (ResultSet rs = pst.executeQuery()) {
-                while (rs.next()) {
-                    feedbackIds.add(rs.getLong(1));
-                }
-            }
-        } catch (SQLException e) {
-            return; // feedback table may not exist yet on this deployment.
-        }
-
-        for (Long feedbackId : feedbackIds) {
-            try (PreparedStatement pst = conn.prepareStatement(
-                    "DELETE FROM feedback_features WHERE feedback_id = ?;")) {
-                pst.setLong(1, feedbackId);
-                pst.executeUpdate();
-            } catch (SQLException ignored) {
-                // Best-effort — a missing child row is not an error here.
-            }
-        }
-
-        try (PreparedStatement pst = conn.prepareStatement(
-                "DELETE FROM feedback WHERE username = ?;")) {
-            pst.setString(1, username);
-            pst.executeUpdate();
-        } catch (SQLException ignored) {
-            // feedback table may not exist yet on this deployment.
-        }
-    }
-
-    /**
-     * Full account removal: wipes all usage data (see deleteUserData) and
-     * then deletes the user_table row itself, so the account can no longer
-     * log in. This is what backs "Remove My Account" and the admin-triggered
-     * user deletion in RoleDAO.
-     *
-     * @return true if both the data wipe and the account-row deletion
-     *         completed without a connection-level failure.
-     */
     public static boolean deleteAccountAndData(String username) {
-        if (username == null || username.isBlank()) {
+        return deleteWithConnection(username, true);
+    }
+
+    private static boolean deleteWithConnection(String username, boolean removeAccount) {
+        if (username == null || username.isBlank()) return false;
+        try (Connection conn = DatabaseUtils.getSQLite3Connection()) {
+            if (conn == null) return false;
+            deleteAtomically(conn, username, removeAccount);
+            return true;
+        } catch (SQLException | RuntimeException e) {
+            // No account identifiers, SQL text or personal records in the failure log.
+            logger.warning("Account data deletion did not complete normally; no success acknowledged.");
             return false;
         }
+    }
 
-        boolean dataDeleted = deleteUserData(username);
-
-        try (Connection conn = DatabaseUtils.getSQLite3Connection();
-             PreparedStatement pst = conn.prepareStatement(
-                     "DELETE FROM user_table WHERE username = ?;")) {
-            pst.setString(1, username);
-            pst.executeUpdate();
-            logger.info("Deleted account row for " + username);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+    /** Connection is owned by the caller; all existing data and account deletes share one transaction. */
+    static void deleteAtomically(Connection conn, String username, boolean removeAccount) throws SQLException {
+        if (conn == null || username == null || username.isBlank()) throw new SQLException("Connection and nonblank username required");
+        if (!conn.getAutoCommit()) throw new SQLException("Deletion requires an unused transaction");
+        conn.setAutoCommit(false);
+        boolean transactionEnded = false;
+        Throwable primaryFailure = null;
+        try {
+            verifyAccount(conn, username, removeAccount);
+            for (String table : USER_DATA_TABLES) {
+                if (!tableExists(conn, table)) continue;
+                try (PreparedStatement statement = conn.prepareStatement("DELETE FROM " + table + " WHERE username = ?")) {
+                    statement.setString(1, username);
+                    statement.executeUpdate();
+                }
+            }
+            if (tableExists(conn, "feedback")) {
+                if (tableExists(conn, "feedback_features")) {
+                    try (PreparedStatement statement = conn.prepareStatement(
+                            "DELETE FROM feedback_features WHERE feedback_id IN (SELECT id FROM feedback WHERE username = ?)")) {
+                        statement.setString(1, username);
+                        statement.executeUpdate();
+                    }
+                }
+                try (PreparedStatement statement = conn.prepareStatement("DELETE FROM feedback WHERE username = ?")) {
+                    statement.setString(1, username);
+                    statement.executeUpdate();
+                }
+            }
+            if (removeAccount) {
+                try (PreparedStatement statement = conn.prepareStatement("DELETE FROM user_table WHERE username = ?")) {
+                    statement.setString(1, username);
+                    if (statement.executeUpdate() != 1) throw new SQLException("Account identity is missing or ambiguous");
+                }
+            }
+            conn.commit();
+            transactionEnded = true;
+        } catch (SQLException | RuntimeException failure) {
+            primaryFailure = failure;
+            try { conn.rollback(); transactionEnded = true; } catch (SQLException | RuntimeException rollbackFailure) { failure.addSuppressed(rollbackFailure); }
+            throw failure;
+        } finally {
+            // Never implicitly commit a failed transaction if rollback itself failed.
+            if (transactionEnded) {
+                try { conn.setAutoCommit(true); }
+                catch (SQLException | RuntimeException cleanupFailure) {
+                    if (primaryFailure != null) primaryFailure.addSuppressed(cleanupFailure);
+                    else throw cleanupFailure;
+                }
+            }
         }
+    }
 
-        return dataDeleted;
+    // Recheck identity and the existing last-admin policy in the deletion transaction.
+    // Earlier controller checks provide friendly errors but cannot serialize races.
+    private static void verifyAccount(Connection conn, String username, boolean removeAccount) throws SQLException {
+        try (PreparedStatement statement = conn.prepareStatement("SELECT COUNT(*) FROM user_table WHERE username = ?")) {
+            statement.setString(1, username);
+            try (ResultSet rows = statement.executeQuery()) {
+                if (!rows.next() || rows.getInt(1) != 1) throw new SQLException("Account identity is missing or ambiguous");
+            }
+        }
+        if (!removeAccount) return;
+        boolean hasRole = false;
+        try (PreparedStatement statement = conn.prepareStatement("PRAGMA table_info(user_table)");
+             ResultSet rows = statement.executeQuery()) {
+            while (rows.next()) if ("role".equalsIgnoreCase(rows.getString("name"))) hasRole = true;
+        }
+        if (hasRole) {
+            try (PreparedStatement statement = conn.prepareStatement(
+                    "SELECT 1 FROM user_table WHERE username = ? AND role = 'admin' AND (SELECT COUNT(*) FROM user_table WHERE role = 'admin') <= 1")) {
+                statement.setString(1, username);
+                try (ResultSet rows = statement.executeQuery()) {
+                    if (rows.next()) throw new SQLException("Last admin removal is not permitted");
+                }
+            }
+        }
+    }
+
+    private static boolean tableExists(Connection conn, String table) throws SQLException {
+        try (PreparedStatement statement = conn.prepareStatement(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? COLLATE NOCASE")) {
+            statement.setString(1, table);
+            try (ResultSet rows = statement.executeQuery()) { return rows.next(); }
+        }
     }
 }

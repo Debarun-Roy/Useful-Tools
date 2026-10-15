@@ -147,7 +147,7 @@ export function identifyHash(raw) {
       const headerJson = JSON.parse(
         typeof atob === 'function'
           ? atob(padded)
-          : Buffer.from(padded, 'base64').toString('utf-8')
+          : globalThis.Buffer.from(padded, 'base64').toString('utf-8')
       )
       if (headerJson && typeof headerJson.alg === 'string') {
         candidates.push(candidate('JWT', 'certain', HASH_ALGORITHMS.jwt.note))

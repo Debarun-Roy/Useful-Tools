@@ -29,3 +29,11 @@ railway_ssh.txt
 .b7.zip
 codebase.zip
 docs.zip
+
+# Disposable Emote qualification profiles, cookies and databases
+.e0
+.e1
+.e2
+
+# Rotated DAO runtime diagnostics
+dao_logs.log.*

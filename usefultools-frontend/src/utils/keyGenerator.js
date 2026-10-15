@@ -123,7 +123,7 @@ export function generateBase64Url(byteLength = 32) {
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i])
   const standard = typeof btoa === 'function'
     ? btoa(bin)
-    : Buffer.from(bytes).toString('base64')
+    : globalThis.Buffer.from(bytes).toString('base64')
   return standard.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
